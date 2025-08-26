@@ -1,79 +1,44 @@
 # icp-js-core
 
-Use an Agent to interact with the Internet Computer from your JavaScript program.
+[![NPM Version](https://img.shields.io/npm/v/%40icp-sdk%2Fcore)](https://www.npmjs.com/package/@icp-sdk/core)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-This source code repository contains multiple npm packages, each under `./packages/`.
+The source code repository for the `@icp-sdk/core` package - the official JavaScript SDK for building applications on the Internet Computer.
 
-## Development
+## For Package Users
 
-### Getting Started
+If you're looking to use the `@icp-sdk/core` package in your project, visit:
 
-1. Clone the git repository.
-2. Install the version of node specified in `.nvmrc`.
-3. Run `corepack enable` to enable `pnpm`.
+- **📦 Package Folder**: [packages/core](./packages/core)
+- **📚 Full Documentation**: [js.icp.build/core/](https://js.icp.build/core/)
 
-After that, you probably want to dive into a specific package in [./packages](./packages).
+### Quick Start
 
-### Running Tests
+```typescript
+import { HttpAgent } from '@icp-sdk/core/agent';
+import { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
+import { IDL } from '@icp-sdk/core/candid';
+import { Principal } from '@icp-sdk/core/principal';
 
-Running tests is a good way to get a sense of what the features will do. We try to have full unit test coverage for all new features, although sometimes mocking network conditions can be difficult, and e2e tests may be preferable.
+const identity = Ed25519KeyIdentity.generate();
+const canisterId = Principal.fromText('uqqxf-5h777-77774-qaaaa-cai');
 
-Before running tests, you need to compile the packages.
+const agent = await HttpAgent.create({
+  host: 'https://icp-api.io',
+  identity,
+});
 
-```shell
-pnpm build
+// Send an update call to the canister
+await agent.call(canisterId, {
+  methodName: 'greet',
+  arg: IDL.encode([IDL.Text], ['world']),
+});
 ```
-
-This command will compile the packages and generate the output under `lib` directory in each package.
-
-#### Unit Tests
-
-To run the unit tests for all packages, run `pnpm test`. You can run tests for a specific package by running `pnpm test` in the package directory or by running `pnpm run -F <package-name> test` in the root directory.
-
-#### E2E Tests
-
-There is currently one set of e2e tests in this repository, located in the `e2e/node` directory.
-
-> **Important Note:** the e2e tests do not run from the TypeScript source code of projects and must be compiled. You should run `pnpm build` to compile the projects after your changes before running the tests.
-
-To run the e2e node tests, you can run
-
-```shell
-pnpm run -F @e2e/node setup
-pnpm run -F @e2e/node e2e
-```
-
-#### Workspaces
-
-We use `pnpm` to manage this repo and its packages. A few useful
-commands to keep in mind;
-
-- To run the unit tests locally, you can use `pnpm test`.
-- To run e2e tests, you can use `pnpm e2e`. **WARNING:** You need to have a running
-  replica locally.
-
-### bin/\* scripts
-
-The following scripts can be found in [./bin](./bin):
-
-- update-management-idl - Update the management canister IDL in @dfinity/agent
-
-Monorepo-related scripts run in this order, but are usually invoked by `pnpm i`:
-
-- postinstall - Run with `pnpm postinstall` in this monorepo package.
-  - It copies devtools dependencies from ./packages/agent-js-devtools/node_modules -> ./node_modules
-- build - Build (`pnpm build`) each subpackage in ./packages/
-- test - Run `pnpm test` in each subpackage
 
 ## Contributing
 
-Contributions are welcome! Please refer to the [CONTRIBUTING.md](.github/CONTRIBUTING.md), where you can find more details about:
-
-- Setting up the repository, making changes, documenting these changes, adherence to automated formatting like prettier, and Continuous Integration, which is facilitated by GitHub Actions.
-- Information about our review process.
-- The release process, publishing to NPM, and publishing docs.
-- The process for deprecating packages in this repository.
+This repository contains the source code for `@icp-sdk/core` and related packages. Contributions are welcome! Please refer to the [CONTRIBUTING.md](./.github/CONTRIBUTING.md) for details about setting up the development environment, running tests, and the review process.
 
 ## License
 
-This project is licensed under the [Apache-2.0 License](LICENSE).
+This project is licensed under the [Apache-2.0 License](./LICENSE).
