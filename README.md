@@ -1,6 +1,6 @@
 # icp-js-core
 
-[![npm version](https://badge.fury.io/js/@icp-sdk%2Fcore.svg)](https://www.npmjs.com/package/@icp-sdk/core)
+[![NPM Version](https://img.shields.io/npm/v/%40icp-sdk%2Fcore)](https://www.npmjs.com/package/@icp-sdk/core)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 The source code repository for the `@icp-sdk/core` package - the official JavaScript SDK for building applications on the Internet Computer.
