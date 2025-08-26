@@ -54,7 +54,7 @@
     "bundle": "pnpm build:packages && pnpm -r bundle",
     "e2e": "pnpm -r e2e",
     "test": "pnpm -r test",
-    "publish:dfinity-packages": "pnpm -r -F './packages/{agent,assets,auth-client,candid,identity,identity-secp256k1,principal,use-auth-client}' publish",
+    "publish:dfinity-packages": "pnpm -r -F './packages/{agent,assets,auth-client,candid,identity,identity-secp256k1,principal}' publish",
     "publish:core-package": "pnpm -F './packages/core' publish",
     "version": "pnpm dlx tsx bin/version.ts",
     "attw": "pnpm -r attw",
@@ -114,11 +114,6 @@
       "name": "@dfinity/principal",
       "path": "./packages/principal/dist/index.js",
       "limit": "5 kB"
-    },
-    {
-      "name": "@dfinity/use-auth-client",
-      "path": "./packages/use-auth-client/dist/index.js",
-      "limit": "63 kB"
     }
   ],
   "release-it": {

@@ -1,5 +1,9 @@
 # @dfinity/use-auth-client
 
+> **⚠️ DEPRECATED**: This package is deprecated since v3.2.3. Please use one of the following alternatives:
+> - [`ic-use-internet-identity`](https://www.npmjs.com/package/ic-use-internet-identity)
+> - [`@ic-reactor/react`](https://www.npmjs.com/package/@ic-reactor/react)
+
 `@dfinity/use-auth-client`! This is a package for Internet Computer React developers, making it easier to integrate the auth-client with your React application.
 
 You can use it to manage your identity for you, or you can pass it an `idlFactory` and `canisterId` and it will construct and manage your entire `Actor` for you.

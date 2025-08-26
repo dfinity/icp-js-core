@@ -17,6 +17,12 @@ The `@icp-sdk/core` package does not contain any other changes.
 
 See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for more information.
 
+### Deprecated
+
+- `@dfinity/use-auth-client`: this package has been deprecated. We recommend using one of the following alternatives:
+  - [ic-use-internet-identity](https://www.npmjs.com/package/ic-use-internet-identity)
+  - [@ic-reactor/react](https://www.npmjs.com/package/@ic-reactor/react)
+
 ## [3.2.2] - 2025-08-21
 
 - fix: add `bigint` to the `JsonValue` types in `@dfinity/candid`.
