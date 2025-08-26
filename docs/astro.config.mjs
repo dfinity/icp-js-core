@@ -52,6 +52,7 @@ export default defineConfig({
                 { label: 'Installation', link: '/installation' },
                 { label: 'Quick Start', link: '/quick-start' },
                 { label: 'Typescript', link: '/typescript' },
+                { label: 'Library Development', link: '/library-development' },
               ],
             },
           ],
