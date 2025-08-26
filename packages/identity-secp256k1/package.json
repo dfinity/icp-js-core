@@ -7,11 +7,11 @@
   "homepage": "https://js.icp.build/core/v3.2/libs/identity-secp256k1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dfinity/agent-js.git",
+    "url": "https://github.com/dfinity/icp-sdk-js-core.git",
     "directory": "packages/identity-secp256k1"
   },
   "bugs": {
-    "url": "https://github.com/dfinity/agent-js/issues"
+    "url": "https://github.com/dfinity/icp-sdk-js-core/issues"
   },
   "keywords": [
     "internet computer",

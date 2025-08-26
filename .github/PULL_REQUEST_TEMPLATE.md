@@ -10,7 +10,7 @@ Please describe the tests that you ran to verify your changes. Provide instructi
 
 # Checklist:
 
-- [ ] My changes follow the guidelines in [CONTRIBUTING.md](https://github.com/dfinity/agent-js/blob/main/.github/CONTRIBUTING.md).
+- [ ] My changes follow the guidelines in [CONTRIBUTING.md](https://github.com/dfinity/icp-sdk-js-core/blob/main/.github/CONTRIBUTING.md).
 - [ ] The title of this PR complies with [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 - [ ] I have edited the CHANGELOG accordingly.
 - [ ] I have made corresponding changes to the documentation.
