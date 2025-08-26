@@ -84,8 +84,8 @@ Additional API Documentation can be found [here](https://js.icp.build/core/lates
 
 ## Contributing
 
-Contributions are welcome! Please refer to the [repository](https://github.com/dfinity/icp-sdk-js-core) for guidelines on contributing to this project.
+Contributions are welcome! Please refer to the [repository](https://github.com/dfinity/icp-js-core) for guidelines on contributing to this project.
 
 ## License
 
-This project is licensed under the Apache-2.0 License. See the [LICENSE](https://github.com/dfinity/icp-sdk-js-core/blob/main/LICENSE) file for details.
+This project is licensed under the Apache-2.0 License. See the [LICENSE](https://github.com/dfinity/icp-js-core/blob/main/LICENSE) file for details.

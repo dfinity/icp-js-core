@@ -2,7 +2,7 @@
 
 Directions to set up your project are available in the [README](../README.md).
 
-Before you make your changes, check to see if an [issue exists](https://github.com/dfinity/icp-sdk-js-core/issues). If there isn't one, you can [create one](https://github.com/dfinity/icp-sdk-js-core/issues/new/choose) to discuss your proposed changes.
+Before you make your changes, check to see if an [issue exists](https://github.com/dfinity/icp-js-core/issues). If there isn't one, you can [create one](https://github.com/dfinity/icp-js-core/issues/new/choose) to discuss your proposed changes.
 
 ## Forking the repository
 
@@ -98,7 +98,7 @@ We utilize the [release-it](https://github.com/release-it/release-it) package to
 
 Start the process by initiating the GitHub Action Workflow `prepare-release.yml`. This can be done by:
 
-- Navigating to the GitHub web UI and clicking "Run workflow" at https://github.com/dfinity/icp-sdk-js-core/actions/workflows/prepare-release.yml, or
+- Navigating to the GitHub web UI and clicking "Run workflow" at https://github.com/dfinity/icp-js-core/actions/workflows/prepare-release.yml, or
 - Running this command from your console:
   ```shell
   gh workflow run "prepare-release.yml" -f "semverBump=major"
@@ -249,7 +249,7 @@ Once the changes are merged, you can publish to NPM by running:
   - To do this, you will need publishing authorization under our NPM organization. Contact IT if you require access.
   - You can include the `--dry-run` flag to verify the version before actual publishing.
 
-After publishing to NPM, go to https://github.com/dfinity/icp-sdk-js-core/releases/new, select "Draft a new release", enter the new tag version (in `v#.#.#` format), and click "Publish release".
+After publishing to NPM, go to https://github.com/dfinity/icp-js-core/releases/new, select "Draft a new release", enter the new tag version (in `v#.#.#` format), and click "Publish release".
 
 </details>
 

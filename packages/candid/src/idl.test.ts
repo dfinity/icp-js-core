@@ -1113,7 +1113,7 @@ describe('IDL subtyping', () => {
   });
 
   describe('Subtyping on records/variants normalizes field labels', () => {
-    // Checks we don't regress https://github.com/dfinity/icp-sdk-js-core/issues/1072
+    // Checks we don't regress https://github.com/dfinity/icp-js-core/issues/1072
     testSub(IDL.Record({ a: IDL.Nat, "_98_": IDL.Nat }), IDL.Record({ "_97_": IDL.Nat, b: IDL.Nat }));
     testSub(IDL.Variant({ a: IDL.Nat, "_98_": IDL.Nat }), IDL.Variant({ "_97_": IDL.Nat, b: IDL.Nat }));
   });

@@ -21,7 +21,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'ICP JS SDK Core',
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/dfinity/icp-sdk-js-core' }],
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/dfinity/icp-js-core' }],
       plugins: [
         dfinityStarlightTheme(),
         markdownUrlsPlugin({

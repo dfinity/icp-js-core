@@ -7,11 +7,11 @@
   "homepage": "https://js.icp.build/core/latest/upgrading/v4/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dfinity/icp-sdk-js-core.git",
+    "url": "https://github.com/dfinity/icp-js-core.git",
     "directory": "packages/migrate"
   },
   "bugs": {
-    "url": "https://github.com/dfinity/icp-sdk-js-core/issues"
+    "url": "https://github.com/dfinity/icp-js-core/issues"
   },
   "keywords": [
     "internet computer",
