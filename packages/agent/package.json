@@ -7,11 +7,11 @@
   "homepage": "https://js.icp.build/core/v3.2/libs/agent",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dfinity/agent-js.git",
+    "url": "https://github.com/dfinity/icp-js-core.git",
     "directory": "packages/agent"
   },
   "bugs": {
-    "url": "https://github.com/dfinity/agent-js/issues"
+    "url": "https://github.com/dfinity/icp-js-core/issues"
   },
   "keywords": [
     "internet computer",

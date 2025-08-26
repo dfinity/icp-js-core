@@ -39,17 +39,9 @@
     "api",
     "sdk"
   ],
-  "bugs": {
-    "url": "https://github.com/dfinity/agent-js/issues"
-  },
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
   "homepage": "https://js.icp.build/core/v3.2/libs/use-auth-client",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/dfinity/agent-js.git",
-    "directory": "packages/use-auth-client"
-  },
   "dependencies": {
     "@dfinity/agent": "workspace:*",
     "@dfinity/auth-client": "workspace:*",

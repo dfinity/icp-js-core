@@ -1,6 +1,6 @@
 # Contribution guidelines
 
-Before you make your changes, check to see if an [issue exists](https://github.com/dfinity/agent-js/issues). If there isn't one, you can [create one](https://github.com/dfinity/agent-js/issues/new/choose) to discuss your proposed changes.
+Before you make your changes, check to see if an [issue exists](https://github.com/dfinity/icp-js-core/issues). If there isn't one, you can [create one](https://github.com/dfinity/icp-js-core/issues/new/choose) to discuss your proposed changes.
 
 ## Development Setup
 
@@ -116,7 +116,7 @@ We utilize the [release-it](https://github.com/release-it/release-it) package to
 
 Start the process by initiating the GitHub Action Workflow `prepare-release.yml`. This can be done by:
 
-- Navigating to the GitHub web UI and clicking "Run workflow" at https://github.com/smallstepman/agent-js/actions/workflows/prepare-release.yml, or
+- Navigating to the GitHub web UI and clicking "Run workflow" at https://github.com/dfinity/icp-js-core/actions/workflows/prepare-release.yml, or
 - Running this command from your console:
   ```shell
   gh workflow run "prepare-release.yml" -f "semverBump=major"
@@ -267,7 +267,7 @@ Once the changes are merged, you can publish to NPM by running:
   - To do this, you will need publishing authorization under our NPM organization. Contact IT if you require access.
   - You can include the `--dry-run` flag to verify the version before actual publishing.
 
-After publishing to NPM, go to https://github.com/dfinity/agent-js/releases/new, select "Draft a new release", enter the new tag version (in `v#.#.#` format), and click "Publish release".
+After publishing to NPM, go to https://github.com/dfinity/icp-js-core/releases/new, select "Draft a new release", enter the new tag version (in `v#.#.#` format), and click "Publish release".
 
 </details>
 
@@ -301,14 +301,9 @@ Docs are built and published in the `publish-docs` step of the [`publish.yml`](.
 
 To deprecate a package, follow these steps
 
-- Remove all contents except the package.json, license, and readme
 - Add a note to the README saying `**Warning** this package is deprecated`
-- Remove unnecessary content, dependencies, and metadata from the package.json
-- add a `"deprecation"` tag to the package.json with instructions you want users to follow in migrating
-- remove the package as a workspace from the root `package.json`
-- the next time that agent-js releases, manually publish a new version of newly deprecated packages by incrementing the patch version and running `pnpm publish:packages`
-
-So far, the following packages were deprecated:
-
-- @dfinity/ledger-identityhq (#665)
-- @dfinity/authentication (#665 & #661)
+- Increment the patch version of the package in its `package.json` file
+- Release the patched version of the package to NPM
+- Deprecate the package in NPM with `npm deprecate ...`
+- Remove the package from the root [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) file
+- Optionally, remove all contents except the package.json, license, and readme. This can be done later, so that the source code stays available for reference for a while.
