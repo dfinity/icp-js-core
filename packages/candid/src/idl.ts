@@ -57,6 +57,7 @@ class TypeTable {
   // List of types. Needs to be an array as the index needs to be stable.
   private _typs: Uint8Array[] = [];
   private _idx = new Map<string, number>();
+  private _idxRefCount = new Map<number, number>();
 
   public has(obj: ConstructType) {
     return this._idx.has(obj.name);
@@ -65,6 +66,7 @@ class TypeTable {
   public add<T>(type: ConstructType<T>, buf: Uint8Array) {
     const idx = this._typs.length;
     this._idx.set(type.name, idx);
+    this._idxRefCount.set(idx, 1);
     this._typs.push(buf);
   }
 
@@ -79,9 +81,28 @@ class TypeTable {
     }
     this._typs[idx] = this._typs[knotIdx];
 
-    // Delete the type.
-    this._typs.splice(knotIdx, 1);
+    // Decrement reference count since we're removing the knot name mapping
+    const knotRefCount = this._getIdxRefCount(knotIdx);
+    this._idxRefCount.set(knotIdx, knotRefCount - 1);
     this._idx.delete(knot);
+
+    this._compactFromEnd();
+  }
+
+  private _getIdxRefCount(idx: number): number {
+    return this._idxRefCount.get(idx) || 0;
+  }
+
+  private _compactFromEnd() {
+    // Remove unused entries from the end of the array
+    while (this._typs.length > 0) {
+      const lastIndex = this._typs.length - 1;
+      if (this._getIdxRefCount(lastIndex) > 0) {
+        break;
+      }
+      this._typs.pop();
+      this._idxRefCount.delete(lastIndex);
+    }
   }
 
   public encode(): Uint8Array {

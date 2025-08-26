@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- fix(candid): avoid removing shared knot types when multiple `Rec()`s are present in the same struct.
+
 ## [4.0.0] - 2025-08-22
 
 Publishes the new `@icp-sdk/core` package.
