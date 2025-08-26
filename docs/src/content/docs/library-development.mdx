@@ -1,0 +1,44 @@
+---
+title: Library Development
+description: Guide for building libraries that depend on @icp-sdk/core
+sidebar:
+  order: 4
+---
+
+If you're building a library that depends on `@icp-sdk/core`, there are some specific considerations to ensure your library works correctly with bundlers and provides the best experience for your users.
+
+## Bundler Configuration
+
+### Rollup/Vite
+
+When using Rollup or Vite (which uses Rollup under the hood), you need to specify each `@icp-sdk/core` submodule as an external dependency:
+
+```js
+// rollup.config.js or vite.config.js
+export default {
+  build: {
+    rollupOptions: {
+      external: [
+        '@icp-sdk/core/agent',
+        '@icp-sdk/core/candid',
+        '@icp-sdk/core/identity',
+        '@icp-sdk/core/identity/secp256k1',
+        '@icp-sdk/core/principal',
+      ],
+      output: {
+        globals: {
+          '@icp-sdk/core/agent': 'icp-sdk-core-agent',
+          '@icp-sdk/core/candid': 'icp-sdk-core-candid',
+          '@icp-sdk/core/identity': 'icp-sdk-core-identity',
+          '@icp-sdk/core/identity/secp256k1': 'icp-sdk-core-identity-secp256k1',
+          '@icp-sdk/core/principal': 'icp-sdk-core-principal',
+        },
+      },
+    },
+  },
+};
+```
+
+## TypeScript Configuration
+
+If your library is written in TypeScript, make sure your `tsconfig.json` uses compatible module resolution. See the [Typescript](./typescript.mdx) documentation for more details.
