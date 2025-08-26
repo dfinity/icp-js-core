@@ -1,4 +1,4 @@
-# agent-js
+# icp-js-core
 
 Use an Agent to interact with the Internet Computer from your JavaScript program.
 
