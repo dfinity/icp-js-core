@@ -643,6 +643,48 @@ test('decode / encode unknown mutual recursive lists', () => {
   expect(value2).toEqual([{ head: BigInt(1), tail: [{ head: BigInt(2), tail: [] }] }]);
 });
 
+test('encode / decode recursive types with shared non-recursive types', () => {
+  const RecursiveBlob = IDL.Rec();
+  RecursiveBlob.fill(IDL.Vec(IDL.Nat8));
+
+  const UsesRecursiveBlob = IDL.Rec();
+  UsesRecursiveBlob.fill(
+    IDL.Record({
+      myBlob: RecursiveBlob,
+    }),
+  );
+
+  const RecursiveRecord = IDL.Rec();
+  RecursiveRecord.fill(
+    IDL.Record({
+      field1: IDL.Vec(IDL.Nat8),
+      field2: IDL.Vec(IDL.Nat8),
+    }),
+  );
+
+  const RecReturnInner = IDL.Record({
+    rec_rec: RecursiveRecord,
+    rec_blob: UsesRecursiveBlob,
+  });
+
+  const RecReturn = IDL.Rec();
+  RecReturn.fill(RecReturnInner);
+
+  const toEncode = {
+    rec_rec: {
+      field1: new Uint8Array([1, 2, 3]),
+      field2: new Uint8Array([4, 5, 6]),
+    },
+    rec_blob: {
+      myBlob: new Uint8Array([7, 8, 9]),
+    },
+  };
+
+  const encoded = IDL.encode([RecReturn], [toEncode]);
+  const decoded = IDL.decode([RecReturn], encoded)[0];
+  expect(decoded).toEqual(toEncode);
+});
+
 test('decode / encode unknown nested record', () => {
   const nestedType = IDL.Record({ foo: IDL.Int32, bar: IDL.Bool });
   const recordType = IDL.Record({
@@ -1114,8 +1156,8 @@ describe('IDL subtyping', () => {
 
   describe('Subtyping on records/variants normalizes field labels', () => {
     // Checks we don't regress https://github.com/dfinity/agent-js/issues/1072
-    testSub(IDL.Record({ a: IDL.Nat, "_98_": IDL.Nat }), IDL.Record({ "_97_": IDL.Nat, b: IDL.Nat }));
-    testSub(IDL.Variant({ a: IDL.Nat, "_98_": IDL.Nat }), IDL.Variant({ "_97_": IDL.Nat, b: IDL.Nat }));
+    testSub(IDL.Record({ a: IDL.Nat, _98_: IDL.Nat }), IDL.Record({ _97_: IDL.Nat, b: IDL.Nat }));
+    testSub(IDL.Variant({ a: IDL.Nat, _98_: IDL.Nat }), IDL.Variant({ _97_: IDL.Nat, b: IDL.Nat }));
   });
 
   describe('decoding function/service references', () => {
