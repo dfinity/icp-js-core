@@ -1,8 +1,26 @@
 # Contribution guidelines
 
-Directions to set up your project are available in the [README](../README.md).
-
 Before you make your changes, check to see if an [issue exists](https://github.com/dfinity/agent-js/issues). If there isn't one, you can [create one](https://github.com/dfinity/agent-js/issues/new/choose) to discuss your proposed changes.
+
+## Development Setup
+
+### Getting Started
+
+1. Clone the repository
+2. Install Node.js version specified in `.nvmrc`
+3. Run `corepack enable` to enable `pnpm`
+4. Run `pnpm install` to install dependencies
+5. Run `pnpm build` to build all packages
+
+### Running Tests
+
+- **Unit tests**: `pnpm test`
+- **E2E tests**: First run setup in the e2e folder, then run tests:
+  ```bash
+  cd e2e/node
+  pnpm run setup
+  pnpm e2e
+  ```
 
 ## Forking the repository
 
