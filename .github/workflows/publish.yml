@@ -9,6 +9,7 @@ on:
 
 jobs:
   publish-dfinity-packages:
+    environment: Release
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     steps:
@@ -26,6 +27,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-core-package:
+    environment: Release
     needs: publish-dfinity-packages
     runs-on: ubuntu-latest
     outputs:
