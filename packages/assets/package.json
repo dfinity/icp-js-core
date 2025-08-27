@@ -1,6 +1,6 @@
 {
   "name": "@dfinity/assets",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
   "description": "JavaScript and TypeScript library to manage assets on the Internet Computer",

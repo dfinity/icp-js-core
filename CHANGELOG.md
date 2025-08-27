@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [4.0.1] - 2025-08-26
+
 - fix(candid): avoid removing shared knot types when multiple `Rec()`s are present in the same struct.
 
 ## [4.0.0] - 2025-08-22
