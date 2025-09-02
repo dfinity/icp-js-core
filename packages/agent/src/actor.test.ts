@@ -6,6 +6,7 @@ import { CallRequest, SubmitRequestType, UnSigned } from './agent/http/types.ts'
 import * as cbor from './cbor.ts';
 import { requestIdOf } from './request_id.ts';
 import * as pollingImport from './polling/index.ts';
+import * as certificateImport from './certificate.ts';
 import { ActorConfig } from './actor.ts';
 import {
   CertifiedRejectErrorCode,
@@ -524,6 +525,228 @@ describe('makeActor', () => {
     } else {
       fail('pollOptions was not passed to pollForResponse');
     }
+  });
+
+  it('should verify certificate using effectiveCanisterId for update calls', async () => {
+    const decodedReturnValue = 'Hello, World!';
+    const expectedReplyArg = IDL.encode([IDL.Text], [decodedReturnValue]);
+    const certificateCreateMock = jest.fn(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      async (_createOptions: certificateImport.CreateCertificateOptions) => {
+        return {
+          // Minimal interface used by the actor
+          lookup_path: (path: unknown[]) => {
+            const last = path[path.length - 1];
+            if (last === 'status') {
+              return {
+                status: certificateImport.LookupPathStatus.Found,
+                value: new TextEncoder().encode('replied'),
+              };
+            }
+            if (last === 'reply') {
+              return {
+                status: certificateImport.LookupPathStatus.Found,
+                value: expectedReplyArg,
+              };
+            }
+            return { status: certificateImport.LookupPathStatus.Absent };
+          },
+        };
+      },
+    );
+
+    const { Actor } = await importActor(() => {
+      jest.doMock('./certificate.ts', () => {
+        return {
+          ...certificateImport,
+          Certificate: { create: certificateCreateMock },
+        };
+      });
+    });
+
+    const actorInterface = () => {
+      return IDL.Service({
+        greet_update: IDL.Func([IDL.Text], [IDL.Text]),
+      });
+    };
+
+    // Mock fetch to return a v3-style response with a dummy certificate
+    const mockFetch = jest.fn(() => {
+      const body = cbor.encode({ certificate: new Uint8Array([1, 2, 3]) });
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          statusText: 'ok',
+        }),
+      );
+    });
+
+    const httpAgent = HttpAgent.createSync({ fetch: mockFetch, host: 'http://127.0.0.1' });
+    const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
+    const effectiveCanisterId = Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai');
+
+    const actor = Actor.createActor(actorInterface, {
+      canisterId,
+      effectiveCanisterId,
+      agent: httpAgent,
+    });
+
+    const reply = await actor.greet_update('test');
+
+    // Assert reply decoded correctly
+    expect(reply).toEqual(decodedReturnValue);
+
+    // Assert Certificate.create was called with the effectiveCanisterId
+    expect(certificateCreateMock).toHaveBeenCalledTimes(1);
+    const callArg = certificateCreateMock.mock.calls[0][0];
+    expect(Principal.from(callArg.canisterId).toText()).toBe(effectiveCanisterId.toText());
+  });
+
+  it('should verify certificate using canisterId when effectiveCanisterId is not provided', async () => {
+    const decodedReturnValue = 'Hello, World!';
+    const expectedReplyArg = IDL.encode([IDL.Text], [decodedReturnValue]);
+    const certificateCreateMock = jest.fn(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      async (_createOptions: certificateImport.CreateCertificateOptions) => {
+        return {
+          // Minimal interface used by the actor
+          lookup_path: (path: unknown[]) => {
+            const last = path[path.length - 1];
+            if (last === 'status') {
+              return {
+                status: certificateImport.LookupPathStatus.Found,
+                value: new TextEncoder().encode('replied'),
+              };
+            }
+            if (last === 'reply') {
+              return {
+                status: certificateImport.LookupPathStatus.Found,
+                value: expectedReplyArg,
+              };
+            }
+            return { status: certificateImport.LookupPathStatus.Absent };
+          },
+        };
+      },
+    );
+
+    const { Actor } = await importActor(() => {
+      jest.doMock('./certificate.ts', () => {
+        return {
+          ...certificateImport,
+          Certificate: { create: certificateCreateMock },
+        };
+      });
+    });
+
+    const actorInterface = () => {
+      return IDL.Service({
+        greet_update: IDL.Func([IDL.Text], [IDL.Text]),
+      });
+    };
+
+    // Mock fetch to return a v3-style response with a dummy certificate
+    const mockFetch = jest.fn(() => {
+      const body = cbor.encode({ certificate: new Uint8Array([1, 2, 3]) });
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          statusText: 'ok',
+        }),
+      );
+    });
+
+    const httpAgent = HttpAgent.createSync({ fetch: mockFetch, host: 'http://127.0.0.1' });
+    const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
+
+    const actor = Actor.createActor(actorInterface, {
+      canisterId,
+      agent: httpAgent,
+    });
+
+    const reply = await actor.greet_update('test');
+
+    // Assert reply decoded correctly
+    expect(reply).toEqual(decodedReturnValue);
+
+    // Assert Certificate.create was called with the target canisterId (since no effectiveCanisterId provided)
+    expect(certificateCreateMock).toHaveBeenCalledTimes(1);
+    const callArg = certificateCreateMock.mock.calls[0][0];
+    expect(Principal.from(callArg.canisterId).toText()).toBe(canisterId.toText());
+  });
+
+  it('should verify certificate using effectiveCanisterId passed via withOptions for update calls', async () => {
+    const decodedReturnValue = 'Hello, World!';
+    const expectedReplyArg = IDL.encode([IDL.Text], [decodedReturnValue]);
+    const certificateCreateMock = jest.fn(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      async (_createOptions: certificateImport.CreateCertificateOptions) => {
+        return {
+          // Minimal interface used by the actor
+          lookup_path: (path: unknown[]) => {
+            const last = path[path.length - 1];
+            if (last === 'status') {
+              return {
+                status: certificateImport.LookupPathStatus.Found,
+                value: new TextEncoder().encode('replied'),
+              };
+            }
+            if (last === 'reply') {
+              return {
+                status: certificateImport.LookupPathStatus.Found,
+                value: expectedReplyArg,
+              };
+            }
+            return { status: certificateImport.LookupPathStatus.Absent };
+          },
+        };
+      },
+    );
+
+    const { Actor } = await importActor(() => {
+      jest.doMock('./certificate.ts', () => {
+        return {
+          ...certificateImport,
+          Certificate: { create: certificateCreateMock },
+        };
+      });
+    });
+
+    const actorInterface = () => {
+      return IDL.Service({
+        greet_update: IDL.Func([IDL.Text], [IDL.Text]),
+      });
+    };
+
+    // Mock fetch to return a v3-style response with a dummy certificate
+    const mockFetch = jest.fn(() => {
+      const body = cbor.encode({ certificate: new Uint8Array([1, 2, 3]) });
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          statusText: 'ok',
+        }),
+      );
+    });
+
+    const httpAgent = HttpAgent.createSync({ fetch: mockFetch, host: 'http://127.0.0.1' });
+    const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
+    const effectiveCanisterId = Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai');
+
+    const actor = Actor.createActor(actorInterface, {
+      canisterId,
+      agent: httpAgent,
+    });
+
+    const reply = await actor.greet_update.withOptions({ effectiveCanisterId })('test');
+
+    // Assert reply decoded correctly
+    expect(reply).toEqual(decodedReturnValue);
+
+    // Assert Certificate.create was called with the effectiveCanisterId provided via withOptions
+    expect(certificateCreateMock).toHaveBeenCalledTimes(1);
+    const callArg = certificateCreateMock.mock.calls[0][0];
+    expect(Principal.from(callArg.canisterId).toText()).toBe(effectiveCanisterId.toText());
   });
 });
 

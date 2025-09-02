@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(agent): use the `effectiveCanisterId` (if provided) instead of the `canisterId` to verify the certificate of an update call.
+
 ## [4.0.1] - 2025-08-26
 
 - fix(candid): avoid removing shared knot types when multiple `Rec()`s are present in the same struct.

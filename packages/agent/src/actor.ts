@@ -45,7 +45,7 @@ export interface CallConfig {
   canisterId?: string | Principal;
 
   /**
-   * The effective canister ID. This should almost always be ignored.
+   * The effective canister ID.
    */
   effectiveCanisterId?: Principal;
 
@@ -426,7 +426,7 @@ function _createActorMethod(
         certificate = await Certificate.create({
           certificate: cert,
           rootKey: agent.rootKey,
-          canisterId: Principal.from(canisterId),
+          canisterId: ecid,
           blsVerify,
           agent,
         });
