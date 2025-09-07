@@ -89,15 +89,13 @@ jobs:
         working-directory: docs
         env:
           DOCS_VERSION: ${{ needs.publish-core-package.outputs.major_minor_version }}
-          DOCS_VERSIONS_DROPDOWN_TITLE_VERSION: ${{ needs.publish-core-package.outputs.major_minor_patch_version }}
-        run: pnpm build --outDir dist/${{ needs.publish-core-package.outputs.major_minor_version }}
+        run: pnpm build
 
       - name: Build docs for version latest
         working-directory: docs
         env:
           DOCS_VERSION: latest
-          DOCS_VERSIONS_DROPDOWN_TITLE_VERSION: ${{ needs.publish-core-package.outputs.major_minor_patch_version }}
-        run: pnpm build --outDir dist/latest
+        run: pnpm build
 
       - name: Checkout icp-pages branch
         uses: actions/checkout@v4

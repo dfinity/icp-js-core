@@ -10,3 +10,7 @@ export async function copyFile(src: string, dest: string): Promise<void> {
   await fs.mkdir(path.dirname(dest), { recursive: true });
   await fs.copyFile(src, dest);
 }
+
+export async function copyDir(src: string, dest: string): Promise<void> {
+  await fs.cp(src, dest, { recursive: true });
+}
