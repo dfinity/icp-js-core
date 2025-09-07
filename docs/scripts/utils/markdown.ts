@@ -1,4 +1,3 @@
-import yaml from 'yaml';
 import fs from 'node:fs/promises';
 import { writeFile } from './fs.ts';
 
@@ -13,7 +12,15 @@ export async function processMarkdown({
 }: ProcessMarkdownOpts): Promise<void> {
   const input = await fs.readFile(inputPath, 'utf-8');
 
-  const output = input.replace(/^\s*#\s*.*$/m, '').replaceAll('README.md', 'index.md');
+  const output = replaceReadmeMentions(removeH1Title(input));
 
   await writeFile(outputPath, output);
+}
+
+function removeH1Title(input: string): string {
+  return input.replace(/^\s*#\s*.*$/m, '');
+}
+
+function replaceReadmeMentions(input: string): string {
+  return input.replaceAll('README.md', 'index.md');
 }

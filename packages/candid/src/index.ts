@@ -1,3 +1,7 @@
+/**
+ * @module api
+ */
+
 export * from './candid-ui.ts';
 export * from './candid-core.ts';
 export * as IDL from './idl.ts';

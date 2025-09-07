@@ -1,3 +1,7 @@
+/**
+ * @module api
+ */
+
 export * from './actor.ts';
 export * from './agent/index.ts';
 export * from './agent/http/transforms.ts';

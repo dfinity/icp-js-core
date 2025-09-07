@@ -1,3 +1,7 @@
+/**
+ * @module api
+ */
+
 export { Ed25519KeyIdentity, Ed25519PublicKey } from './identity/ed25519.ts';
 export * from './identity/ecdsa.ts';
 export * from './identity/delegation.ts';
