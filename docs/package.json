@@ -4,7 +4,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "build": "pnpm dlx tsx scripts/generate-libs-docs.ts"
+    "build": "pnpm dlx tsx scripts/generate-docs.ts"
   },
   "devDependencies": {
     "@tsconfig/node-ts": "^23.6.1",

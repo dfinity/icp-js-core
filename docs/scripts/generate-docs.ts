@@ -16,8 +16,7 @@ const excludePackages = [
 
 const additionalFiles = ['../CHANGELOG.md'];
 
-export async function main() {
-  const baseDir = path.resolve('../packages');
+async function main() {
   const libsDir = path.resolve(DOCS_DIR, 'libs');
   const clean = true;
 
@@ -34,7 +33,7 @@ export async function main() {
         entryPoints: ['src/index.ts'],
         tsconfig: './tsconfig.json',
         readme: 'README.md',
-        alwaysCreateEntryPointModule: true, // puts everything into <package>/index folder
+        alwaysCreateEntryPointModule: true, // puts everything into <package>/api folder
       },
       exclude: excludePackages,
       projectDocuments: additionalFiles,
@@ -45,12 +44,6 @@ export async function main() {
   for (const { name } of modules) {
     const id = name.startsWith('@') ? name.split('/')[1]! : name;
     const outputRootDir = path.resolve(libsDir, id);
-    const outputApiDir = path.resolve(outputRootDir, 'api');
-
-    // await processMarkdown({
-    //   inputPath: path.resolve(baseDir, id, 'README.md'),
-    //   outputPath: path.resolve(outputRootDir, 'index.md'),
-    // });
 
     const apiSrcDir = path.resolve(TMP_DIR, name);
     const files = await fs.readdir(apiSrcDir, {
