@@ -14,3 +14,7 @@ export async function copyFile(src: string, dest: string): Promise<void> {
 export async function copyDir(src: string, dest: string): Promise<void> {
   await fs.cp(src, dest, { recursive: true });
 }
+
+export async function cleanDir(dir: string): Promise<void> {
+  await fs.rm(dir, { recursive: true, maxRetries: 3, force: true });
+}
