@@ -1,6 +1,5 @@
 packages:
   - docs
-  - docs/plugins
   - e2e/node
   - packages/agent
   - packages/assets
@@ -11,7 +10,6 @@ packages:
   - packages/identity-secp256k1
   - packages/migrate
   - packages/principal
-  - packages/use-auth-client
 onlyBuiltDependencies:
   - esbuild
   - sharp
