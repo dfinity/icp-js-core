@@ -5,10 +5,12 @@
   },
   {
     "path": "v4.0",
-    "label": "v4.0"
+    "label": "v4.0",
+    "versionInTitle": "v4.0.2"
   },
   {
     "path": "v3.2",
-    "label": "v3.2"
+    "label": "v3.2",
+    "versionInTitle": "v3.2.2"
   }
 ]
