@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- docs(identity-secp256k1): update the submodule name in the README.
+- docs: push markdown files to the docs site.
+
 ## [4.0.2] - 2025-09-02
 
 - fix(agent): use the `effectiveCanisterId` (if provided) instead of the `canisterId` to verify the certificate of an update call.

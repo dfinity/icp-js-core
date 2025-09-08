@@ -1,6 +1,6 @@
-# @icp-sdk/core/identity-secp256k1
+# @icp-sdk/core/identity/secp256k1
 
-The `@icp-sdk/core/identity-secp256k1` module provides an implementation of the [`SignIdentity`](https://js.icp.build/core/latest/libs/agent/api/classes/signidentity/) interface for the secp256k1 elliptic curve. It allows you to create and manage key pairs for signing and verification of messages.
+The `@icp-sdk/core/identity/secp256k1` module provides an implementation of the [`SignIdentity`](https://js.icp.build/core/latest/libs/agent/api/classes/signidentity/) interface for the secp256k1 elliptic curve. It allows you to create and manage key pairs for signing and verification of messages.
 
 ## Usage
 
