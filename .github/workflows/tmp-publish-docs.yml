@@ -55,7 +55,7 @@ jobs:
           path: icp-pages
 
       - name: Assemble docs
-        uses: dfinity/ci-tools/actions/assemble-docs@main
+        uses: dfinity/ci-tools/actions/assemble-docs@2d1b5f2d4a6400bfbac186f0a73ac042aa7228f3
         with:
           assets_dir: 'docs/dist/${{ steps.ver.outputs.major_minor_version }}'
           version: ${{ steps.ver.outputs.major_minor_version }}
@@ -64,7 +64,7 @@ jobs:
           version_in_title: ${{ steps.ver.outputs.major_minor_patch_version }}
 
       - name: Assemble docs
-        uses: dfinity/ci-tools/actions/assemble-docs@main
+        uses: dfinity/ci-tools/actions/assemble-docs@2d1b5f2d4a6400bfbac186f0a73ac042aa7228f3
         with:
           assets_dir: 'docs/dist/latest'
           version: 'latest'
