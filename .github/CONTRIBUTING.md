@@ -286,7 +286,7 @@ Docs are built and published in the `publish-docs` step of the [`publish.yml`](.
 3. Move to the [`docs`](../docs/) directory.
 4. Build the docs setting the proper environment variables:
   ```shell
-  DOCS_VERSION=v3.2 DOCS_VERSIONS_DROPDOWN_TITLE_VERSION=v3.2.2 pnpm build --outDir dist/v3.2
+  DOCS_VERSION=v3.2 pnpm build
   ```
 5. Zip the `dist/v3.2` directory:
   ```shell

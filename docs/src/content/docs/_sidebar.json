@@ -1,0 +1,115 @@
+[
+  {
+    "label": "Getting Started",
+    "items": [
+      { "label": "Overview", "link": "/" },
+      { "label": "Installation", "link": "/installation" },
+      { "label": "Quick Start", "link": "/quick-start" },
+      { "label": "Typescript", "link": "/typescript" },
+      { "label": "Library Development", "link": "/library-development" }
+    ]
+  },
+  {
+    "label": "Modules",
+    "items": [
+      {
+        "label": "Agent",
+        "collapsed": true,
+        "items": [
+          {
+            "label": "Overview",
+            "link": "/libs/agent"
+          },
+          {
+            "label": "API Reference",
+            "collapsed": true,
+            "autogenerate": {
+              "collapsed": true,
+              "directory": "libs/agent/api"
+            }
+          }
+        ]
+      },
+      {
+        "label": "Candid",
+        "collapsed": true,
+        "items": [
+          {
+            "label": "Overview",
+            "link": "/libs/candid"
+          },
+          {
+            "label": "API Reference",
+            "collapsed": true,
+            "autogenerate": {
+              "collapsed": true,
+              "directory": "libs/candid/api"
+            }
+          }
+        ]
+      },
+      {
+        "label": "Identity",
+        "collapsed": true,
+        "items": [
+          {
+            "label": "Overview",
+            "link": "/libs/identity"
+          },
+          {
+            "label": "API Reference",
+            "collapsed": true,
+            "autogenerate": {
+              "collapsed": true,
+              "directory": "libs/identity/api"
+            }
+          }
+        ]
+      },
+      {
+        "label": "Identity Secp256k1",
+        "collapsed": true,
+        "items": [
+          {
+            "label": "Overview",
+            "link": "/libs/identity-secp256k1"
+          },
+          {
+            "label": "API Reference",
+            "collapsed": true,
+            "autogenerate": {
+              "collapsed": true,
+              "directory": "libs/identity-secp256k1/api"
+            }
+          }
+        ]
+      },
+      {
+        "label": "Principal",
+        "collapsed": true,
+        "items": [
+          {
+            "label": "Overview",
+            "link": "/libs/principal"
+          },
+          {
+            "label": "API Reference",
+            "collapsed": true,
+            "autogenerate": {
+              "collapsed": true,
+              "directory": "libs/principal/api"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Upgrading",
+    "autogenerate": { "directory": "upgrading", "collapsed": true }
+  },
+  {
+    "label": "Changelog",
+    "link": "/changelog"
+  }
+]
