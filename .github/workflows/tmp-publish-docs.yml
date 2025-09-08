@@ -1,0 +1,79 @@
+# TODO: remove this workflow once the action works
+name: Tmp publish docs
+
+on:
+  pull_request:
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-latest
+    if: ${{ github.head_ref == 'luca/tmp-ci-publish' }}
+    steps:
+      - name: Create GitHub App Token
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        id: generate_token
+        with:
+          app-id: ${{ vars.PR_AUTOMATION_BOT_PUBLIC_APP_ID }}
+          private-key: ${{ secrets.PR_AUTOMATION_BOT_PUBLIC_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: icp-js-sdk-docs
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup PNPM
+        uses: dfinity/ci-tools/actions/setup-pnpm@main
+        with:
+          node_version_file: '.nvmrc'
+
+      - uses: dfinity/ci-tools/actions/extract-version@main
+        id: extract-version
+        with:
+          file: 'packages/core/package.json'
+
+      - name: Prepare version
+        id: ver
+        run: |
+          echo "major_minor_version=v${{ steps.extract-version.outputs.major }}.${{ steps.extract-version.outputs.minor }}" >> $GITHUB_OUTPUT
+          echo "major_minor_patch_version=v${{ steps.extract-version.outputs.major }}.${{ steps.extract-version.outputs.minor }}.${{ steps.extract-version.outputs.patch }}" >> $GITHUB_OUTPUT
+
+      - name: Build docs for version ${{ steps.ver.outputs.major_minor_version }}
+        working-directory: docs
+        env:
+          DOCS_VERSION: ${{ steps.ver.outputs.major_minor_version }}
+        run: pnpm build
+
+      - name: Build docs for version latest
+        working-directory: docs
+        env:
+          DOCS_VERSION: latest
+        run: pnpm build
+
+      - name: Checkout icp-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: icp-pages
+          path: icp-pages
+
+      - name: Assemble docs
+        uses: dfinity/ci-tools/actions/assemble-docs@main
+        with:
+          assets_dir: 'docs/dist/${{ steps.ver.outputs.major_minor_version }}'
+          version: ${{ steps.ver.outputs.major_minor_version }}
+          target_dir: 'icp-pages'
+          version_label: ${{ steps.ver.outputs.major_minor_version }}
+          version_in_title: ${{ steps.ver.outputs.major_minor_patch_version }}
+
+      - name: Assemble docs
+        uses: dfinity/ci-tools/actions/assemble-docs@main
+        with:
+          assets_dir: 'docs/dist/latest'
+          version: 'latest'
+          target_dir: 'icp-pages'
+          version_label: 'Latest (${{ steps.ver.outputs.major_minor_patch_version }})'
+
+      - name: Submit Documentation
+        uses: dfinity/ci-tools/actions/submit-docs@main
+        with:
+          destination_repo: 'dfinity/icp-js-sdk-docs'
+          token: ${{ steps.generate_token.outputs.token }}
+          target_dir: 'icp-pages'
