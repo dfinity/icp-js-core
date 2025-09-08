@@ -110,6 +110,7 @@ jobs:
           version: ${{ needs.publish-core-package.outputs.major_minor_version }}
           target_dir: 'icp-pages'
           version_label: ${{ needs.publish-core-package.outputs.major_minor_version }}
+          version_in_title: ${{ needs.publish-core-package.outputs.major_minor_patch_version }}
 
       - name: Assemble docs
         uses: dfinity/ci-tools/actions/assemble-docs@main
