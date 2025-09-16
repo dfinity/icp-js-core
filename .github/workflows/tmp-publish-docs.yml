@@ -1,0 +1,13 @@
+# TODO: remove this workflow once the action works
+name: Tmp publish docs
+
+on:
+  pull_request:
+
+jobs:
+  publish-docs:
+    if: ${{ github.head_ref == 'luca/ci-manual-docs' }}
+    uses: ./.github/workflows/publish-docs.yml
+    with:
+      ref: v4.0.3
+    secrets: inherit
