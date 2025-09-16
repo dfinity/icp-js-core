@@ -1,5 +1,5 @@
 {
-  "name": "@dfinity/agent-monorepo",
+  "name": "icp-js-core",
   "version": "4.0.3",
   "private": true,
   "description": "Use an Agent to interact with the Internet Computer from your JavaScript program.",
