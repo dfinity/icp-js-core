@@ -45,6 +45,7 @@
     "@dfinity/identity-secp256k1": "workspace:^",
     "@dfinity/principal": "workspace:^"
   },
+  "types": "./lib/esm/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/esm/index.d.ts",
