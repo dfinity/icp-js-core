@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [4.0.3] - 2025-09-16
+
 - fix(identity): expose all the exported elements from the `ed25519` module.
 - ci: add provenance to the published packages on NPM.
 - docs(identity-secp256k1): update the submodule name in the README.
