@@ -25,6 +25,7 @@ jobs:
       - run: pnpm publish:dfinity-packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
 
   publish-core-package:
     environment: Release
@@ -57,6 +58,7 @@ jobs:
       - name: Publish core package
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
         run: pnpm publish:core-package --access public
 
       - name: Mark as Latest Release in GitHub Releases
