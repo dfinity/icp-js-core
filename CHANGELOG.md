@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- ci: add provenance to the published packages on NPM.
 - docs(identity-secp256k1): update the submodule name in the README.
 - docs: push markdown files to the docs site.
 
