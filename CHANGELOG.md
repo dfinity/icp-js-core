@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- fix(agent): create a fresh default polling strategy per request.
+- fix(agent): remove the unused `PollStrategyFactory` type.
+
 ## [4.0.3] - 2025-09-16
 
 - fix(identity): expose all the exported elements from the `ed25519` module.
