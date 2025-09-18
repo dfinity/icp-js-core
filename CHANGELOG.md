@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(agent): create a fresh default polling strategy per request.
+- fix(agent): remove the unused `PollStrategyFactory` type.
 - fix(agent): remove the `nonce` from the `ActorConfig` type. This field must be used through the `CallConfig` type instead.
 
 ## [4.0.3] - 2025-09-16
