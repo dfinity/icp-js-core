@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(agent): remove the `nonce` from the `ActorConfig` type. This field must be used through the `CallConfig` type instead.
+
 ## [4.0.3] - 2025-09-16
 
 - fix(identity): expose all the exported elements from the `ed25519` module.
