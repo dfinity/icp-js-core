@@ -108,8 +108,8 @@ describe('pollForResponse strategy lifecycle', () => {
     // And that each created strategy function was invoked during its own request
     expect(instantiatedStrategies.length).toBe(2);
     // Request A had two non-replied statuses, so strategy called at least twice
-    expect(instantiatedStrategies[0].mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(instantiatedStrategies[0].mock.calls.length).toBe(2);
     // Request B had one non-replied status (unknown), so strategy called once
-    expect(instantiatedStrategies[1].mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(instantiatedStrategies[1].mock.calls.length).toBe(1);
   });
 });
