@@ -18,7 +18,6 @@ jest.mock('./strategy.ts', () => {
   };
 });
 
-// Mock the certificate helpers used by pollForResponse
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
