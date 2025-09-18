@@ -56,9 +56,9 @@ export interface CallConfig {
 }
 
 /**
- * Configuration that can be passed to customize the Actor behaviour.
+ * Configuration that can be passed to customize the Actor behavior.
  */
-export interface ActorConfig extends CallConfig {
+export interface ActorConfig extends Pick<CallConfig, 'agent' | 'effectiveCanisterId'> {
   /**
    * The Canister ID of this Actor. This is required for an Actor.
    */
