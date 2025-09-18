@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- fix(agent): remove the `nonce` the `ActorConfig` type. This field must be used through the `CallConfig` type instead.
+- fix(agent): remove the `nonce` from the `ActorConfig` type. This field must be used through the `CallConfig` type instead.
 
 ## [4.0.3] - 2025-09-16
 
