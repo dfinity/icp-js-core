@@ -31,8 +31,6 @@ export type PollStrategy = (
   status: RequestStatusResponseStatus,
 ) => Promise<void>;
 
-export type PollStrategyFactory = () => PollStrategy;
-
 interface SignedReadStateRequestWithExpiry extends ReadStateRequest {
   body: {
     content: Pick<ReadStateRequest, 'request_type' | 'ingress_expiry'>;
@@ -46,7 +44,7 @@ export interface PollingOptions {
   /**
    * A polling strategy that dictates how much and often we should poll the
    * read_state endpoint to get the result of an update call.
-   * @default defaultStrategy()
+   * @default {@link defaultStrategy}
    */
   strategy?: PollStrategy;
 
@@ -69,7 +67,6 @@ export interface PollingOptions {
 }
 
 export const DEFAULT_POLLING_OPTIONS: PollingOptions = {
-  strategy: defaultStrategy(),
   preSignReadStateRequest: false,
 };
 
@@ -187,8 +184,11 @@ export async function pollForResponse(
       // Execute the polling strategy, then retry.
       const strategy = options.strategy ?? defaultStrategy();
       await strategy(canisterId, requestId, status);
+
       return pollForResponse(agent, canisterId, requestId, {
         ...options,
+        // Pass over either the strategy already provided or the new one created above
+        strategy,
         request: currentRequest,
       });
     }

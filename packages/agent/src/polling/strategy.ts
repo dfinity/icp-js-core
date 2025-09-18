@@ -15,6 +15,9 @@ const FIVE_MINUTES_IN_MSEC = 5 * 60 * 1000;
 /**
  * A best practices polling strategy: wait 2 seconds before the first poll, then 1 second
  * with an exponential backoff factor of 1.2. Timeout after 5 minutes.
+ *
+ * Note that calling this function will create the strategy chain described above and already start the 5 minutes timeout.
+ * You should only call this function when you want to start the polling, and not before, to avoid exhausting the 5 minutes timeout in advance.
  */
 export function defaultStrategy(): PollStrategy {
   return chain(conditionalDelay(once(), 1000), backoff(1000, 1.2), timeout(FIVE_MINUTES_IN_MSEC));
