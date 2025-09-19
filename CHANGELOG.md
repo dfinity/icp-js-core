@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(identity): Fix 'Uint8Array expected' error in DelegationChain serialization with ArrayBuffer data
+
 ## [4.0.4] - 2025-09-18
 
 - fix(agent): create a fresh default polling strategy per request.
