@@ -13,6 +13,17 @@ import { Principal } from '@dfinity/principal';
 import { PartialIdentity } from './partial.ts';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 
+/**
+ * Safe wrapper around bytesToHex that handles ArrayBuffer/Uint8Array type conversion.
+ * Required because @noble/hashes v1.8+ strictly expects Uint8Array inputs.
+ */
+function safeBytesToHex(data: ArrayBuffer | Uint8Array | ArrayLike<number>): string {
+  if (data instanceof Uint8Array) {
+    return bytesToHex(data);
+  }
+  return bytesToHex(new Uint8Array(data));
+}
+
 function _parseBlob(value: unknown): Uint8Array {
   if (typeof value !== 'string' || value.length < 64) {
     throw new Error('Invalid public key.');
@@ -50,7 +61,7 @@ export class Delegation implements ToCborValue {
     // with an OID). After de-hex, if it's not obvious what it is, it's an ArrayBuffer.
     return {
       expiration: this.expiration.toString(16),
-      pubkey: bytesToHex(this.pubkey),
+      pubkey: safeBytesToHex(this.pubkey),
       ...(this.targets && { targets: this.targets.map(p => p.toHex()) }),
     };
   }
@@ -241,15 +252,15 @@ export class DelegationChain {
         return {
           delegation: {
             expiration: delegation.expiration.toString(16),
-            pubkey: bytesToHex(delegation.pubkey),
+            pubkey: safeBytesToHex(delegation.pubkey),
             ...(targets && {
               targets: targets.map(t => t.toHex()),
             }),
           },
-          signature: bytesToHex(signature),
+          signature: safeBytesToHex(signature),
         };
       }),
-      publicKey: bytesToHex(this.publicKey),
+      publicKey: safeBytesToHex(this.publicKey),
     };
   }
 }

@@ -81,7 +81,7 @@ test('DelegationChain can be serialized to and from JSON', async () => {
   const rootToMiddleJson = JSON.stringify(rootToMiddle);
   // All strings in the JSON should be hex so it is clear how to decode this as different versions
   // of `toJSON` evolve.
-  JSON.parse(rootToMiddleJson, (key, value) => {
+  JSON.parse(rootToMiddleJson, (_key, value) => {
     if (typeof value === 'string') {
       const byte = parseInt(value, 16);
       if (isNaN(byte)) {
@@ -153,5 +153,106 @@ describe('PartialDelegationIdentity', () => {
     await partial.transformRequest().catch(e => {
       expect(e).toContain('Not implemented.');
     });
+  });
+});
+
+describe('DelegationChain ArrayBuffer serialization bug fix', () => {
+  it('should handle ArrayBuffer binary data in toJSON without throwing', async () => {
+    const root = createIdentity(2);
+    const middle = createIdentity(1);
+
+    // Create a normal delegation chain
+    const chain = await DelegationChain.create(
+      root,
+      middle.getPublicKey(),
+      new Date(1609459200000),
+    );
+
+    // Get the JSON representation first
+    const originalJson = chain.toJSON();
+
+    // Create a new chain from JSON, then manipulate it to simulate the bug condition
+    // The bug occurred when binary data was ArrayBuffer instead of Uint8Array
+    const recreated = DelegationChain.fromJSON(originalJson);
+
+    // Access the internal delegations and simulate ArrayBuffer conversion
+    // This simulates what happened in real-world usage when crypto APIs
+    // or serialization processes returned ArrayBuffer instead of Uint8Array
+    const delegationsWithArrayBuffer = recreated.delegations.map(signedDelegation => {
+      // Convert signature Uint8Array to ArrayBuffer (the bug condition)
+      const signature = signedDelegation.signature;
+      const arrayBufferSignature = signature.buffer.slice(
+        signature.byteOffset,
+        signature.byteOffset + signature.byteLength
+      );
+
+      return {
+        delegation: signedDelegation.delegation,
+        signature: arrayBufferSignature as any // This would cause the original error
+      };
+    });
+
+    // Create a chain using fromDelegations with ArrayBuffer publicKey too
+    const publicKeyArrayBuffer = recreated.publicKey.buffer.slice(
+      recreated.publicKey.byteOffset,
+      recreated.publicKey.byteOffset + recreated.publicKey.byteLength
+    );
+
+    const chainWithArrayBuffers = DelegationChain.fromDelegations(
+      delegationsWithArrayBuffer,
+      publicKeyArrayBuffer as any
+    );
+
+    // This would throw "Uint8Array expected" before the safeBytesToHex fix
+    // but should work fine after the fix
+    expect(() => {
+      const json = chainWithArrayBuffers.toJSON();
+      // Verify the output is still valid hex
+      expect(json.delegations[0].signature).toMatch(/^[0-9a-f]+$/);
+      expect(json.publicKey).toMatch(/^[0-9a-f]+$/);
+    }).not.toThrow();
+  });
+
+  it('should handle ArrayBuffer in delegation pubkey during toJSON', async () => {
+    const root = createIdentity(3);
+    const middle = createIdentity(1);
+
+    const chain = await DelegationChain.create(
+      root,
+      middle.getPublicKey(),
+      new Date(1609459200000),
+    );
+
+    // Simulate the scenario where delegation.pubkey is ArrayBuffer
+    const delegationsWithArrayBufferPubkey = chain.delegations.map(signedDelegation => {
+      const pubkey = signedDelegation.delegation.pubkey;
+      const arrayBufferPubkey = pubkey.buffer.slice(
+        pubkey.byteOffset,
+        pubkey.byteOffset + pubkey.byteLength
+      );
+
+      // Create new delegation with ArrayBuffer pubkey
+      const delegationWithArrayBuffer = {
+        pubkey: arrayBufferPubkey as any,
+        expiration: signedDelegation.delegation.expiration,
+        targets: signedDelegation.delegation.targets
+      };
+
+      return {
+        delegation: delegationWithArrayBuffer as any,
+        signature: signedDelegation.signature
+      };
+    });
+
+    const chainWithArrayBufferPubkey = DelegationChain.fromDelegations(
+      delegationsWithArrayBufferPubkey,
+      chain.publicKey
+    );
+
+    // This tests another code path that could fail with ArrayBuffer
+    expect(() => {
+      const json = chainWithArrayBufferPubkey.toJSON();
+      expect(json.delegations[0].delegation.pubkey).toMatch(/^[0-9a-f]+$/);
+    }).not.toThrow();
   });
 });
