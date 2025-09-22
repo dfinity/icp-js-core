@@ -16,6 +16,7 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 /**
  * Safe wrapper around bytesToHex that handles ArrayBuffer/Uint8Array type conversion.
  * Required because @noble/hashes v1.8+ strictly expects Uint8Array inputs.
+ * @param data The binary data to convert to hexadecimal string (ArrayBuffer, Uint8Array, or ArrayLike<number>)
  */
 function safeBytesToHex(data: ArrayBuffer | Uint8Array | ArrayLike<number>): string {
   if (data instanceof Uint8Array) {

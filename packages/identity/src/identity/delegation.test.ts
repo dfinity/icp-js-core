@@ -188,7 +188,7 @@ describe('DelegationChain ArrayBuffer serialization bug fix', () => {
 
       return {
         delegation: signedDelegation.delegation,
-        signature: arrayBufferSignature as any // This would cause the original error
+        signature: arrayBufferSignature as ArrayBuffer // This would cause the original error
       };
     });
 
@@ -200,7 +200,7 @@ describe('DelegationChain ArrayBuffer serialization bug fix', () => {
 
     const chainWithArrayBuffers = DelegationChain.fromDelegations(
       delegationsWithArrayBuffer,
-      publicKeyArrayBuffer as any
+      publicKeyArrayBuffer as ArrayBuffer
     );
 
     // This would throw "Uint8Array expected" before the safeBytesToHex fix
@@ -233,13 +233,13 @@ describe('DelegationChain ArrayBuffer serialization bug fix', () => {
 
       // Create new delegation with ArrayBuffer pubkey
       const delegationWithArrayBuffer = {
-        pubkey: arrayBufferPubkey as any,
+        pubkey: arrayBufferPubkey as Record<string, unknown>,
         expiration: signedDelegation.delegation.expiration,
         targets: signedDelegation.delegation.targets
       };
 
       return {
-        delegation: delegationWithArrayBuffer as any,
+        delegation: delegationWithArrayBuffer as ArrayBuffer,
         signature: signedDelegation.signature
       };
     });
