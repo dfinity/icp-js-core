@@ -8,6 +8,34 @@ function createIdentity(seed: number): Ed25519KeyIdentity {
   return Ed25519KeyIdentity.generate(s);
 }
 
+expect.extend({
+  toBeHex(received: unknown) {
+    const pass = typeof received === 'string' &&
+                 received.length > 0 &&
+                 /^[0-9a-f]+$/i.test(received);
+
+    if (pass) {
+      return {
+        message: () => `expected ${received} not to be a valid hex string`,
+        pass: true,
+      };
+    } else {
+      return {
+        message: () => `expected ${received} to be a valid hex string`,
+        pass: false,
+      };
+    }
+  },
+});
+
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toBeHex(): R;
+    }
+  }
+}
+
 test('delegation signs with proper keys (3)', async () => {
   const root = createIdentity(2);
   const middle = createIdentity(1);
@@ -156,7 +184,7 @@ describe('PartialDelegationIdentity', () => {
   });
 });
 
-describe('DelegationChain ArrayBuffer serialization bug fix', () => {
+describe('DelegationChain with ArrayBuffers', () => {
   it('should handle ArrayBuffer binary data in toJSON without throwing', async () => {
     const root = createIdentity(2);
     const middle = createIdentity(1);
@@ -203,13 +231,14 @@ describe('DelegationChain ArrayBuffer serialization bug fix', () => {
       publicKeyArrayBuffer as ArrayBuffer
     );
 
+    expect.assertions(3)
     // This would throw "Uint8Array expected" before the safeBytesToHex fix
     // but should work fine after the fix
     expect(() => {
       const json = chainWithArrayBuffers.toJSON();
       // Verify the output is still valid hex
-      expect(json.delegations[0].signature).toMatch(/^[0-9a-f]+$/);
-      expect(json.publicKey).toMatch(/^[0-9a-f]+$/);
+      expect(json.delegations[0].signature).toBeHex();
+      expect(json.publicKey).toBeHex();
     }).not.toThrow();
   });
 
@@ -249,10 +278,11 @@ describe('DelegationChain ArrayBuffer serialization bug fix', () => {
       chain.publicKey
     );
 
+    expect.assertions(2);
     // This tests another code path that could fail with ArrayBuffer
     expect(() => {
       const json = chainWithArrayBufferPubkey.toJSON();
-      expect(json.delegations[0].delegation.pubkey).toMatch(/^[0-9a-f]+$/);
+      expect(json.delegations[0].delegation.pubkey).toBeHex();
     }).not.toThrow();
   });
 });

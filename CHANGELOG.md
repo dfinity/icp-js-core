@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- fix(identity): Fix 'Uint8Array expected' error in DelegationChain serialization with ArrayBuffer data
+- fix(identity): handle ArrayBuffer in delegation chain serialization
 
 ## [4.0.4] - 2025-09-18
 
