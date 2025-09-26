@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(candid): recursive type table merging preserves concrete type mapping
+
 ## [4.0.4] - 2025-09-18
 
 - fix(agent): create a fresh default polling strategy per request.
