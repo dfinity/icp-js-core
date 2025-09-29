@@ -28,11 +28,9 @@ expect.extend({
   },
 });
 
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeHex(): R;
-    }
+declare module '@jest/expect' {
+  interface Matchers<R> {
+    toBeHex(): R;
   }
 }
 
