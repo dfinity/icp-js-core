@@ -685,6 +685,69 @@ test('encode / decode recursive types with shared non-recursive types', () => {
   expect(decoded).toEqual(toEncode);
 });
 
+test('encode / decode recursive record with shared opt nat8', () => {
+  const MyRecursiveOpt = IDL.Rec();
+  MyRecursiveOpt.fill(IDL.Opt(IDL.Nat8));
+
+  const MyRecursiveRecord = IDL.Rec();
+  MyRecursiveRecord.fill(
+    IDL.Record({
+      field1: IDL.Opt(IDL.Nat8),
+      field2: IDL.Record({
+        field3: MyRecursiveOpt,
+      }),
+    }),
+  );
+
+  expect(() => {
+    const encoded = IDL.encode(
+      [MyRecursiveRecord],
+      [
+        {
+          field1: [],
+          field2: {
+            field3: [],
+          },
+        },
+      ],
+    );
+    IDL.decode([MyRecursiveRecord], encoded);
+  }).not.toThrow();
+});
+
+test('encode / decode recursive types sharing opt nat8 across record and func return', () => {
+  const recRecordFunc = IDL.Rec();
+  const recOpt = IDL.Rec();
+  recRecordFunc.fill(IDL.Record({ field1: IDL.Func([], [IDL.Opt(IDL.Nat8)]), field2: recOpt }));
+  recOpt.fill(IDL.Record({ field3: IDL.Opt(IDL.Nat8) }));
+
+  const recRecordOpt = IDL.Rec();
+  const recOpt2 = IDL.Rec();
+  recOpt2.fill(IDL.Opt(IDL.Nat8));
+  recRecordOpt.fill(IDL.Record({ field4: IDL.Opt(IDL.Nat8), field5: recOpt2 }));
+
+  const myRecRecordFunc = {
+    field1: [
+      Principal.fromText('bpyi5-2bzji-dsb2y-bav6a-jeig6-eakqa-ibawc-73crj-st4ac-berzm-mwy'),
+      '',
+    ],
+    field2: {
+      field3: [],
+    },
+  };
+  const myRecRecordOpt = {
+    field4: [],
+    field5: [],
+  };
+  const encodedRecRecordFunc = IDL.encode([recRecordFunc], [myRecRecordFunc]);
+  const encodedRecRecordOpt = IDL.encode([recRecordOpt], [myRecRecordOpt]);
+
+  expect(() => {
+    IDL.decode([recRecordFunc], encodedRecRecordFunc);
+    IDL.decode([recRecordOpt], encodedRecRecordOpt);
+  }).not.toThrow();
+});
+
 test('decode / encode unknown nested record', () => {
   const nestedType = IDL.Record({ foo: IDL.Int32, bar: IDL.Bool });
   const recordType = IDL.Record({
@@ -1156,8 +1219,8 @@ describe('IDL subtyping', () => {
 
   describe('Subtyping on records/variants normalizes field labels', () => {
     // Checks we don't regress https://github.com/dfinity/icp-js-core/issues/1072
-    testSub(IDL.Record({ a: IDL.Nat, "_98_": IDL.Nat }), IDL.Record({ "_97_": IDL.Nat, b: IDL.Nat }));
-    testSub(IDL.Variant({ a: IDL.Nat, "_98_": IDL.Nat }), IDL.Variant({ "_97_": IDL.Nat, b: IDL.Nat }));
+    testSub(IDL.Record({ a: IDL.Nat, _98_: IDL.Nat }), IDL.Record({ _97_: IDL.Nat, b: IDL.Nat }));
+    testSub(IDL.Variant({ a: IDL.Nat, _98_: IDL.Nat }), IDL.Variant({ _97_: IDL.Nat, b: IDL.Nat }));
   });
 
   describe('decoding function/service references', () => {

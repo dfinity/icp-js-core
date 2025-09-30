@@ -79,13 +79,21 @@ class TypeTable {
     if (knotIdx === undefined) {
       throw new Error('Missing type index for ' + knot);
     }
+    // Point the recursive placeholder (obj) to the concrete type bytes
     this._typs[idx] = this._typs[knotIdx];
 
-    // Decrement reference count since we're removing the knot name mapping
+    // Merge mappings so BOTH names point to the same index
+    // This avoids losing lookups for the concrete type name (e.g. "opt nat8")
+    // which may still be referenced elsewhere in the type table build.
+    const idxRefCount = this._getIdxRefCount(idx);
     const knotRefCount = this._getIdxRefCount(knotIdx);
-    this._idxRefCount.set(knotIdx, knotRefCount - 1);
-    this._idx.delete(knot);
+    this._idxRefCount.set(idx, idxRefCount + knotRefCount);
 
+    // Re-point the knot name to the resolved index and mark the old index as unused
+    this._idx.set(knot, idx);
+    this._idxRefCount.set(knotIdx, 0);
+
+    // Remove unused trailing entries if possible
     this._compactFromEnd();
   }
 
