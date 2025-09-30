@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - fix(candid): recursive type table merging preserves concrete type mapping
+- fix(identity): handle ArrayBuffer in delegation chain serialization
 
 ## [4.0.4] - 2025-09-18
 
