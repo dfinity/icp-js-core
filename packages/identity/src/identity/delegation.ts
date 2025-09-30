@@ -246,10 +246,10 @@ export class DelegationChain {
               targets: targets.map(t => t.toHex()),
             }),
           },
-          signature: bytesToHex(signature),
+          signature: bytesToHex(new Uint8Array(signature)),
         };
       }),
-      publicKey: bytesToHex(this.publicKey),
+      publicKey: bytesToHex(new Uint8Array(this.publicKey)),
     };
   }
 }
