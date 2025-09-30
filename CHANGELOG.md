@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(identity): `DelegationChain`'s `toJSON` failing silently.
+
 ## [4.0.4] - 2025-09-18
 
 - fix(agent): create a fresh default polling strategy per request.
