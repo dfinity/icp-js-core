@@ -807,6 +807,22 @@ export class ExpiryJsonDeserializeErrorCode extends ErrorCode {
   }
 }
 
+export class InvalidRootKeyErrorCode extends ErrorCode {
+  public name = 'InvalidRootKeyErrorCode';
+
+  constructor(
+    public readonly rootKey: Uint8Array,
+    public readonly expectedLength: number,
+  ) {
+    super();
+    Object.setPrototypeOf(this, InvalidRootKeyErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return `Invalid root key. Expected length: ${this.expectedLength}, actual length: ${this.rootKey.length}`;
+  }
+}
+
 function formatUnknownError(error: unknown): string {
   if (error instanceof Error) {
     return error.stack ?? error.message;
