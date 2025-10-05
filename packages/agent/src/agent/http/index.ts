@@ -70,6 +70,8 @@ import { decodeTime } from '../../utils/leb.ts';
 import { concatBytes, hexToBytes } from '@noble/hashes/utils';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
+import { safeGetCanisterEnv } from './canister-env.ts';
+
 export * from './transforms.ts';
 export { type Nonce, makeNonce } from './types.ts';
 
@@ -183,6 +185,11 @@ export interface HttpAgentOptions {
    * Whether or not to sync the time with the network during construction. Defaults to false.
    */
   shouldSyncTime?: boolean;
+
+  /**
+   * An optional cookie name to use when loading the canister environment variables.
+   */
+  canisterEnvCookieName?: string;
 }
 
 function getDefaultFetch(): typeof fetch {
@@ -338,7 +345,12 @@ export class HttpAgent implements Agent {
     } else if (this.#shouldFetchRootKey) {
       this.rootKey = null;
     } else {
-      this.rootKey = hexToBytes(IC_ROOT_KEY);
+      const canisterEnv = safeGetCanisterEnv({ cookieName: options.canisterEnvCookieName });
+      if (canisterEnv) {
+        this.rootKey = canisterEnv.IC_ROOT_KEY;
+      } else {
+        this.rootKey = hexToBytes(IC_ROOT_KEY);
+      }
     }
 
     const host = determineHost(options.host);
