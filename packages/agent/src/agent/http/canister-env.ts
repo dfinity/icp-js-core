@@ -13,7 +13,7 @@ const IC_ROOT_KEY_BYTES_LENGTH = 133;
 
 declare global {
   /**
-   * The environment variables served by the canister.
+   * The environment variables served by the asset canister that hosts the frontend.
    * You can extend the `CanisterEnv` interface to add your own environment variables
    * and have strong typing for them.
    * @example
@@ -29,7 +29,7 @@ declare global {
    *
    * const env = getCanisterEnv();
    *
-   * console.log(env.IC_ROOT_KEY); // by default served by the canister
+   * console.log(env.IC_ROOT_KEY); // by default served by the asset canister
    * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ TS passes
    * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
    * ```
@@ -38,15 +38,15 @@ declare global {
    * ```ts
    * const env = getCanisterEnv<{ readonly ['PUBLIC_CANISTER_ID:backend']: string }>();
    *
-   * console.log(env.IC_ROOT_KEY); // by default served by the canister
+   * console.log(env.IC_ROOT_KEY); // by default served by the asset canister
    * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ from generic parameter, TS passes
    * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
    * ```
    */
   interface CanisterEnv {
     /**
-     * The root key of the IC network where the canister is deployed.
-     * Served by default by the canister.
+     * The root key of the IC network where the asset canister is deployed.
+     * Served by default by the asset canister that hosts the frontend.
      */
     readonly IC_ROOT_KEY: Uint8Array;
   }
@@ -64,7 +64,7 @@ export type GetCanisterEnvOptions = {
 };
 
 /**
- * Get the environment variables served by the canister via the cookie.
+ * Get the environment variables served by the asset canister via the cookie.
  *
  * The returned object always includes `IC_ROOT_KEY` property.
  * You can extend the global `CanisterEnv` interface to add your own environment variables
@@ -73,7 +73,7 @@ export type GetCanisterEnvOptions = {
  * In Node.js environment (or any other environment where `globalThis.document` is not available), this function will throw an error.
  * Use {@link safeGetCanisterEnv}, which returns `undefined` in such cases.
  * @param options The options for loading the canister environment variables
- * @returns The environment variables for the canister, always including `IC_ROOT_KEY`
+ * @returns The environment variables for the asset canister, always including `IC_ROOT_KEY`
  * @example
  * Extend the global `CanisterEnv` interface to add your own environment variables:
  * ```ts
@@ -123,8 +123,8 @@ export function getCanisterEnv<T = Record<string, never>>(
 
 /**
  * Same as {@link getCanisterEnv} but returns `undefined` if `globalThis.document` is not available.
- * @param options The options for loading the canister environment variables
- * @returns The environment variables for the canister
+ * @param options The options for loading the asset canister environment variables
+ * @returns The environment variables for the asset canister
  * @example
  * ```ts
  * // in a browser environment
