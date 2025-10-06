@@ -139,7 +139,7 @@ describe('getCanisterEnv', () => {
           readonly PUBLIC_MESSAGE: string;
         };
 
-        const specialChars = 'Hello World!@#$%';
+        const specialChars = 'Hello World!=@#$%';
         const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_MESSAGE=${specialChars}`;
         setCookie(cookieValue);
 
