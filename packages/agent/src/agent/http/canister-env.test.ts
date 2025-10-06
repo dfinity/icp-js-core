@@ -1,6 +1,12 @@
 import { bytesToHex } from '@noble/hashes/utils';
 import { getCanisterEnv, safeGetCanisterEnv } from './canister-env.ts';
-import { InputError, InvalidRootKeyErrorCode, MissingRootKeyErrorCode } from '../../errors.ts';
+import {
+  InputError,
+  InvalidRootKeyErrorCode,
+  EmptyCookieErrorCode,
+  MissingRootKeyErrorCode,
+  MissingCookieErrorCode,
+} from '../../errors.ts';
 import { JSDOM } from 'jsdom';
 
 const mockRootKeyHex = 'a'.repeat(266); // 133 bytes
@@ -34,7 +40,7 @@ describe('getCanisterEnv', () => {
         const cookieValue = `ic_root_key=${mockRootKeyHex}`;
         setCookie(cookieValue);
 
-        const env = getCanisterEnv()!;
+        const env = getCanisterEnv();
 
         expect(env.IC_ROOT_KEY).toBeDefined();
         expect(env.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
@@ -50,7 +56,7 @@ describe('getCanisterEnv', () => {
         const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_CANISTER_ID:backend=rrkah-fqaaa-aaaaa-aaaaq-cai&PUBLIC_API_URL=https://api.example.com`;
         setCookie(cookieValue);
 
-        const env = getCanisterEnv<TestCanisterEnv>()!;
+        const env = getCanisterEnv<TestCanisterEnv>();
 
         expect(env.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
         expect(bytesToHex(env.IC_ROOT_KEY)).toBe(mockRootKeyHex);
@@ -68,7 +74,7 @@ describe('getCanisterEnv', () => {
         const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_SECRET=${valueWithEquals}`;
         setCookie(cookieValue);
 
-        const env = getCanisterEnv<TestCanisterEnv>()!;
+        const env = getCanisterEnv<TestCanisterEnv>();
 
         expect(env.PUBLIC_SECRET).toBe(valueWithEquals);
       });
@@ -78,7 +84,7 @@ describe('getCanisterEnv', () => {
         const customCookieName = 'custom_env';
         setCookie(cookieValue, customCookieName);
 
-        const env = getCanisterEnv({ cookieName: customCookieName })!;
+        const env = getCanisterEnv({ cookieName: customCookieName });
 
         expect(env.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
         expect(bytesToHex(env.IC_ROOT_KEY)).toBe(mockRootKeyHex);
@@ -97,7 +103,7 @@ describe('getCanisterEnv', () => {
           value: `ic_env=${encodeURIComponent(cookieValue)}; session=xyz; lang=en`,
         });
 
-        const env1 = getCanisterEnv<TestCanisterEnv>()!;
+        const env1 = getCanisterEnv<TestCanisterEnv>();
         expect(env1.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
         expect(env1.PUBLIC_API_URL).toBe('https://api.example.com');
 
@@ -106,7 +112,7 @@ describe('getCanisterEnv', () => {
           value: `theme=light; ic_env=${encodeURIComponent(cookieValue)}; user_id=456`,
         });
 
-        const env2 = getCanisterEnv<TestCanisterEnv>()!;
+        const env2 = getCanisterEnv<TestCanisterEnv>();
         expect(env2.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
         expect(env2.PUBLIC_API_URL).toBe('https://api.example.com');
 
@@ -115,7 +121,7 @@ describe('getCanisterEnv', () => {
           value: `auth=token123; preferences=setting1; ic_env=${encodeURIComponent(cookieValue)}`,
         });
 
-        const env3 = getCanisterEnv<TestCanisterEnv>()!;
+        const env3 = getCanisterEnv<TestCanisterEnv>();
         expect(env3.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
         expect(env3.PUBLIC_API_URL).toBe('https://api.example.com');
       });
@@ -127,7 +133,7 @@ describe('getCanisterEnv', () => {
           value: `  ic_env=${encodeURIComponent(cookieValue)}`,
         });
 
-        const env = getCanisterEnv()!;
+        const env = getCanisterEnv();
 
         expect(env.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
         expect(bytesToHex(env.IC_ROOT_KEY)).toBe(mockRootKeyHex);
@@ -143,32 +149,79 @@ describe('getCanisterEnv', () => {
         const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_MESSAGE=${specialChars}`;
         setCookie(cookieValue);
 
-        const env = getCanisterEnv<TestCanisterEnv>()!;
+        const env = getCanisterEnv<TestCanisterEnv>();
 
         expect(env.PUBLIC_MESSAGE).toBe(specialChars);
       });
     });
 
     describe('no cookie', () => {
-      test('should return undefined when cookie is not present', () => {
+      test('should throw error when cookie is not present', () => {
         setCookie('value', 'other_cookie');
 
-        expect(getCanisterEnv()).toBeUndefined();
+        expect.assertions(3);
+        try {
+          getCanisterEnv();
+        } catch (error) {
+          expect(error).toBeInstanceOf(InputError);
+          expect((error as InputError).code).toBeInstanceOf(MissingCookieErrorCode);
+          expect((error as InputError).message).toEqual("Cookie 'ic_env' not found");
+        }
       });
 
-      test('should return undefined when document.cookie is empty', () => {
+      test('should throw error when document.cookie is empty', () => {
         Object.defineProperty(globalThis.document, 'cookie', {
           writable: true,
           value: '',
         });
 
-        expect(getCanisterEnv()).toBeUndefined();
+        expect.assertions(3);
+        try {
+          getCanisterEnv();
+        } catch (error) {
+          expect(error).toBeInstanceOf(InputError);
+          expect((error as InputError).code).toBeInstanceOf(MissingCookieErrorCode);
+          expect((error as InputError).message).toEqual("Cookie 'ic_env' not found");
+        }
       });
 
-      test('should return undefined when custom cookie name is not found', () => {
+      test('should throw error when cookie is invalid', () => {
+        setCookie('');
+
+        expect.assertions(3);
+        try {
+          getCanisterEnv();
+        } catch (error) {
+          expect(error).toBeInstanceOf(InputError);
+          expect((error as InputError).code).toBeInstanceOf(EmptyCookieErrorCode);
+          expect((error as InputError).message).toEqual("Cookie 'ic_env' is empty");
+        }
+      });
+
+      test('should throw error when custom cookie name is not found', () => {
         setCookie('something');
 
-        expect(getCanisterEnv({ cookieName: 'custom_env' })).toBeUndefined();
+        expect.assertions(3);
+        try {
+          getCanisterEnv({ cookieName: 'custom_env' });
+        } catch (error) {
+          expect(error).toBeInstanceOf(InputError);
+          expect((error as InputError).code).toBeInstanceOf(MissingCookieErrorCode);
+          expect((error as InputError).message).toEqual("Cookie 'custom_env' not found");
+        }
+      });
+
+      test('should throw error when custom cookie name is invalid', () => {
+        setCookie('', 'custom_env');
+
+        expect.assertions(3);
+        try {
+          getCanisterEnv({ cookieName: 'custom_env' });
+        } catch (error) {
+          expect(error).toBeInstanceOf(InputError);
+          expect((error as InputError).code).toBeInstanceOf(EmptyCookieErrorCode);
+          expect((error as InputError).message).toEqual("Cookie 'custom_env' is empty");
+        }
       });
     });
 
@@ -264,17 +317,12 @@ describe('safeGetCanisterEnv', () => {
       const cookieValue = `ic_root_key=${mockRootKeyHex}`;
       setCookie(cookieValue);
 
-      const env = safeGetCanisterEnv()!;
+      const env = safeGetCanisterEnv();
 
-      expect(env.IC_ROOT_KEY).toBeDefined();
-      expect(env.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
-      expect(bytesToHex(env.IC_ROOT_KEY)).toBe(mockRootKeyHex);
-    });
-
-    test('should return undefined when cookie is not present', () => {
-      setCookie('value', 'other_cookie');
-
-      expect(safeGetCanisterEnv()).toBeUndefined();
+      expect(env).toBeDefined();
+      expect(env!.IC_ROOT_KEY).toBeDefined();
+      expect(env!.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
+      expect(bytesToHex(env!.IC_ROOT_KEY)).toBe(mockRootKeyHex);
     });
 
     test('should handle custom cookie name', () => {
@@ -282,10 +330,32 @@ describe('safeGetCanisterEnv', () => {
       const cookieValue = `ic_root_key=${mockRootKeyHex}`;
       setCookie(cookieValue, customCookieName);
 
-      const env = safeGetCanisterEnv({ cookieName: customCookieName })!;
+      const env = safeGetCanisterEnv({ cookieName: customCookieName });
 
-      expect(env.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
-      expect(bytesToHex(env.IC_ROOT_KEY)).toBe(mockRootKeyHex);
+      expect(env).toBeDefined();
+      expect(env!.IC_ROOT_KEY).toBeInstanceOf(Uint8Array);
+      expect(bytesToHex(env!.IC_ROOT_KEY)).toBe(mockRootKeyHex);
+    });
+
+    test('should return undefined when cookie is not present (instead of throwing)', () => {
+      setCookie('value', 'other_cookie');
+
+      expect(safeGetCanisterEnv()).toBeUndefined();
+    });
+
+    test('should return undefined when IC_ROOT_KEY is invalid (instead of throwing)', () => {
+      const invalidKeyHex = 'a'.repeat(100); // Too short
+      const cookieValue = `ic_root_key=${invalidKeyHex}`;
+      setCookie(cookieValue);
+
+      expect(safeGetCanisterEnv()).toBeUndefined();
+    });
+
+    test('should return undefined when IC_ROOT_KEY is missing (instead of throwing)', () => {
+      const cookieValue = `PUBLIC_CANISTER_ID:backend=rrkah-fqaaa-aaaaa-aaaaq-cai`;
+      setCookie(cookieValue);
+
+      expect(safeGetCanisterEnv()).toBeUndefined();
     });
   });
 

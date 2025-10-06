@@ -823,6 +823,32 @@ export class InvalidRootKeyErrorCode extends ErrorCode {
   }
 }
 
+export class MissingCookieErrorCode extends ErrorCode {
+  public name = 'MissingCookieErrorCode';
+
+  constructor(public readonly expectedCookieName: string) {
+    super();
+    Object.setPrototypeOf(this, MissingCookieErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return `Cookie '${this.expectedCookieName}' not found`;
+  }
+}
+
+export class EmptyCookieErrorCode extends ErrorCode {
+  public name = 'EmptyCookieErrorCode';
+
+  constructor(public readonly expectedCookieName: string) {
+    super();
+    Object.setPrototypeOf(this, EmptyCookieErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return `Cookie '${this.expectedCookieName}' is empty`;
+  }
+}
+
 function formatUnknownError(error: unknown): string {
   if (error instanceof Error) {
     return error.stack ?? error.message;

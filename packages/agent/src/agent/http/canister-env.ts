@@ -1,5 +1,11 @@
 import { hexToBytes } from '@noble/hashes/utils';
-import { InputError, InvalidRootKeyErrorCode, MissingRootKeyErrorCode } from '../../errors.ts';
+import {
+  InputError,
+  InvalidRootKeyErrorCode,
+  EmptyCookieErrorCode,
+  MissingRootKeyErrorCode,
+  MissingCookieErrorCode,
+} from '../../errors.ts';
 
 const IC_ENV_COOKIE_NAME = 'ic_env';
 
@@ -71,9 +77,12 @@ export type GetCanisterEnvOptions = {
  * and have strong typing for them.
  *
  * In Node.js environment (or any other environment where `globalThis.document` is not available), this function will throw an error.
- * Use {@link safeGetCanisterEnv}, which returns `undefined` in such cases.
+ * Use {@link safeGetCanisterEnv} if you need a function that returns `undefined` instead of throwing errors.
  * @param options The options for loading the canister environment variables
  * @returns The environment variables for the asset canister, always including `IC_ROOT_KEY`
+ * @throws {TypeError} When `globalThis.document` is not available
+ * @throws {InputError} When the cookie is not found
+ * @throws {InputError} When the `IC_ROOT_KEY` is missing or has an invalid length
  * @example
  * Extend the global `CanisterEnv` interface to add your own environment variables:
  * ```ts
@@ -107,31 +116,43 @@ export type GetCanisterEnvOptions = {
  */
 export function getCanisterEnv<T = Record<string, never>>(
   options: GetCanisterEnvOptions = {},
-): (CanisterEnv & T) | undefined {
+): CanisterEnv & T {
   const { cookieName = IC_ENV_COOKIE_NAME } = options;
 
-  const encodedEnvVars = getEncodedEnvVarsFromCookie(cookieName);
-  if (!encodedEnvVars) {
-    return undefined;
+  const cookie = getCookie(cookieName);
+  if (!cookie) {
+    throw InputError.fromCode(new MissingCookieErrorCode(cookieName));
   }
 
-  const decodedEnvVars = decodeURIComponent(encodedEnvVars);
-  const envVars = getEnvVars<T>(decodedEnvVars);
+  const cookieValue = cookie.split('=')[1].trim();
+  if (!cookieValue) {
+    throw InputError.fromCode(new EmptyCookieErrorCode(cookieName));
+  }
+
+  const decodedCookieValue = decodeURIComponent(cookieValue);
+  const envVars = parseEnvVars<T>(decodedCookieValue);
+  if (!envVars.IC_ROOT_KEY) {
+    throw InputError.fromCode(new MissingRootKeyErrorCode());
+  }
 
   return envVars;
 }
 
 /**
- * Same as {@link getCanisterEnv} but returns `undefined` if `globalThis.document` is not available.
+ * Safe version of {@link getCanisterEnv} that returns `undefined` instead of throwing errors.
  * @param options The options for loading the asset canister environment variables
- * @returns The environment variables for the asset canister
+ * @returns The environment variables for the asset canister, or `undefined` if any error occurs
  * @example
  * ```ts
- * // in a browser environment
+ * // in a browser environment with valid cookie
  * const env = safeGetCanisterEnv();
- * console.log(env); // { IC_ROOT_KEY: Uint8Array }
+ * console.log(env); // { IC_ROOT_KEY: Uint8Array, ... }
  *
  * // in a Node.js environment
+ * const env = safeGetCanisterEnv();
+ * console.log(env); // undefined
+ *
+ * // in a browser without the environment cookie
  * const env = safeGetCanisterEnv();
  * console.log(env); // undefined
  * ```
@@ -139,21 +160,20 @@ export function getCanisterEnv<T = Record<string, never>>(
 export function safeGetCanisterEnv<T = Record<string, never>>(
   options: GetCanisterEnvOptions = {},
 ): (CanisterEnv & T) | undefined {
-  if (!globalThis.document) {
+  try {
+    return getCanisterEnv<T>(options);
+  } catch {
     return undefined;
   }
-  return getCanisterEnv<T>(options);
 }
 
-function getEncodedEnvVarsFromCookie(cookieName: string): string | undefined {
+function getCookie(cookieName: string): string | undefined {
   return globalThis.document.cookie
     .split(';')
-    .find(cookie => cookie.trim().startsWith(`${cookieName}=`))
-    ?.split('=')[1]
-    .trim();
+    .find(cookie => cookie.trim().startsWith(`${cookieName}=`));
 }
 
-function getEnvVars<T = Record<string, never>>(decoded: string): (CanisterEnv & T) | undefined {
+function parseEnvVars<T = Record<string, never>>(decoded: string): CanisterEnv & T {
   const entries = decoded.split(ENV_VAR_SEPARATOR).map(v => {
     // we only want to split at the first occurrence of the assignment symbol
     const symbolIndex = v.indexOf(ENV_VAR_ASSIGNMENT_SYMBOL);
@@ -172,15 +192,5 @@ function getEnvVars<T = Record<string, never>>(decoded: string): (CanisterEnv & 
     return [key, value];
   });
 
-  if (entries.length === 0) {
-    return undefined;
-  }
-
-  const envVars = Object.fromEntries(entries) as CanisterEnv & T;
-
-  if (!envVars.IC_ROOT_KEY) {
-    throw InputError.fromCode(new MissingRootKeyErrorCode());
-  }
-
-  return envVars;
+  return Object.fromEntries(entries);
 }
