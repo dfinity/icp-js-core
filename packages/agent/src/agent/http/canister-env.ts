@@ -23,11 +23,13 @@ const IC_ROOT_KEY_BYTES_LENGTH = 133;
  * and have strong typing for them.
  * @example
  * Extend the global `CanisterEnv` interface to add your own environment variables:
- * ```ts
- * // You can also declare the interface in a separate .d.ts file
+ * ```ts title="index.ts"
+ * // You can declare the interface to have strong typing
+ * // for your own environment variables across your codebase
  * declare module '@icp-sdk/core/agent' {
  *   interface CanisterEnv {
  *     readonly ['PUBLIC_CANISTER_ID:backend']: string;
+ *     readonly PUBLIC_API_URL: string;
  *   }
  * }
  *
@@ -35,14 +37,15 @@ const IC_ROOT_KEY_BYTES_LENGTH = 133;
  *
  * console.log(env.IC_ROOT_KEY); // by default served by the asset canister
  * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ TS passes
- * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
+ * console.log(env.PUBLIC_API_URL); // ✅ TS passes
+ * console.log(env['PUBLIC_CANISTER_ID:another']); // ❌ TS will show an error
  * ```
  *
  * > Note: the [`@icp-sdk/bindgen`](https://js.icp.build/bindgen/latest/) package has a feature
  * > to automatically generate the .d.ts file for you.
  * @example
  * Alternatively, use the generic parameter to specify additional properties:
- * ```ts
+ * ```ts title="index.ts"
  * const env = getCanisterEnv<{ readonly ['PUBLIC_CANISTER_ID:backend']: string }>();
  *
  * console.log(env.IC_ROOT_KEY); // by default served by the asset canister
@@ -84,24 +87,6 @@ export type GetCanisterEnvOptions = {
  * @throws {InputError} When the cookie is not found
  * @throws {InputError} When the `IC_ROOT_KEY` is missing or has an invalid length
  * @example
- * Extend the global `CanisterEnv` interface to add your own environment variables:
- * ```ts
- * // You can also declare the interface in a separate .d.ts file
- * // The `@icp-sdk/bindgen` package has a feature to automatically generate the .d.ts file
- * declare module '@icp-sdk/core/agent' {
- *   interface CanisterEnv {
- *     readonly ['PUBLIC_CANISTER_ID:backend']: string;
- *   }
- * }
- *
- * const env = getCanisterEnv();
- *
- * console.log(env.IC_ROOT_KEY); // always available (Uint8Array)
- * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ your custom env var, TS passes
- * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
- * ```
- * @example
- * Alternatively, use the generic parameter to specify additional properties:
  * ```ts
  * type MyCanisterEnv = {
  *   readonly ['PUBLIC_CANISTER_ID:backend']: string;
@@ -113,6 +98,7 @@ export type GetCanisterEnvOptions = {
  * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ from generic parameter, TS passes
  * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
  * ```
+ * @see {@link CanisterEnv} for more details on how to extend the interface
  */
 export function getCanisterEnv<T = Record<string, never>>(
   options: GetCanisterEnvOptions = {},
