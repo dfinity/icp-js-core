@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- feat(agent): introduce the `getCanisterEnv` and `safeGetCanisterEnv` functions to load the canister environment from the `ic_env` cookie.
+
 ## [4.0.5] - 2025-09-30
 
 - fix(candid): recursive type table merging preserves concrete type mapping
