@@ -17,45 +17,45 @@ const IC_ROOT_KEY_ENV_NAME = 'IC_ROOT_KEY'; // same as the `CanisterEnv` interfa
 
 const IC_ROOT_KEY_BYTES_LENGTH = 133;
 
-declare global {
+/**
+ * The environment variables served by the asset canister that hosts the frontend.
+ * You can extend the `CanisterEnv` interface to add your own environment variables
+ * and have strong typing for them.
+ * @example
+ * Extend the global `CanisterEnv` interface to add your own environment variables:
+ * ```ts
+ * // You can also declare the interface in a separate .d.ts file
+ * declare module '@icp-sdk/core/agent' {
+ *   interface CanisterEnv {
+ *     readonly ['PUBLIC_CANISTER_ID:backend']: string;
+ *   }
+ * }
+ *
+ * const env = getCanisterEnv();
+ *
+ * console.log(env.IC_ROOT_KEY); // by default served by the asset canister
+ * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ TS passes
+ * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
+ * ```
+ *
+ * > Note: the [`@icp-sdk/bindgen`](https://js.icp.build/bindgen/latest/) package has a feature
+ * > to automatically generate the .d.ts file for you.
+ * @example
+ * Alternatively, use the generic parameter to specify additional properties:
+ * ```ts
+ * const env = getCanisterEnv<{ readonly ['PUBLIC_CANISTER_ID:backend']: string }>();
+ *
+ * console.log(env.IC_ROOT_KEY); // by default served by the asset canister
+ * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ from generic parameter, TS passes
+ * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
+ * ```
+ */
+export interface CanisterEnv {
   /**
-   * The environment variables served by the asset canister that hosts the frontend.
-   * You can extend the `CanisterEnv` interface to add your own environment variables
-   * and have strong typing for them.
-   * @example
-   * Extend the global `CanisterEnv` interface to add your own environment variables:
-   * ```ts
-   * // You can also declare the interface in a separate .d.ts file
-   * // The `@icp-sdk/bindgen` package has a feature to automatically generate the .d.ts file
-   * declare global {
-   *   interface CanisterEnv {
-   *     readonly ['PUBLIC_CANISTER_ID:backend']: string;
-   *   }
-   * }
-   *
-   * const env = getCanisterEnv();
-   *
-   * console.log(env.IC_ROOT_KEY); // by default served by the asset canister
-   * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ TS passes
-   * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
-   * ```
-   * @example
-   * Alternatively, use the generic parameter to specify additional properties:
-   * ```ts
-   * const env = getCanisterEnv<{ readonly ['PUBLIC_CANISTER_ID:backend']: string }>();
-   *
-   * console.log(env.IC_ROOT_KEY); // by default served by the asset canister
-   * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ from generic parameter, TS passes
-   * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
-   * ```
+   * The root key of the IC network where the asset canister is deployed.
+   * Served by default by the asset canister that hosts the frontend.
    */
-  interface CanisterEnv {
-    /**
-     * The root key of the IC network where the asset canister is deployed.
-     * Served by default by the asset canister that hosts the frontend.
-     */
-    readonly IC_ROOT_KEY: Uint8Array;
-  }
+  readonly IC_ROOT_KEY: Uint8Array;
 }
 
 /**
@@ -88,7 +88,7 @@ export type GetCanisterEnvOptions = {
  * ```ts
  * // You can also declare the interface in a separate .d.ts file
  * // The `@icp-sdk/bindgen` package has a feature to automatically generate the .d.ts file
- * declare global {
+ * declare module '@icp-sdk/core/agent' {
  *   interface CanisterEnv {
  *     readonly ['PUBLIC_CANISTER_ID:backend']: string;
  *   }
