@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpAgent, Nonce } from '../index.ts';
+import { HttpAgent, IC_ROOT_KEY, Nonce } from '../index.ts';
 import * as cbor from '../../cbor.ts';
 import { Expiry, httpHeadersTransform } from './transforms.ts';
 import {
@@ -26,6 +26,7 @@ import { utf8ToBytes, bytesToHex, hexToBytes } from '@noble/hashes/utils';
 const { window } = new JSDOM(`<!DOCTYPE html><p>Hello world</p>`);
 window.fetch = global.fetch;
 (global as any).window = window;
+(global as any).document = window.document;
 
 const HTTP_AGENT_HOST = 'http://127.0.0.1:4943';
 
@@ -1321,6 +1322,130 @@ describe('error logs for bad signature', () => {
     expect(logs[0].error).toBeInstanceOf(AgentError);
     expect(logs[0].error.cause.code).toBeInstanceOf(HttpErrorCode);
     expect(logs[0].error.cause.code.requestContext).toBeDefined();
+  });
+});
+
+describe('canister environment cookie integration', () => {
+  const mockRootKeyHex = 'a'.repeat(266); // 133 bytes
+  const mockFetch: jest.Mock = jest.fn(() => {
+    return Promise.resolve(
+      new Response(null, {
+        status: 200,
+      }),
+    );
+  });
+
+  beforeEach(() => {
+    // Reset document.cookie before each test
+    Object.defineProperty(window.document, 'cookie', {
+      writable: true,
+      value: '',
+    });
+  });
+
+  it('should use root key from cookie when present', () => {
+    const cookieValue = `ic_root_key=${mockRootKeyHex}`;
+    Object.defineProperty(window.document, 'cookie', {
+      writable: true,
+      value: `ic_env=${encodeURIComponent(cookieValue)}`,
+    });
+
+    const agent = HttpAgent.createSync({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+    });
+
+    expect(agent.rootKey).toBeDefined();
+    expect(agent.rootKey).toBeInstanceOf(Uint8Array);
+    expect(bytesToHex(agent.rootKey!)).toBe(mockRootKeyHex);
+  });
+
+  it('should respect priority: explicit rootKey > shouldFetchRootKey > cookie > default', () => {
+    const cookieValue = `ic_root_key=${mockRootKeyHex}`;
+    Object.defineProperty(window.document, 'cookie', {
+      writable: true,
+      value: `ic_env=${encodeURIComponent(cookieValue)}`,
+    });
+
+    // Explicit rootKey has highest priority
+    const customRootKey = new Uint8Array(133).fill(0xff);
+    const agentWithExplicitKey = HttpAgent.createSync({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+      rootKey: customRootKey,
+    });
+    expect(agentWithExplicitKey.rootKey).toBe(customRootKey);
+
+    // shouldFetchRootKey has priority over cookie
+    const agentWithFetchFlag = HttpAgent.createSync({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+      shouldFetchRootKey: true,
+    });
+    expect(agentWithFetchFlag.rootKey).toBe(null);
+
+    // cookie has priority over default root key
+    const agentWithCookie = HttpAgent.createSync({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+    });
+    expect(agentWithCookie.rootKey).toBeDefined();
+    expect(bytesToHex(agentWithCookie.rootKey!)).toBe(mockRootKeyHex);
+
+    // When cookie is empty, the default root key is used
+    Object.defineProperty(window.document, 'cookie', {
+      writable: true,
+      value: '',
+    });
+
+    const agentWithDefaultRootKey = HttpAgent.createSync({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+    });
+    expect(agentWithDefaultRootKey.rootKey).toBeDefined();
+    expect(bytesToHex(agentWithDefaultRootKey.rootKey!)).toBe(IC_ROOT_KEY);
+  });
+
+  it('should support custom cookie name', () => {
+    const customCookieName = 'custom_env';
+    const cookieValue = `ic_root_key=${mockRootKeyHex}`;
+    Object.defineProperty(window.document, 'cookie', {
+      writable: true,
+      value: `${customCookieName}=${encodeURIComponent(cookieValue)}`,
+    });
+
+    const agent = HttpAgent.createSync({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+      canisterEnvCookieName: customCookieName,
+    });
+
+    expect(agent.rootKey).toBeDefined();
+    expect(bytesToHex(agent.rootKey!)).toBe(mockRootKeyHex);
+  });
+
+  describe('Node.js environment (no document)', () => {
+    let originalDocument: Document;
+
+    beforeAll(() => {
+      originalDocument = (global as any).document;
+      delete (global as any).document;
+    });
+
+    afterAll(() => {
+      (global as any).document = originalDocument;
+    });
+
+    it('should fall back to default IC_ROOT_KEY when document is not available', () => {
+      const agent = HttpAgent.createSync({
+        fetch: mockFetch,
+        host: 'http://127.0.0.1',
+      });
+
+      expect(agent.rootKey).toBeDefined();
+      expect(agent.rootKey).toBeInstanceOf(Uint8Array);
+      expect(bytesToHex(agent.rootKey!)).toBe(IC_ROOT_KEY);
+    });
   });
 });
 
