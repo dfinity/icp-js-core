@@ -39,11 +39,11 @@
     "attw": "attw --pack . --profile node16"
   },
   "peerDependencies": {
-    "@dfinity/agent": "workspace:^",
-    "@dfinity/candid": "workspace:^",
-    "@dfinity/identity": "workspace:^",
-    "@dfinity/identity-secp256k1": "workspace:^",
-    "@dfinity/principal": "workspace:^"
+    "@dfinity/agent": "workspace:*",
+    "@dfinity/candid": "workspace:*",
+    "@dfinity/identity": "workspace:*",
+    "@dfinity/identity-secp256k1": "workspace:*",
+    "@dfinity/principal": "workspace:*"
   },
   "types": "./lib/esm/index.d.ts",
   "exports": {
