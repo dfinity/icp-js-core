@@ -1,4 +1,4 @@
-import { decode, encode } from './utils/base32.ts';
+import { base32Decode, base32Encode } from './utils/base32.ts';
 import { getCrc32 } from './utils/getCrc.ts';
 import { sha224 } from '@noble/hashes/sha2';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
@@ -59,7 +59,7 @@ export class Principal {
 
     const canisterIdNoDash = maybePrincipal.toLowerCase().replace(/-/g, '');
 
-    let arr = decode(canisterIdNoDash);
+    let arr = base32Decode(canisterIdNoDash);
     arr = arr.slice(4, arr.length);
 
     const principal = new this(arr);
@@ -112,7 +112,7 @@ export class Principal {
 
     const array = new Uint8Array([...checksum, ...this._arr]);
 
-    const result = encode(array);
+    const result = base32Encode(array);
     const matches = result.match(/.{1,5}/g);
     if (!matches) {
       // This should only happen if there's no character, which is unreachable.

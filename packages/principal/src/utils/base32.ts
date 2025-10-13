@@ -14,7 +14,7 @@ lookupTable['1'] = lookupTable.i;
  * @param input The Uint8Array to encode.
  * @returns A Base32 string encoding the input.
  */
-export function encode(input: Uint8Array): string {
+export function base32Encode(input: Uint8Array): string {
   // How many bits will we skip from the first byte.
   let skip = 0;
   // 5 high bits, carry from one byte to the next.
@@ -57,7 +57,7 @@ export function encode(input: Uint8Array): string {
 /**
  * @param input The base32 encoded string to decode.
  */
-export function decode(input: string): Uint8Array {
+export function base32Decode(input: string): Uint8Array {
   // how many bits we have from the previous character.
   let skip = 0;
   // current byte we're producing.
