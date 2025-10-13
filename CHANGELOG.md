@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [4.1.0] - 2025-10-13
+
 - feat(principal): export the `base32Encode` and `base32Decode` functions
 
 ## [4.0.5] - 2025-09-30
