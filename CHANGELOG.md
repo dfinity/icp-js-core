@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- feat(principal): export the `base32Encode` and `base32Decode` functions
+
 ## [4.0.5] - 2025-09-30
 
 - fix(candid): recursive type table merging preserves concrete type mapping
