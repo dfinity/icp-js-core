@@ -1,6 +1,6 @@
 {
   "name": "@dfinity/principal",
-  "version": "3.2.7",
+  "version": "3.3.0",
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
   "description": "JavaScript and TypeScript library to work with Internet Computer principals",
@@ -51,7 +51,7 @@
     "test:coverage": "jest --collectCoverage"
   },
   "devDependencies": {
-    "@dfinity/utils": "^2.0.0"
+    "@dfinity/utils": "^3.2.0"
   },
   "dependencies": {
     "@noble/hashes": "^1.8.0"

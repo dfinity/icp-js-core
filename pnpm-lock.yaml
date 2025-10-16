@@ -245,19 +245,19 @@ importers:
   packages/core:
     dependencies:
       '@dfinity/agent':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../agent
       '@dfinity/candid':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../candid
       '@dfinity/identity':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../identity
       '@dfinity/identity-secp256k1':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../identity-secp256k1
       '@dfinity/principal':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../principal
 
   packages/identity:
@@ -321,8 +321,8 @@ importers:
         version: 1.8.0
     devDependencies:
       '@dfinity/utils':
-        specifier: ^2.0.0
-        version: 2.13.2(@dfinity/agent@3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0))(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)
+        specifier: ^3.2.0
+        version: 3.2.0(@dfinity/agent@3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0))(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)
 
 packages:
 
@@ -528,12 +528,12 @@ packages:
   '@dfinity/principal@3.2.7':
     resolution: {integrity: sha512-R67oKAac90vD/KBVCMXcFCloWVU2Y3cDDyaja66i5JFxSt5Em+0M5CZrVZjn1LE7EcrMgsvQcqiV2S0Rnaw7Zg==}
 
-  '@dfinity/utils@2.13.2':
-    resolution: {integrity: sha512-D9Gkvtj59NQavSClOJjr7xp5cBEahK4ekrTFCFKfdm51V7HHbOnoyTx5vjcWg5x4vdi9dRD6EtEO9UoCp3b7gQ==}
+  '@dfinity/utils@3.2.0':
+    resolution: {integrity: sha512-5G7KkZ7/4qOTeX7ptlUOvYdGSVHfO0oQrNddYtVuqzQJ8L4lA58ju4OUzuE5DTuD1pvZjIDavJLWezQ4Bug6Vg==}
     peerDependencies:
-      '@dfinity/agent': ^2.0.0
-      '@dfinity/candid': ^2.0.0
-      '@dfinity/principal': ^2.0.0
+      '@dfinity/agent': ^3
+      '@dfinity/candid': ^3
+      '@dfinity/principal': ^3
 
   '@es-joy/jsdoccomment@0.46.0':
     resolution: {integrity: sha512-C3Axuq1xd/9VqFZpW4YAzOx5O9q/LP46uIQy/iNDpHG3fmPa6TBtvfglMCs3RBiBxAIi0Go97r8+jvTt55XMyQ==}
@@ -4905,7 +4905,7 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.8.0
 
-  '@dfinity/utils@2.13.2(@dfinity/agent@3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0))(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)':
+  '@dfinity/utils@3.2.0(@dfinity/agent@3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0))(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)':
     dependencies:
       '@dfinity/agent': 3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0)
       '@dfinity/candid': 3.2.7(@dfinity/principal@3.2.7)
