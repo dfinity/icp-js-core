@@ -5,7 +5,7 @@ import {
   EmptyCookieErrorCode,
   MissingRootKeyErrorCode,
   MissingCookieErrorCode,
-} from '../../errors.ts';
+} from '../errors.ts';
 
 const IC_ENV_COOKIE_NAME = 'ic_env';
 

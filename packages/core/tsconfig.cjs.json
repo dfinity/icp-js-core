@@ -6,5 +6,5 @@
     "outDir": "./lib/cjs"
   },
   "include": ["./src/**/*.ts"],
-  "exclude": ["./src/**/*.test.ts"]
+  "exclude": ["./src/**/*.test.ts", "./src/agent/canister-env/*.ts"]
 }

@@ -1,12 +1,12 @@
 import { bytesToHex } from '@noble/hashes/utils';
-import { getCanisterEnv, safeGetCanisterEnv } from './canister-env.ts';
+import { getCanisterEnv, safeGetCanisterEnv } from './index.ts';
 import {
   InputError,
   InvalidRootKeyErrorCode,
   EmptyCookieErrorCode,
   MissingRootKeyErrorCode,
   MissingCookieErrorCode,
-} from '../../errors.ts';
+} from '../errors.ts';
 import { JSDOM } from 'jsdom';
 
 const mockRootKeyHex = 'a'.repeat(266); // 133 bytes

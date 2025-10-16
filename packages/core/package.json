@@ -61,6 +61,10 @@
       "require": "./lib/cjs/agent/index.js",
       "default": "./lib/esm/agent/index.js"
     },
+    "./agent/canister-env": {
+      "types": "./lib/esm/agent/canister-env/index.d.ts",
+      "import": "./lib/esm/agent/canister-env/index.js"
+    },
     "./candid": {
       "types": "./lib/esm/candid/index.d.ts",
       "import": "./lib/esm/candid/index.js",
