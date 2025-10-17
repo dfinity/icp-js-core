@@ -1,3 +1,7 @@
+/**
+ * @module canister-env/api
+ */
+
 import { hexToBytes } from '@noble/hashes/utils';
 import {
   InputError,
@@ -26,7 +30,7 @@ const IC_ROOT_KEY_BYTES_LENGTH = 133;
  * ```ts title="index.ts"
  * // You can declare the interface to have strong typing
  * // for your own environment variables across your codebase
- * declare module '@icp-sdk/core/agent' {
+ * declare module '@icp-sdk/core/agent/canister-env' {
  *   interface CanisterEnv {
  *     readonly ['PUBLIC_CANISTER_ID:backend']: string;
  *     readonly PUBLIC_API_URL: string;

@@ -27,6 +27,14 @@
               "collapsed": true,
               "directory": "libs/agent/api"
             }
+          },
+          {
+            "label": "Canister Env",
+            "collapsed": true,
+            "autogenerate": {
+              "collapsed": true,
+              "directory": "libs/agent/canister-env"
+            }
           }
         ]
       },
