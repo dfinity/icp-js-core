@@ -18,7 +18,7 @@ export async function processMarkdown({
 }
 
 function removeH1Title(input: string): string {
-  return input.replace(/^\s*#\s*.*$/m, '');
+  return input.replace(/^\s*#\s+.*$/m, '');
 }
 
 function replaceReadmeMentions(input: string): string {

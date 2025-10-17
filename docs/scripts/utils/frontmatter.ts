@@ -13,11 +13,8 @@ export function addPageFrontmatter(page: MarkdownPageEvent) {
         if (page.model.name.startsWith('@')) {
           const packageName = page.model.name.split('/')[1]!;
           title = titleFromIdCapitalized(packageName);
-        } else if (page.model.name === 'api' && page.model.parent?.name.startsWith('@')) {
-          title = API_HOMEPAGE_TITLE;
         } else {
-          // should never happen
-          title = titleFromIdCapitalized(page.model.name);
+          title = API_HOMEPAGE_TITLE;
         }
         break;
       default:
