@@ -7,5 +7,5 @@
     "lib": ["DOM"]
   },
   "include": ["./src/**/*.ts"],
-  "exclude": ["./src/**/*.test.ts", "./src/**/__certificates__"]
+  "exclude": ["./src/**/*.test.ts", "./src/**/__certificates__", "./src/canister-env/*.ts"]
 }

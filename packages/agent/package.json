@@ -37,11 +37,17 @@
   "default": "./lib/esm/index.js",
   "types": "./lib/esm/index.d.ts",
   "exports": {
-    "types": "./lib/esm/index.d.ts",
-    "import": "./lib/esm/index.js",
-    "node": "./lib/cjs/index.js",
-    "require": "./lib/cjs/index.js",
-    "default": "./lib/esm/index.js"
+    ".": {
+      "types": "./lib/esm/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "node": "./lib/cjs/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/esm/index.js"
+    },
+    "./canister-env": {
+      "types": "./lib/esm/canister-env/index.d.ts",
+      "import": "./lib/esm/canister-env/index.js"
+    }
   },
   "scripts": {
     "build": "tsc -b && tsc -p tsconfig.cjs.json && cp src/package.json lib/esm/package.json",
