@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- feat(agent): load root key from the `ic_env` cookie if no root key is specified and `shouldFetchRootKey` is false.
 - feat(agent): introduce the `getCanisterEnv` and `safeGetCanisterEnv` functions to load the canister environment from the `ic_env` cookie.
 
 ## [4.1.0] - 2025-10-13
