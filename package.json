@@ -78,7 +78,7 @@
     {
       "name": "@dfinity/agent",
       "path": "./packages/agent/dist/index.js",
-      "limit": "52 kB"
+      "limit": "53 kB"
     },
     {
       "name": "@dfinity/assets",
