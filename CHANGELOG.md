@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(agent): remove exported `CanisterInstallMode` type
+
 ## [4.1.0] - 2025-10-13
 
 - feat(principal): export the `base32Encode` and `base32Decode` functions
