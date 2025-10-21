@@ -12,7 +12,11 @@
     "items": [
       {
         "label": "Canister Environment",
-        "link": "/canister-environment"
+        "link": "/canister-environment",
+        "badge": {
+          "text": "Experimental",
+          "variant": "caution"
+        }
       },
       { "label": "Typescript", "link": "/typescript" },
       { "label": "Library Development", "link": "/library-development" }
@@ -39,6 +43,10 @@
           },
           {
             "label": "Canister Environment API",
+            "badge": {
+              "text": "Experimental",
+              "variant": "caution"
+            },
             "collapsed": true,
             "autogenerate": {
               "collapsed": true,

@@ -1,4 +1,5 @@
 /**
+ * @experimental
  * @module canister-env/api
  */
 
@@ -26,6 +27,7 @@ const IC_ROOT_KEY_BYTES_LENGTH = 133;
  * You can extend the `CanisterEnv` interface to add your own environment variables
  * and have strong typing for them.
  * @see The {@link https://js.icp.build/core/latest/canister-environment/ | Canister Environment Guide} for more details on how to use the canister environment in a frontend application
+ * @experimental
  * @example
  * Extend the global `CanisterEnv` interface to add your own environment variables:
  * ```ts title="index.ts"
@@ -65,6 +67,7 @@ export interface CanisterEnv {
 
 /**
  * Options for the {@link getCanisterEnv} function
+ * @experimental
  */
 export type GetCanisterEnvOptions = {
   /**
@@ -89,6 +92,7 @@ export type GetCanisterEnvOptions = {
  * @throws {InputError} When the cookie is not found
  * @throws {InputError} When the `IC_ROOT_KEY` is missing or has an invalid length
  * @see The {@link https://js.icp.build/core/latest/canister-environment/ | Canister Environment Guide} for more details on how to use the canister environment in a frontend application
+ * @experimental
  * @example
  * ```ts
  * type MyCanisterEnv = {
@@ -101,7 +105,7 @@ export type GetCanisterEnvOptions = {
  * console.log(env['PUBLIC_CANISTER_ID:backend']); // ✅ from generic parameter, TS passes
  * console.log(env['PUBLIC_CANISTER_ID:frontend']); // ❌ TS will show an error
  * ```
- * @see {@link CanisterEnv} for more details on how to extend the interface
+ * Have a look at {@link CanisterEnv} for more details on how to extend the interface
  */
 export function getCanisterEnv<T = Record<string, never>>(
   options: GetCanisterEnvOptions = {},
@@ -132,6 +136,7 @@ export function getCanisterEnv<T = Record<string, never>>(
  * @param options The options for loading the asset canister environment variables
  * @returns The environment variables for the asset canister, or `undefined` if any error occurs
  * @see The {@link https://js.icp.build/core/latest/canister-environment/ | Canister Environment Guide} for more details on how to use the canister environment in a frontend application
+ * @experimental
  * @example
  * ```ts
  * // in a browser environment with valid cookie
