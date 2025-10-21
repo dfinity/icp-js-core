@@ -29,11 +29,11 @@
             }
           },
           {
-            "label": "Canister Env",
+            "label": "Canister Environment API",
             "collapsed": true,
             "autogenerate": {
               "collapsed": true,
-              "directory": "libs/agent/canister-env"
+              "directory": "libs/agent/canister-env/api"
             }
           }
         ]
