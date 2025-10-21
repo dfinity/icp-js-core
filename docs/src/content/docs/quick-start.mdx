@@ -21,6 +21,8 @@ This is the most common way to use the `@icp-sdk/core` package to interact with 
     import { Principal } from "@icp-sdk/core/principal";
     import { createActor } from "./api/hello-world";
 
+    // For a convenient way to get the canister ID,
+    // see the https://js.icp.build/core/latest/canister-environment/ guide.
     const canisterId = Principal.fromText('uqqxf-5h777-77774-qaaaa-cai');
     const identity = Ed25519KeyIdentity.generate();
 
@@ -81,6 +83,8 @@ import { IDL } from '@icp-sdk/core/candid';
 import { Principal } from '@icp-sdk/core/principal';
 
 const identity = Ed25519KeyIdentity.generate();
+// For a convenient way to get the canister ID,
+// see the https://js.icp.build/core/latest/canister-environment/ guide.
 const canisterId = Principal.fromText('uqqxf-5h777-77774-qaaaa-cai');
 
 const agent = await HttpAgent.create({
@@ -101,5 +105,6 @@ If you are using TypeScript, have a look at the [TypeScript guide](./typescript.
 
 ## Next Steps
 
-- Have a look at the [Examples repo](https://github.com/dfinity/examples) to see how to use the `@icp-sdk/core` package in a real-world application.
+- Have a look at the [Canister Environment guide](./canister-environment.mdx) for how to load the canister environment from the asset canister.
 - Have a look at the [@icp-sdk/bindgen](https://js.icp.build/bindgen/) package for how to generate the bindings for your canister.
+- Have a look at the [Examples repo](https://github.com/dfinity/examples) to see how to use the `@icp-sdk/core` package in a real-world application.

@@ -17,7 +17,7 @@ const ENV_VAR_SEPARATOR = '&';
 const ENV_VAR_ASSIGNMENT_SYMBOL = '=';
 
 const IC_ROOT_KEY_VALUE_NAME = 'ic_root_key';
-const IC_ROOT_KEY_ENV_NAME = 'IC_ROOT_KEY'; // same as the `CanisterEnv` interface below
+const IC_ROOT_KEY_ENV_NAME = 'IC_ROOT_KEY'; // the value must be the same as the `CanisterEnv.IC_ROOT_KEY` property name
 
 const IC_ROOT_KEY_BYTES_LENGTH = 133;
 
@@ -25,6 +25,7 @@ const IC_ROOT_KEY_BYTES_LENGTH = 133;
  * The environment variables served by the asset canister that hosts the frontend.
  * You can extend the `CanisterEnv` interface to add your own environment variables
  * and have strong typing for them.
+ * @see The {@link https://js.icp.build/core/latest/canister-environment/ | Canister Environment Guide} for more details on how to use the canister environment in a frontend application
  * @example
  * Extend the global `CanisterEnv` interface to add your own environment variables:
  * ```ts title="index.ts"
@@ -44,9 +45,6 @@ const IC_ROOT_KEY_BYTES_LENGTH = 133;
  * console.log(env.PUBLIC_API_URL); // ✅ TS passes
  * console.log(env['PUBLIC_CANISTER_ID:another']); // ❌ TS will show an error
  * ```
- *
- * > Note: the [`@icp-sdk/bindgen`](https://js.icp.build/bindgen/latest/) package has a feature
- * > to automatically generate the .d.ts file for you.
  * @example
  * Alternatively, use the generic parameter to specify additional properties:
  * ```ts title="index.ts"
@@ -62,7 +60,7 @@ export interface CanisterEnv {
    * The root key of the IC network where the asset canister is deployed.
    * Served by default by the asset canister that hosts the frontend.
    */
-  readonly IC_ROOT_KEY: Uint8Array;
+  readonly IC_ROOT_KEY: Uint8Array; // the key must be the same as the `IC_ROOT_KEY_ENV_NAME` constant
 }
 
 /**
@@ -90,6 +88,7 @@ export type GetCanisterEnvOptions = {
  * @throws {TypeError} When `globalThis.document` is not available
  * @throws {InputError} When the cookie is not found
  * @throws {InputError} When the `IC_ROOT_KEY` is missing or has an invalid length
+ * @see The {@link https://js.icp.build/core/latest/canister-environment/ | Canister Environment Guide} for more details on how to use the canister environment in a frontend application
  * @example
  * ```ts
  * type MyCanisterEnv = {
@@ -132,6 +131,7 @@ export function getCanisterEnv<T = Record<string, never>>(
  * Safe version of {@link getCanisterEnv} that returns `undefined` instead of throwing errors.
  * @param options The options for loading the asset canister environment variables
  * @returns The environment variables for the asset canister, or `undefined` if any error occurs
+ * @see The {@link https://js.icp.build/core/latest/canister-environment/ | Canister Environment Guide} for more details on how to use the canister environment in a frontend application
  * @example
  * ```ts
  * // in a browser environment with valid cookie
