@@ -4,6 +4,10 @@
 
 - feat(agent): introduce the `getCanisterEnv` and `safeGetCanisterEnv` functions to load the canister environment from the `ic_env` cookie.
 
+## [4.1.1] - 2025-10-21
+
+- fix(agent): remove exported `CanisterInstallMode` type
+
 ## [4.1.0] - 2025-10-13
 
 - feat(principal): export the `base32Encode` and `base32Decode` functions

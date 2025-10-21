@@ -4,10 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  devalue@<5.3.2: '>=5.3.2'
-  vite@>=6.0.0 <=6.3.5: '>=6.3.6'
-
 importers:
 
   .:
@@ -322,7 +318,7 @@ importers:
     devDependencies:
       '@dfinity/utils':
         specifier: ^3.2.0
-        version: 3.2.0(@dfinity/agent@3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0))(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)
+        version: 3.2.0(@dfinity/agent@3.3.0(@dfinity/candid@3.3.0(@dfinity/principal@3.3.0))(@dfinity/principal@3.3.0)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.0(@dfinity/principal@3.3.0))(@dfinity/principal@3.3.0)
 
 packages:
 
@@ -510,23 +506,23 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@dfinity/agent@3.2.7':
-    resolution: {integrity: sha512-JO8GrhHcTialLeBfEEEruZPaA+4Ipt3mYqlM5CYKO7aWUCGPn94yxDVZ4nRJA8SRJjq+IXEBYpfGqbNOe5Djbg==}
+  '@dfinity/agent@3.3.0':
+    resolution: {integrity: sha512-CymEzXEfWpY+ecLlRhVa5occAQBIx5xVghZZ6EH1PSQVHm2bUXXPGmhC0SbEG+1qFgfiBSGCpJ2bMhrA1kBifw==}
     peerDependencies:
-      '@dfinity/candid': 3.2.7
-      '@dfinity/principal': 3.2.7
+      '@dfinity/candid': 3.3.0
+      '@dfinity/principal': 3.3.0
       '@noble/hashes': ^1.8.0
 
-  '@dfinity/candid@3.2.7':
-    resolution: {integrity: sha512-Sad081UnB0DWI6pB+F1pOwcarqdhD0XVfuqw8MRzP0PuSCHlr7CKK5QZ6HE/Hq+ABDjn5vPG4WkbZs1sdma/Iw==}
+  '@dfinity/candid@3.3.0':
+    resolution: {integrity: sha512-cBK1B4EAr5FcwHjcXC5Hh9tFjWt8suFTggprhBJ0pJb7A7sztJJMxZrFbkfE8GdYoaIl3FUV0TatKT3C7FJ7ow==}
     peerDependencies:
-      '@dfinity/principal': 3.2.7
+      '@dfinity/principal': 3.3.0
 
   '@dfinity/cbor@0.2.2':
     resolution: {integrity: sha512-GPJpH73kDEKbUBdUjY80lz7cq9l0vm1h/7ppejPV6O0ZTqCLrYspssYvqjRmK4aNnJ/SKXsP0rg9LYX7zpegaA==}
 
-  '@dfinity/principal@3.2.7':
-    resolution: {integrity: sha512-R67oKAac90vD/KBVCMXcFCloWVU2Y3cDDyaja66i5JFxSt5Em+0M5CZrVZjn1LE7EcrMgsvQcqiV2S0Rnaw7Zg==}
+  '@dfinity/principal@3.3.0':
+    resolution: {integrity: sha512-0oisjzg6n7U7raayhcpmBLGxPQ4o/FbsMv0JN7OecVHaXo7+RfTrv+Dr5ty4JHTZJEw/4q+3sSPG9otRpbjaMA==}
 
   '@dfinity/utils@3.2.0':
     resolution: {integrity: sha512-5G7KkZ7/4qOTeX7ptlUOvYdGSVHfO0oQrNddYtVuqzQJ8L4lA58ju4OUzuE5DTuD1pvZjIDavJLWezQ4Bug6Vg==}
@@ -1483,7 +1479,7 @@ packages:
     resolution: {integrity: sha512-46ryTE9RZO/rfDd7pEqFl7etuyzekzEhUbTW3BvmeO/BcCMEgq59BKhek3dXDWgAj4oMK6OZi+vRr1wPW6qjEQ==}
     peerDependencies:
       msw: ^2.4.9
-      vite: '>=6.3.6'
+      vite: ^5.0.0 || ^6.0.0 || ^7.0.0-0
     peerDependenciesMeta:
       msw:
         optional: true
@@ -4452,8 +4448,8 @@ packages:
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
 
-  vite@7.1.5:
-    resolution: {integrity: sha512-4cKBO9wR75r0BeIWWWId9XK9Lj6La5X846Zw9dFfzMRw38IlTk2iCcUt6hsyiDRcPidc55ZParFYDXi0nXOeLQ==}
+  vite@7.1.11:
+    resolution: {integrity: sha512-uzcxnSDVjAopEUjljkWh8EIrg6tlzrjFUfMcR1EVsRDGwf/ccef0qQPRyOrROwhrTDaApueq+ja+KLPlzR/zdg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -4887,29 +4883,29 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@dfinity/agent@3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0)':
+  '@dfinity/agent@3.3.0(@dfinity/candid@3.3.0(@dfinity/principal@3.3.0))(@dfinity/principal@3.3.0)(@noble/hashes@1.8.0)':
     dependencies:
-      '@dfinity/candid': 3.2.7(@dfinity/principal@3.2.7)
+      '@dfinity/candid': 3.3.0(@dfinity/principal@3.3.0)
       '@dfinity/cbor': 0.2.2
-      '@dfinity/principal': 3.2.7
+      '@dfinity/principal': 3.3.0
       '@noble/curves': 1.9.6
       '@noble/hashes': 1.8.0
 
-  '@dfinity/candid@3.2.7(@dfinity/principal@3.2.7)':
+  '@dfinity/candid@3.3.0(@dfinity/principal@3.3.0)':
     dependencies:
-      '@dfinity/principal': 3.2.7
+      '@dfinity/principal': 3.3.0
 
   '@dfinity/cbor@0.2.2': {}
 
-  '@dfinity/principal@3.2.7':
+  '@dfinity/principal@3.3.0':
     dependencies:
       '@noble/hashes': 1.8.0
 
-  '@dfinity/utils@3.2.0(@dfinity/agent@3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0))(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)':
+  '@dfinity/utils@3.2.0(@dfinity/agent@3.3.0(@dfinity/candid@3.3.0(@dfinity/principal@3.3.0))(@dfinity/principal@3.3.0)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.0(@dfinity/principal@3.3.0))(@dfinity/principal@3.3.0)':
     dependencies:
-      '@dfinity/agent': 3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0)
-      '@dfinity/candid': 3.2.7(@dfinity/principal@3.2.7)
-      '@dfinity/principal': 3.2.7
+      '@dfinity/agent': 3.3.0(@dfinity/candid@3.3.0(@dfinity/principal@3.3.0))(@dfinity/principal@3.3.0)(@noble/hashes@1.8.0)
+      '@dfinity/candid': 3.3.0(@dfinity/principal@3.3.0)
+      '@dfinity/principal': 3.3.0
 
   '@es-joy/jsdoccomment@0.46.0':
     dependencies:
@@ -5911,13 +5907,13 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@7.1.5(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1))':
+  '@vitest/mocker@3.2.4(vite@7.1.11(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1))':
     dependencies:
       '@vitest/spy': 3.2.4
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 7.1.5(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1)
+      vite: 7.1.11(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -9622,7 +9618,7 @@ snapshots:
       debug: 4.4.1
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.1.5(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1)
+      vite: 7.1.11(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -9637,7 +9633,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@7.1.5(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1):
+  vite@7.1.11(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1):
     dependencies:
       esbuild: 0.25.8
       fdir: 6.5.0(picomatch@4.0.3)
@@ -9656,7 +9652,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.1.5(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.1.11(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -9674,7 +9670,7 @@ snapshots:
       tinyglobby: 0.2.14
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
-      vite: 7.1.5(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1)
+      vite: 7.1.11(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1)
       vite-node: 3.2.4(@types/node@20.19.10)(jiti@2.5.1)(tsx@4.20.5)(yaml@2.8.1)
       why-is-node-running: 2.3.0
     optionalDependencies:

@@ -147,26 +147,6 @@ export type ActorMethodMappedExtended<T> = {
 };
 
 /**
- * The mode used when installing a canister.
- */
-export type CanisterInstallMode =
-  | {
-      reinstall: null;
-    }
-  | {
-      upgrade:
-        | []
-        | [
-            {
-              skip_pre_upgrade: [] | [boolean];
-            },
-          ];
-    }
-  | {
-      install: null;
-    };
-
-/**
  * Internal metadata for actors. It's an enhanced version of ActorConfig with
  * some fields marked as required (as they are defaulted) and canisterId as
  * a Principal type.

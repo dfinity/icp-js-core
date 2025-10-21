@@ -1,6 +1,6 @@
 {
   "name": "@dfinity/identity-secp256k1",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
   "description": "JavaScript and TypeScript library to manage Secp256k1KeyIdentities for use with the Internet Computer",
