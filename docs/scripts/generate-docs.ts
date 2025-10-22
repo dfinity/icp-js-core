@@ -30,7 +30,7 @@ async function main() {
     typedocOptions: {
       entryPoints: ['../packages/*'],
       packageOptions: {
-        entryPoints: ['src/index.ts'],
+        entryPoints: ['src/index.ts', 'src/canister-env/index.ts'],
         tsconfig: './tsconfig.json',
         readme: 'README.md',
         alwaysCreateEntryPointModule: true, // puts everything into <package>/api folder
