@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
-- feat(agent): introduce the `getCanisterEnv` and `safeGetCanisterEnv` functions to load the canister environment from the `ic_env` cookie. (experimental)
+## [4.2.0] - 2025-10-22
+
+- feat(agent): (_experimental_) introduce the `getCanisterEnv` and `safeGetCanisterEnv` functions to load the canister environment from the `ic_env` cookie. See the [Canister Environment guide](https://js.icp.build/core/v4.2/canister-environment/) for more details.
 
 ## [4.1.1] - 2025-10-21
 
