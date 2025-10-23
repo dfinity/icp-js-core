@@ -47,7 +47,7 @@ sequenceDiagram
 The flow is the following:
 
 1. The developer deploys the backend canister.
-2. The developer sets the `PUBLIC_CANISTER_ID:backend` environment variable to the backend canister ID via the management canister.
+2. The developer sets the `PUBLIC_CANISTER_ID:backend` environment variable and its value (the backend canister ID) in the asset canister using the [management canister](https://internetcomputer.org/docs/references/system-canisters/management-canister).
 3. The browser of the end user requests the HTML assets from the asset canister.
 4. The asset canister serves the HTML assets with the `ic_env` cookie. In this example, it serves the `ic_root_key` (by default, see [below](#the-ic_env-cookie)) and `PUBLIC_CANISTER_ID:backend` variables.
 5. The browser of the end user decodes the `ic_env` cookie and configures the actor with the root key and `PUBLIC_CANISTER_ID:backend` variables.
