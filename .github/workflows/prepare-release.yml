@@ -17,8 +17,6 @@ jobs:
 
       - name: Setup PNPM
         uses: dfinity/ci-tools/actions/setup-pnpm@main
-        with:
-          node_version_file: '.nvmrc'
           
       - name: Set up git config
         run: |

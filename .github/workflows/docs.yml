@@ -20,8 +20,6 @@ jobs:
 
       - name: Setup PNPM
         uses: dfinity/ci-tools/actions/setup-pnpm@main
-        with:
-          node_version_file: '.nvmrc'
 
       - name: Generate docs
         run: pnpm run -F docs build

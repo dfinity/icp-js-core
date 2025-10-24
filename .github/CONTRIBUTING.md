@@ -7,7 +7,7 @@ Before you make your changes, check to see if an [issue exists](https://github.c
 ### Getting Started
 
 1. Clone the repository
-2. Install Node.js version specified in `.nvmrc`
+2. Install Node.js version specified in `.node-version`
 3. Run `corepack enable` to enable `pnpm`
 4. Run `pnpm install` to install dependencies
 5. Run `pnpm build:packages` to build all packages
