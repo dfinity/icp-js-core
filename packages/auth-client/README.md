@@ -1,12 +1,12 @@
 # @dfinity/auth-client
 
-> 0.10.5 Idle update - see changes [here](#0.10.5-idle-update)
-
 Simple interface to get your web application authenticated with the Internet Identity Service
 
 Do you want to know more about developing on the Internet Computer? Visit the [Developer Docs](https://internetcomputer.org/docs/home).
 
 Additional API Documentation can be found [here](https://js.icp.build/core/v3.2/libs/auth-client/api).
+
+> Still using `@dfinity/auth-client`? Migrate to [`@icp-sdk/auth`](https://js.icp.build/auth/latest/upgrading/v4)!
 
 ---
 
