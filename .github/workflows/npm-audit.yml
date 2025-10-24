@@ -14,18 +14,12 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        ghc: ['8.8.4']
-        node:
-          - 22
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup PNPM
         uses: dfinity/ci-tools/actions/setup-pnpm@main
         with:
-          node_version: ${{ matrix.node }}
+          node_version_file: '.nvmrc'
 
       - run: pnpm audit
