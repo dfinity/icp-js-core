@@ -19,13 +19,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        ghc: ['8.8.4']
-        spec:
-          - '0.16.1'
         node:
-          - 20.18 # without require(esm)
-          - 20.19 # with require(esm), see https://nodejs.org/en/blog/release/v20.19.0/#requireesm-is-now-enabled-by-default
+          - 20
           - 22
+          - 24
 
     steps:
       - uses: actions/checkout@v4
