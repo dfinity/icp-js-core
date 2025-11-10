@@ -13,15 +13,16 @@ export const JSON_KEY_EXPIRY = '__expiry__';
 const SECONDS_TO_MILLISECONDS = BigInt(1_000);
 const MILLISECONDS_TO_NANOSECONDS = BigInt(1_000_000);
 const MINUTES_TO_SECONDS = BigInt(60);
+const MINUTES_TO_MILLISECONDS = MINUTES_TO_SECONDS * SECONDS_TO_MILLISECONDS;
 
-const EXPIRY_DELTA_THRESHOLD_MILLISECONDS = BigInt(90) * SECONDS_TO_MILLISECONDS;
+const EXPIRY_DELTA_THRESHOLD_MILLISECONDS = BigInt(1) * MINUTES_TO_MILLISECONDS;
 
-function roundMillisToSeconds(millis: bigint): bigint {
-  return millis / SECONDS_TO_MILLISECONDS;
+function roundToSecond(millis: bigint): bigint {
+  return (millis / SECONDS_TO_MILLISECONDS) * SECONDS_TO_MILLISECONDS;
 }
 
-function roundMillisToMinutes(millis: bigint): bigint {
-  return roundMillisToSeconds(millis) / MINUTES_TO_SECONDS;
+function roundToMinute(millis: bigint): bigint {
+  return (millis / MINUTES_TO_MILLISECONDS) * MINUTES_TO_MILLISECONDS;
 }
 
 export type JsonnableExpiry = {
@@ -35,25 +36,29 @@ export class Expiry {
 
   /**
    * Creates an Expiry object from a delta in milliseconds.
-   * If the delta is less than 90 seconds, the expiry is rounded down to the nearest second.
-   * Otherwise, the expiry is rounded down to the nearest minute.
+   * The expiry is calculated as: current_time + delta + clock_drift
+   * The resulting expiry is then rounded:
+   * - If rounding down to the nearest minute still provides at least 60 seconds in the future, use minute precision
+   * - Otherwise, use second precision
    * @param deltaInMs The milliseconds to add to the current time.
-   * @param clockDriftMs The milliseconds to add to the current time, typically the clock drift between IC network clock and the client's clock. Defaults to `0` if not provided.
+   * @param clockDriftInMs The milliseconds to add to the current time, typically the clock drift between IC network clock and the client's clock. Defaults to `0` if not provided.
    * @returns {Expiry} The constructed Expiry object.
    */
-  public static fromDeltaInMilliseconds(deltaInMs: number, clockDriftMs: number = 0): Expiry {
-    const deltaMs = BigInt(deltaInMs);
-    const expiryMs = BigInt(Date.now()) + deltaMs + BigInt(clockDriftMs);
+  public static fromDeltaInMilliseconds(deltaInMs: number, clockDriftInMs: number = 0): Expiry {
+    const correctedNowMs = BigInt(Date.now()) + BigInt(clockDriftInMs);
+    const expiryMs = correctedNowMs + BigInt(deltaInMs);
 
-    let roundedExpirySeconds: bigint;
-    if (deltaMs < EXPIRY_DELTA_THRESHOLD_MILLISECONDS) {
-      roundedExpirySeconds = roundMillisToSeconds(expiryMs);
+    const roundedToMinute = roundToMinute(expiryMs);
+
+    let roundedExpiryMs: bigint;
+    if (roundedToMinute >= correctedNowMs + EXPIRY_DELTA_THRESHOLD_MILLISECONDS) {
+      roundedExpiryMs = roundedToMinute;
     } else {
-      const roundedExpiryMinutes = roundMillisToMinutes(expiryMs);
-      roundedExpirySeconds = roundedExpiryMinutes * MINUTES_TO_SECONDS;
+      const roundedToSecond = roundToSecond(expiryMs);
+      roundedExpiryMs = roundedToSecond;
     }
 
-    return new Expiry(roundedExpirySeconds * SECONDS_TO_MILLISECONDS * MILLISECONDS_TO_NANOSECONDS);
+    return new Expiry(roundedExpiryMs * MILLISECONDS_TO_NANOSECONDS);
   }
 
   public toBigInt(): bigint {
