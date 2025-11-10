@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(agent): use minute precision when rounded expiry is at least 60s in future
+
 ## [4.2.1] - 2025-10-24
 
 ## [4.2.0] - 2025-10-22
