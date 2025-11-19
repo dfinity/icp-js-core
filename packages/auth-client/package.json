@@ -1,6 +1,6 @@
 {
   "name": "@dfinity/auth-client",
-  "version": "3.4.2",
+  "version": "3.4.3",
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
   "description": "JavaScript and TypeScript library to provide a simple integration with an IC Internet Identity",
