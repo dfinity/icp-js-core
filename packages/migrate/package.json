@@ -44,6 +44,6 @@
   "dependencies": {
     "chalk": "^5.6.0",
     "commander": "^14.0.0",
-    "glob": "^11.0.3"
+    "glob": "^11.1.0"
   }
 }
