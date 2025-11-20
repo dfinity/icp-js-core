@@ -784,6 +784,8 @@ export function find_label(label: NodeLabel, tree: HashTree): LabelLookupResult 
   }
 }
 
+type CanisterRanges = Array<[Principal, Principal]>;
+
 /**
  * Check if a canister ID falls within the canister ranges of a given subnet
  * @param params the parameters with which to check the canister ranges
@@ -798,6 +800,15 @@ export function check_canister_ranges(params: {
   tree: HashTree;
 }): boolean {
   const { canisterId, subnetId, tree } = params;
+
+  const rangesLookupValue = lookupCanisterRanges(subnetId, tree);
+  const ranges = decodeCanisterRanges(rangesLookupValue);
+
+  const canisterInRange = ranges.some(r => r[0].ltEq(canisterId) && r[1].gtEq(canisterId));
+  return canisterInRange;
+}
+
+function lookupCanisterRanges(subnetId: Principal, tree: HashTree): Uint8Array {
   const rangeLookup = lookup_path(['subnet', subnetId.toUint8Array(), 'canister_ranges'], tree);
 
   if (rangeLookup.status !== LookupPathStatus.Found) {
@@ -817,13 +828,14 @@ export function check_canister_ranges(params: {
     );
   }
 
-  const ranges_arr = cbor.decode<Array<[Uint8Array, Uint8Array]>>(rangeLookup.value);
-  const ranges: Array<[Principal, Principal]> = ranges_arr.map(v => [
+  return rangeLookup.value;
+}
+
+function decodeCanisterRanges(lookupValue: Uint8Array): CanisterRanges {
+  const ranges_arr = cbor.decode<Array<[Uint8Array, Uint8Array]>>(lookupValue);
+  const ranges: CanisterRanges = ranges_arr.map(v => [
     Principal.fromUint8Array(v[0]),
     Principal.fromUint8Array(v[1]),
   ]);
-
-  const canisterInRange = ranges.some(r => r[0].ltEq(canisterId) && r[1].gtEq(canisterId));
-
-  return canisterInRange;
+  return ranges;
 }
