@@ -572,11 +572,9 @@ export class HttpAgent implements Agent {
     try {
       // Attempt v3 sync call
       const requestSync = () => {
-        this.log.print(
-          `fetching "/api/v3/canister/${ecid.toText()}/call" with request:`,
-          transformedRequest,
-        );
-        return this.#fetch('' + new URL(`/api/v3/canister/${ecid.toText()}/call`, this.host), {
+        const url = new URL(`/api/v3/canister/${ecid.toText()}/call`, this.host);
+        this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
+        return this.#fetch(url, {
           ...this.#callOptions,
           ...transformedRequest.request,
           body,
@@ -584,11 +582,9 @@ export class HttpAgent implements Agent {
       };
 
       const requestAsync = () => {
-        this.log.print(
-          `fetching "/api/v2/canister/${ecid.toText()}/call" with request:`,
-          transformedRequest,
-        );
-        return this.#fetch('' + new URL(`/api/v2/canister/${ecid.toText()}/call`, this.host), {
+        const url = new URL(`/api/v2/canister/${ecid.toText()}/call`, this.host);
+        this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
+        return this.#fetch(url, {
           ...this.#callOptions,
           ...transformedRequest.request,
           body,
@@ -663,7 +659,10 @@ export class HttpAgent implements Agent {
     const { ecid, transformedRequest, body, requestId, backoff, tries } = args;
 
     const delay = tries === 0 ? 0 : backoff.next();
-    this.log.print(`fetching "/api/v2/canister/${ecid.toString()}/query" with tries:`, {
+
+    const url = new URL(`/api/v2/canister/${ecid.toString()}/query`, this.host);
+
+    this.log.print(`fetching "${url.pathname}" with tries:`, {
       tries,
       backoff,
       delay,
@@ -685,18 +684,12 @@ export class HttpAgent implements Agent {
     let response: ApiQueryResponse;
     // Make the request and retry if it throws an error
     try {
-      this.log.print(
-        `fetching "/api/v2/canister/${ecid.toString()}/query" with request:`,
-        transformedRequest,
-      );
-      const fetchResponse = await this.#fetch(
-        '' + new URL(`/api/v2/canister/${ecid.toString()}/query`, this.host),
-        {
-          ...this.#fetchOptions,
-          ...transformedRequest.request,
-          body,
-        },
-      );
+      this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
+      const fetchResponse = await this.#fetch(url, {
+        ...this.#fetchOptions,
+        ...transformedRequest.request,
+        body,
+      });
       if (fetchResponse.status === HTTP_STATUS_OK) {
         const queryResponse: QueryResponse = cbor.decode(
           uint8FromBufLike(await fetchResponse.arrayBuffer()),
@@ -1126,23 +1119,19 @@ export class HttpAgent implements Agent {
       transformedRequest = await this.createReadStateRequest(fields, identity);
     }
 
-    this.log.print(
-      `fetching "/api/v2/canister/${canister}/read_state" with request:`,
-      transformedRequest,
-    );
+    const url = new URL(`/api/v2/canister/${canister.toString()}/read_state`, this.host);
+
+    this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
 
     const backoff = this.#backoffStrategy();
     try {
       const { responseBodyBytes } = await this.#requestAndRetry({
         requestFn: () =>
-          this.#fetch(
-            '' + new URL(`/api/v2/canister/${canister.toString()}/read_state`, this.host),
-            {
-              ...this.#fetchOptions,
-              ...transformedRequest.request,
-              body: cbor.encode(transformedRequest.body),
-            },
-          ),
+          this.#fetch(url, {
+            ...this.#fetchOptions,
+            ...transformedRequest.request,
+            body: cbor.encode(transformedRequest.body),
+          }),
         backoff,
         tries: 0,
       });
@@ -1288,12 +1277,13 @@ export class HttpAgent implements Agent {
         }
       : {};
 
-    this.log.print(`fetching "/api/v2/status"`);
+    const url = new URL(`/api/v2/status`, this.host);
+
+    this.log.print(`fetching "${url.pathname}"`);
     const backoff = this.#backoffStrategy();
     const { responseBodyBytes } = await this.#requestAndRetry({
       backoff,
-      requestFn: () =>
-        this.#fetch('' + new URL(`/api/v2/status`, this.host), { headers, ...this.#fetchOptions }),
+      requestFn: () => this.#fetch(url, { headers, ...this.#fetchOptions }),
       tries: 0,
     });
     return cbor.decode(responseBodyBytes);

@@ -111,16 +111,16 @@ test('call', async () => {
   // For test stability, don't directly compare requestIds
   expect(requestId).toBeTruthy();
 
-  const call1 = calls[0][0];
-  const call2 = calls[0][1];
-  expect(call1).toBe(`http://127.0.0.1/api/v3/canister/${canisterId.toText()}/call`);
-  expect(call2.method).toEqual('POST');
+  const callUrl = calls[0][0];
+  const callParams = calls[0][1];
+  expect(callUrl.toString()).toBe(`http://127.0.0.1/api/v3/canister/${canisterId.toText()}/call`);
+  expect(callParams.method).toEqual('POST');
 
   // Get the body from the request and ensure nonce matches
-  const requestBody = cbor.decode<Envelope<CallRequest>>(call2.body);
+  const requestBody = cbor.decode<Envelope<CallRequest>>(callParams.body);
   expect(Array.from(requestBody.content.nonce!)).toHaveLength(Array.from(nonce).length);
 
-  expect(call2.headers['Content-Type']).toEqual('application/cbor');
+  expect(callParams.headers['Content-Type']).toEqual('application/cbor');
 });
 
 test.todo('query');
@@ -354,7 +354,9 @@ test('use anonymous principal if unspecified', async () => {
   // For test stability, don't directly compare requestIds
   expect(requestId).toBeTruthy();
 
-  expect(calls[0][0]).toBe(`http://127.0.0.1/api/v3/canister/${canisterId.toText()}/call`);
+  expect(calls[0][0].toString()).toBe(
+    `http://127.0.0.1/api/v3/canister/${canisterId.toText()}/call`,
+  );
   const call2 = calls[0][1];
   expect(call2.method).toEqual('POST');
 

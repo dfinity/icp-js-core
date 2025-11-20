@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- refactor(agent): only declare IC URLs once in the `HttpAgent` class.
+
 ## [4.2.3] - 2025-11-19
 
 - docs: fix next button link in guide pages
