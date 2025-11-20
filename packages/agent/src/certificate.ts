@@ -666,6 +666,35 @@ export function lookup_subtree(path: NodePath, tree: HashTree): SubtreeLookupRes
 }
 
 /**
+ * Ported from https://github.com/dfinity/response-verification/blob/a4b8b46bcf93f44ac30b5698e60bfd245e33ad4e/packages/ic-certification/src/hash_tree/mod.rs#L527-L541.
+ * @param path the path to prepend to the paths of the tree
+ * @param tree the tree to list the paths of
+ * @returns the paths of the tree
+ */
+function list_paths(path: Array<NodeLabel>, tree: HashTree): Array<Array<NodeLabel>> {
+  switch (tree[0]) {
+    case NodeType.Empty | NodeType.Pruned: {
+      return [];
+    }
+    case NodeType.Leaf: {
+      return [path];
+    }
+    case NodeType.Fork: {
+      return list_paths(path, tree[1]).concat(list_paths(path, tree[2]));
+    }
+    case NodeType.Labeled: {
+      const label = tree[1];
+      const subtree = tree[2];
+      const pathWithLabel = [...path, label];
+      return list_paths(pathWithLabel, subtree);
+    }
+    default: {
+      throw UNREACHABLE_ERROR;
+    }
+  }
+}
+
+/**
  * If the tree is a fork, flatten it into an array of trees
  * @param {HashTree} t the tree to flatten
  * @returns {HashTree[]} the flattened tree
