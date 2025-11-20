@@ -159,35 +159,35 @@ describe('makeActor', () => {
     const { calls } = mockFetch.mock;
 
     expect(calls.length).toBe(5);
-    expect(calls[0]).toEqual([
+    expect(calls[0][0].toString()).toEqual(
       `http://127.0.0.1/api/v2/canister/${canisterId.toText()}/call`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/cbor',
-        },
-        body: cbor.encode(expectedCallRequest),
+    );
+    expect(calls[0][1]).toEqual({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/cbor',
       },
-    ]);
+      body: cbor.encode(expectedCallRequest),
+    });
 
-    expect(calls[1]).toEqual([
+    expect(calls[1][0].toString()).toEqual(
       `http://127.0.0.1/api/v2/canister/${canisterId.toText()}/read_state`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/cbor',
-        },
-        body: cbor.encode({
-          content: {
-            request_type: 'request_status',
-            request_id: expectedCallRequestId,
-            ingress_expiry: Expiry.fromDeltaInMilliseconds(300000),
-          },
-        }),
+    );
+    expect(calls[1][1]).toEqual({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/cbor',
       },
-    ]);
+      body: cbor.encode({
+        content: {
+          request_type: 'request_status',
+          request_id: expectedCallRequestId,
+          ingress_expiry: Expiry.fromDeltaInMilliseconds(300000),
+        },
+      }),
+    });
 
-    expect(calls[2][0]).toBe('http://127.0.0.1/api/v1/read');
+    expect(calls[2][0].toString()).toBe('http://127.0.0.1/api/v1/read');
     expect(calls[2][1]).toEqual({
       method: 'POST',
       headers: {
@@ -202,7 +202,7 @@ describe('makeActor', () => {
       }),
     });
 
-    expect(calls[3][0]).toBe('http://127.0.0.1/api/v1/read');
+    expect(calls[3][0].toString()).toBe('http://127.0.0.1/api/v1/read');
     expect(calls[3][1]).toEqual({
       method: 'POST',
       headers: {
@@ -217,7 +217,7 @@ describe('makeActor', () => {
       }),
     });
 
-    expect(calls[4][0]).toBe('http://127.0.0.1/api/v1/read');
+    expect(calls[4][0].toString()).toBe('http://127.0.0.1/api/v1/read');
     expect(calls[4][1]).toEqual({
       method: 'POST',
       headers: {
@@ -232,7 +232,7 @@ describe('makeActor', () => {
       }),
     });
 
-    expect(calls[5][0]).toBe('http://127.0.0.1/api/v1/call');
+    expect(calls[5][0].toString()).toBe('http://127.0.0.1/api/v1/call');
     expect(calls[5][1]).toEqual({
       method: 'POST',
       headers: {
@@ -253,8 +253,8 @@ describe('makeActor', () => {
       })),
     );
 
-    const mockFetch = jest.fn(resource => {
-      if (resource.endsWith('/call')) {
+    const mockFetch = jest.fn((resource: URL) => {
+      if (resource.toString().endsWith('/call')) {
         return Promise.resolve(
           new Response(null, {
             status: 202,
