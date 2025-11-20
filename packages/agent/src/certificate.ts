@@ -671,6 +671,7 @@ export function lookup_subtree(path: NodePath, tree: HashTree): SubtreeLookupRes
  * @param tree the tree to list the paths of
  * @returns the paths of the tree
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function list_paths(path: Array<NodeLabel>, tree: HashTree): Array<Array<NodeLabel>> {
   switch (tree[0]) {
     case NodeType.Empty | NodeType.Pruned: {
