@@ -2,7 +2,8 @@
 
 ## [Unreleased]
 
-- refactor(agent): only declare IC URLs once in the `HttpAgent` class.
+- refactor(agent): only declare IC URLs once in the `HttpAgent` class
+- refactor(agent): split inner logic of `check_canister_ranges` into functions
 
 ## [4.2.3] - 2025-11-19
 
