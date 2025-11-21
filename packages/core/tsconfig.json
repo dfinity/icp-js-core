@@ -8,6 +8,7 @@
     "paths": {
       "#agent": ["agent/index.ts"],
       "#candid": ["candid/index.ts"],
+      "#identity": ["identity/index.ts"],
       "#principal": ["principal/index.ts"]
     }
   },
@@ -15,7 +16,6 @@
   "exclude": ["./src/**/*.test.ts"],
   "references": [
     { "path": "../auth-client" },
-    { "path": "../identity" },
     { "path": "../identity-secp256k1" }
   ]
 }
