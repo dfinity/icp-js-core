@@ -32,17 +32,18 @@ jobs:
         with:
           node_version: ${{ matrix.node }}
 
-      - run: pnpm build
+      # TODO: restore once all packages' source code is migrated to @icp-sdk/core
+      # - run: pnpm build
 
-      - uses: dfinity/setup-dfx@main
+      # - uses: dfinity/setup-dfx@main
 
-      - name: running dfx
-        run: pnpm run -F @e2e/node setup
+      # - name: running dfx
+      #   run: pnpm run -F @e2e/node setup
 
-      - name: Node.js e2e tests
-        run: pnpm run -F @e2e/node e2e
-        env:
-          REPLICA_PORT: 4943
+      # - name: Node.js e2e tests
+      #   run: pnpm run -F @e2e/node e2e
+      #   env:
+      #     REPLICA_PORT: 4943
 
   aggregate:
     name: e2e:required

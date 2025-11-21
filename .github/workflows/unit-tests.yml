@@ -32,7 +32,7 @@ jobs:
         with:
           node_version: ${{ matrix.node }}
 
-      - run: pnpm build
+      - run: pnpm build:packages
 
       - run: pnpm test
 

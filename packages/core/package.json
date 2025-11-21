@@ -93,5 +93,8 @@
       "require": "./lib/cjs/principal/index.js",
       "default": "./lib/esm/principal/index.js"
     }
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.8.0"
   }
 }
