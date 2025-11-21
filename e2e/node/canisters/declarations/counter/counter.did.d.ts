@@ -1,4 +1,4 @@
-import type { ActorMethod } from '@dfinity/agent';
+import type { ActorMethod } from '@icp-sdk/core/agent';
 
 export interface _SERVICE {
   greet: ActorMethod<[string], string>;

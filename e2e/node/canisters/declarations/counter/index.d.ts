@@ -1,5 +1,11 @@
-import type { ActorSubclass, HttpAgentOptions, ActorConfig, Agent, Actor } from '@dfinity/agent';
-import type { Principal } from '@dfinity/principal';
+import type {
+  ActorSubclass,
+  HttpAgentOptions,
+  ActorConfig,
+  Agent,
+  Actor,
+} from '@icp-sdk/core/agent';
+import type { Principal } from '@icp-sdk/core/principal';
 import type { IDL } from '@icp-sdk/core/candid';
 
 import { type _SERVICE } from './counter.did.ts';
