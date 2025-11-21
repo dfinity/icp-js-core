@@ -249,6 +249,9 @@ importers:
       '@dfinity/candid':
         specifier: workspace:*
         version: link:../candid
+      '@dfinity/cbor':
+        specifier: ^0.2.2
+        version: 0.2.2
       '@dfinity/identity':
         specifier: workspace:*
         version: link:../identity
@@ -258,6 +261,9 @@ importers:
       '@dfinity/principal':
         specifier: workspace:*
         version: link:../principal
+      '@noble/curves':
+        specifier: ^1.9.2
+        version: 1.9.6
       '@noble/hashes':
         specifier: ^1.8.0
         version: 1.8.0
