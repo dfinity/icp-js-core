@@ -15,6 +15,7 @@ const baseConfig = {
     '^@dfinity/identity$': '<rootDir>/packages/identity/src/index.ts',
     '^@dfinity/identity-secp256k1$': '<rootDir>/packages/identity-secp256k1/src/index.ts',
     '^@dfinity/principal$': '<rootDir>/packages/core/src/principal/index.ts',
+    '#principal': '<rootDir>/packages/core/src/principal/index.ts',
   },
 };
 
