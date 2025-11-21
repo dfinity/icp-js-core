@@ -4,9 +4,10 @@
     "composite": true,
     "baseUrl": "./src",
     "rootDir": "./src",
-    "outDir": "./lib/esm"
+    "outDir": "./lib/esm",
+    "moduleResolution": "node16"
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["./src/**/*.test.ts"],
-  "references": [{ "path": "../agent" }, { "path": "../principal" }, { "path": "../candid" }]
+  "references": [{ "path": "../core" }]
 }

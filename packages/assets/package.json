@@ -35,6 +35,7 @@
     "api",
     "sdk"
   ],
+  "type": "module",
   "browser": {
     ".": "./lib/esm/index.js",
     "fs": "./lib/esm/utils/browserShim.js",
@@ -46,22 +47,18 @@
   "exports": {
     "types": "./lib/esm/index.d.ts",
     "import": "./lib/esm/index.js",
-    "node": "./lib/cjs/index.js",
-    "require": "./lib/cjs/index.js",
     "default": "./lib/esm/index.js"
   },
   "scripts": {
-    "build": "tsc -b && tsc -p tsconfig.cjs.json && cp src/package.json lib/esm/package.json",
+    "build": "tsc -b",
     "build:watch": "tsc -b --watch",
     "bundle": "esbuild --bundle src/index.ts --outfile=dist/index.js --platform=browser",
-    "attw": "attw --pack .",
+    "attw": "attw --pack . --profile esm-only",
     "test": "jest",
     "test:coverage": "jest --collectCoverage"
   },
   "peerDependencies": {
-    "@dfinity/agent": "workspace:*",
-    "@dfinity/principal": "workspace:*",
-    "@dfinity/candid": "workspace:*",
+    "@icp-sdk/core": "workspace:^",
     "@noble/hashes": "^1.8.0"
   },
   "dependencies": {

@@ -2,7 +2,7 @@ import { type Readable } from './readable.ts';
 import mime from 'mime/lite.js';
 import fs from 'fs';
 import path from 'path';
-import { uint8FromBufLike } from '@dfinity/agent';
+import { uint8FromBufLike } from '@icp-sdk/core/agent';
 
 export class ReadablePath implements Readable {
   private readonly _path: string;

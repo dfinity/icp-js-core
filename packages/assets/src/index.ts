@@ -10,8 +10,8 @@ import {
   lookupResultToBuffer,
   reconstruct,
   LookupPathStatus,
-} from '@dfinity/agent';
-import { lebDecode, PipeArrayBuffer, compare } from '@dfinity/candid';
+} from '@icp-sdk/core/agent';
+import { lebDecode, PipeArrayBuffer, compare } from '@icp-sdk/core/candid';
 import { type AssetsCanisterRecord, getAssetsCanister } from './canisters/assets.ts';
 import { sha256 } from '@noble/hashes/sha2';
 import { type BatchOperationKind } from './canisters/assets_service.ts';
