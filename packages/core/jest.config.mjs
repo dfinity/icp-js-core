@@ -8,7 +8,10 @@ const config = {
   moduleDirectories: ['node_modules'],
   collectCoverageFrom: ['src/**/*.{ts,tsx}'],
   rootDir: '../..',
-  projects: [getProjectConfig('principal')],
+  projects: [
+    getProjectConfig('candid'),
+    getProjectConfig('principal'),
+  ],
 };
 
 /**

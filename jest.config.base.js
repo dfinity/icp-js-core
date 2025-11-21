@@ -11,10 +11,12 @@ const baseConfig = {
     '^@dfinity/agent$': '<rootDir>/packages/agent/src/index.ts',
     '^@dfinity/assets$': '<rootDir>/packages/assets/src/index.ts',
     '^@dfinity/auth-client$': '<rootDir>/packages/auth-client/src/index.ts',
-    '^@dfinity/candid$': '<rootDir>/packages/candid/src/index.ts',
+    '^@dfinity/candid$': '<rootDir>/packages/core/src/candid/index.ts',
     '^@dfinity/identity$': '<rootDir>/packages/identity/src/index.ts',
     '^@dfinity/identity-secp256k1$': '<rootDir>/packages/identity-secp256k1/src/index.ts',
     '^@dfinity/principal$': '<rootDir>/packages/core/src/principal/index.ts',
+    '#candid': '<rootDir>/packages/core/src/candid/index.ts',
+    '#principal': '<rootDir>/packages/core/src/principal/index.ts',
   },
 };
 
