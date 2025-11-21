@@ -243,24 +243,9 @@ importers:
 
   packages/core:
     dependencies:
-      '@dfinity/agent':
-        specifier: workspace:*
-        version: link:../agent
-      '@dfinity/candid':
-        specifier: workspace:*
-        version: link:../candid
       '@dfinity/cbor':
         specifier: ^0.2.2
         version: 0.2.2
-      '@dfinity/identity':
-        specifier: workspace:*
-        version: link:../identity
-      '@dfinity/identity-secp256k1':
-        specifier: workspace:*
-        version: link:../identity-secp256k1
-      '@dfinity/principal':
-        specifier: workspace:*
-        version: link:../principal
       '@noble/curves':
         specifier: ^1.9.2
         version: 1.9.6
