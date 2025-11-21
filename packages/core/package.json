@@ -101,6 +101,7 @@
     "@noble/hashes": "^1.8.0"
   },
   "devDependencies": {
+    "@peculiar/webcrypto": "^1.5.0",
     "tsc-alias": "^1.8.16"
   }
 }
