@@ -52,7 +52,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "build:packages": "pnpm -F './packages/*' -F '!./packages/migrate' build",
-    "bundle": "pnpm build:packages && pnpm -r bundle",
+    "bundle": "pnpm build:packages && pnpm -F './packages/{assets,core}' bundle",
     "e2e": "pnpm -r e2e",
     "test": "pnpm -r -F './packages/{assets,core}' test",
     "publish:dfinity-packages": "pnpm -r -F './packages/{agent,assets,candid,identity,identity-secp256k1,principal}' publish",
@@ -76,38 +76,38 @@
   "license": "Apache-2.0",
   "size-limit": [
     {
-      "name": "@dfinity/agent",
-      "path": "./packages/agent/dist/index.js",
-      "limit": "52 kB"
-    },
-    {
       "name": "@dfinity/assets",
       "path": "./packages/assets/dist/index.js",
       "limit": "57 kB"
     },
     {
-      "name": "@dfinity/candid",
-      "path": "./packages/candid/dist/index.js",
+      "name": "@icp-sdk/core",
+      "path": "./packages/core/dist/index.js",
+      "limit": "100 b"
+    },
+    {
+      "name": "@icp-sdk/core/agent",
+      "path": "./packages/core/dist/agent/index.js",
+      "limit": "52 kB"
+    },
+    {
+      "name": "@icp-sdk/core/candid",
+      "path": "./packages/core/dist/candid/index.js",
       "limit": "15 kb"
     },
     {
-      "name": "@icp-sdk/core",
-      "path": "./packages/core/dist/index.js",
-      "limit": "250 b"
-    },
-    {
-      "name": "@dfinity/identity",
-      "path": "./packages/identity/dist/index.js",
+      "name": "@icp-sdk/core/identity",
+      "path": "./packages/core/dist/identity/index.js",
       "limit": "25 kB"
     },
     {
-      "name": "@dfinity/identity-secp256k1",
-      "path": "./packages/identity-secp256k1/dist/index.js",
+      "name": "@icp-sdk/core/identity/secp256k1",
+      "path": "./packages/core/dist/identity/secp256k1/index.js",
       "limit": "40 kB"
     },
     {
-      "name": "@dfinity/principal",
-      "path": "./packages/principal/dist/index.js",
+      "name": "@icp-sdk/core/principal",
+      "path": "./packages/core/dist/principal/index.js",
       "limit": "5 kB"
     }
   ],
