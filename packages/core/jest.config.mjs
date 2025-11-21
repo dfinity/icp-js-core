@@ -11,6 +11,7 @@ const config = {
   projects: [
     getProjectConfig('agent', { fakeTimers: { enableGlobally: true } }),
     getProjectConfig('candid'),
+    getProjectConfig('identity'),
     getProjectConfig('principal'),
   ],
 };
