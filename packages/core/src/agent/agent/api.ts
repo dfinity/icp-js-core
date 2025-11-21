@@ -252,7 +252,7 @@ export interface Agent {
    * If an application needs to replace an identity under certain conditions, an `Agent` may expose a `replaceIdentity` method.
    * Invoking this method will set the inner identity used by the `Agent` to a newly provided identity.
    *
-   * A use case for this would be - after authenticating using `@dfinity/auth-client`, you can replace the `AnonymousIdentity` of your `Actor` with a `DelegationIdentity`.
+   * A use case for this would be - after authenticating using `@icp-sdk/auth/client`, you can replace the `AnonymousIdentity` of your `Actor` with a `DelegationIdentity`.
    *
    * ```ts
    * Actor.agentOf(defaultActor).replaceIdentity(await authClient.getIdentity());
