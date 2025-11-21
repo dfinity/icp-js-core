@@ -190,15 +190,9 @@ importers:
 
   packages/assets:
     dependencies:
-      '@dfinity/agent':
-        specifier: workspace:*
-        version: link:../agent
-      '@dfinity/candid':
-        specifier: workspace:*
-        version: link:../candid
-      '@dfinity/principal':
-        specifier: workspace:*
-        version: link:../principal
+      '@icp-sdk/core':
+        specifier: workspace:^
+        version: link:../core
       '@noble/hashes':
         specifier: ^1.8.0
         version: 1.8.0

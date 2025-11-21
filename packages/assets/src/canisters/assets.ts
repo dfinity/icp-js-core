@@ -1,4 +1,4 @@
-import { Actor, type ActorConfig, type ActorSubclass } from '@dfinity/agent';
+import { Actor, type ActorConfig, type ActorSubclass } from '@icp-sdk/core/agent';
 import { idlFactory } from './assets_idl.ts';
 import type _SERVICE from './assets_service.ts';
 
