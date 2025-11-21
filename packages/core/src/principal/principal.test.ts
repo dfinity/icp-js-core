@@ -1,5 +1,4 @@
-import { Principal } from './principal.ts';
-import { jsonReviver } from '@dfinity/utils';
+import { JSON_KEY_PRINCIPAL, Principal } from './principal.ts';
 
 describe('Principal', () => {
   it('encodes properly', () => {
@@ -58,7 +57,10 @@ describe('Principal', () => {
     const stringified = JSON.stringify(principal);
     expect(stringified).toEqual('{"__principal__":"ryjl3-tyaaa-aaaaa-aaaba-cai"}');
 
-    expect(JSON.parse(stringified, jsonReviver)).toEqual(principal);
+    // round trips
+    const parsed = JSON.parse(stringified);
+    expect(parsed[JSON_KEY_PRINCIPAL]).toEqual(principal.toText());
+    expect(Principal.fromText(stringified)).toEqual(principal);
   });
 
   it('serializes from JSON string', () => {

@@ -4,6 +4,7 @@
 
 - refactor(agent): only declare IC URLs once in the `HttpAgent` class
 - refactor(agent): split inner logic of `check_canister_ranges` into functions
+- test(principal): remove unneeded dependency
 
 ## [4.2.3] - 2025-11-19
 
@@ -58,6 +59,7 @@
 Publishes the new `@icp-sdk/core` package.
 
 This package unifies the following packages:
+
 - `@dfinity/agent`
 - `@dfinity/candid`
 - `@dfinity/identity`

@@ -66,8 +66,7 @@
     "prepare": "husky install",
     "prettier:check": "npx -p prettier -p pretty-quick pretty-quick --check --branch main",
     "prettier:format": "npx -p prettier -p pretty-quick pretty-quick --branch main",
-    "postversion": "pnpm prettier:format",
-    "update-management-idl": "pnpm dlx tsx bin/update-management-idl.ts"
+    "postversion": "pnpm prettier:format"
   },
   "repository": {
     "type": "git",
