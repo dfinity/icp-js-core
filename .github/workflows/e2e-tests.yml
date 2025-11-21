@@ -32,11 +32,11 @@ jobs:
         with:
           node_version: ${{ matrix.node }}
 
-      - run: pnpm build
-
-      - uses: dfinity/setup-dfx@main
-
       # TODO: restore once all packages' source code is migrated to @icp-sdk/core
+      # - run: pnpm build
+
+      # - uses: dfinity/setup-dfx@main
+
       # - name: running dfx
       #   run: pnpm run -F @e2e/node setup
 
