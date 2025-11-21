@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- feat(core)!: removes `@dfinity/{agent,candid,identity,identity-secp256k1,principal}` peer dependencies and moves their source code to the `@icp-sdk/core` package.
 - refactor(agent): only declare IC URLs once in the `HttpAgent` class
 - refactor(agent): split inner logic of `check_canister_ranges` into functions
 - test(principal): remove unneeded dependency
