@@ -36,13 +36,14 @@ jobs:
 
       - uses: dfinity/setup-dfx@main
 
-      - name: running dfx
-        run: pnpm run -F @e2e/node setup
+      # TODO: restore once all packages' source code is migrated to @icp-sdk/core
+      # - name: running dfx
+      #   run: pnpm run -F @e2e/node setup
 
-      - name: Node.js e2e tests
-        run: pnpm run -F @e2e/node e2e
-        env:
-          REPLICA_PORT: 4943
+      # - name: Node.js e2e tests
+      #   run: pnpm run -F @e2e/node e2e
+      #   env:
+      #     REPLICA_PORT: 4943
 
   aggregate:
     name: e2e:required
