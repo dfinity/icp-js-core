@@ -1,6 +1,6 @@
 import { baseConfig } from '../../jest.config.base.js';
 
-const CORE_PACKAGE_NAME = 'core';
+const CORE_PACKAGE_PATH = `<rootDir>/packages/core/src`;
 
 /** @type {import('jest').Config} */
 const config = {
@@ -28,7 +28,13 @@ function getProjectConfig(packageName, options = {}) {
     ...baseConfig,
     rootDir: '../..',
     displayName: packageName,
-    roots: [`<rootDir>/packages/${CORE_PACKAGE_NAME}/src/${packageName}`],
+    moduleNameMapper: {
+      '#agent': `${CORE_PACKAGE_PATH}/agent/index.ts`,
+      '#candid': `${CORE_PACKAGE_PATH}/candid/index.ts`,
+      '#identity': `${CORE_PACKAGE_PATH}/identity/index.ts`,
+      '#principal': `${CORE_PACKAGE_PATH}/principal/index.ts`,
+    },
+    roots: [`${CORE_PACKAGE_PATH}/${packageName}`],
     ...options,
   };
 }
