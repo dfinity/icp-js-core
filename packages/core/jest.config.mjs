@@ -9,8 +9,8 @@ const config = {
   collectCoverageFrom: ['src/**/*.{ts,tsx}'],
   rootDir: '../..',
   projects: [
-    getProjectConfig('principal'),
     getProjectConfig('candid'),
+    getProjectConfig('principal'),
   ],
 };
 
