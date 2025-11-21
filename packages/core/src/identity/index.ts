@@ -10,12 +10,10 @@ export { WebAuthnIdentity } from './identity/webauthn.ts';
 export { wrapDER, unwrapDER, DER_COSE_OID, ED25519_OID } from '#agent';
 
 /**
- * @deprecated due to size of dependencies. Use `@dfinity/identity-secp256k1` instead.
+ * @deprecated due to size of dependencies. Use `@icp-sdk/identity/secp256k1` instead.
  */
 export class Secp256k1KeyIdentity {
   constructor() {
-    throw new Error(
-      'Secp256k1KeyIdentity has been moved to a new repo: @dfinity/identity-secp256k1',
-    );
+    throw new Error('Secp256k1KeyIdentity is available in @icp-sdk/identity/secp256k1');
   }
 }
