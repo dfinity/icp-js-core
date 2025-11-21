@@ -4,7 +4,10 @@
     "composite": true,
     "baseUrl": "./src",
     "rootDir": "./src",
-    "outDir": "./lib/esm"
+    "outDir": "./lib/esm",
+    "paths": {
+      "#principal": ["principal/index.ts"]
+    }
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["./src/**/*.test.ts"],
@@ -13,7 +16,6 @@
     { "path": "../auth-client" },
     { "path": "../candid" },
     { "path": "../identity" },
-    { "path": "../identity-secp256k1" },
-    { "path": "../principal" },
+    { "path": "../identity-secp256k1" }
   ]
 }
