@@ -10,13 +10,12 @@
     "setup": "dfx killall; dfx start --background --clean; dfx deploy; dfx canister call assets authorize '(principal \"n7obp-cx27z-e4ytc-ipt7n-urffz-txqa5-el2vn-7vpqc-jjoh3-wrob6-bqe\")'"
   },
   "dependencies": {
+    "@dfinity/assets": "workspace:*",
     "@icp-sdk/core": "workspace:*",
-    "@dfinity/agent": "workspace:*",
-    "@dfinity/assets": "workspace:*"
+    "@noble/curves": "^1.9.2",
+    "@noble/hashes": "^1.8.0"
   },
   "devDependencies": {
-    "@noble/curves": "^1.9.2",
-    "@noble/hashes": "^1.8.0",
     "@tsconfig/node22": "^22.0.2",
     "@types/express": "^5.0.2",
     "express": "^5.1.0"

@@ -140,22 +140,19 @@ importers:
 
   e2e/node:
     dependencies:
-      '@dfinity/agent':
-        specifier: workspace:*
-        version: link:../../packages/agent
       '@dfinity/assets':
         specifier: workspace:*
         version: link:../../packages/assets
       '@icp-sdk/core':
         specifier: workspace:*
         version: link:../../packages/core
-    devDependencies:
       '@noble/curves':
         specifier: ^1.9.2
         version: 1.9.6
       '@noble/hashes':
         specifier: ^1.8.0
         version: 1.8.0
+    devDependencies:
       '@tsconfig/node22':
         specifier: ^22.0.2
         version: 22.0.2
