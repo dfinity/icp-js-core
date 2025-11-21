@@ -7,6 +7,7 @@
 
 !src/**/*.ts
 src/**/*.test.ts
+src/**/*.test.json
 src/package.json
 
 !lib/**
