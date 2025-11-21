@@ -13,9 +13,5 @@
     }
   },
   "include": ["./src/**/*.ts"],
-  "exclude": ["./src/**/*.test.ts"],
-  "references": [
-    { "path": "../auth-client" },
-    { "path": "../identity-secp256k1" }
-  ]
+  "exclude": ["./src/**/*.test.ts"]
 }
