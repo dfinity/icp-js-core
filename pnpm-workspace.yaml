@@ -3,7 +3,6 @@ packages:
   - e2e/node
   - packages/agent
   - packages/assets
-  - packages/auth-client
   - packages/candid
   - packages/core
   - packages/identity

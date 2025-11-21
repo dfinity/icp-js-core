@@ -14,7 +14,7 @@ const webAuthnIdentity = await WebAuthnIdentity.create();
 
 ### DelegationIdentity
 
-The `DelegationIdentity` is typically generated using the [@dfinity/auth-client](https://npmjs.com/package/@dfinity/auth-client) package.
+The `DelegationIdentity` is typically generated using the [`@icp-sdk/auth`](https://js.icp.build/auth/latest/) package.
 
 ### PartialIdentity
 
