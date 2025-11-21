@@ -33,7 +33,7 @@
     "sdk"
   ],
   "scripts": {
-    "build": "tsc -b && tsc -p tsconfig.cjs.json && cp src/package.json lib/esm/package.json",
+    "build": "tsc -b && tsc -p tsconfig.cjs.json && tsc-alias && tsc-alias -p tsconfig.cjs.json && cp src/package.json lib/esm/package.json",
     "build:watch": "tsc -b --watch",
     "bundle": "esbuild --bundle src/index.ts --outfile=dist/index.js --platform=browser",
     "attw": "attw --pack . --profile node16",
@@ -97,5 +97,8 @@
   },
   "dependencies": {
     "@noble/hashes": "^1.8.0"
+  },
+  "devDependencies": {
+    "tsc-alias": "^1.8.16"
   }
 }
