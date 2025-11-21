@@ -6,6 +6,7 @@
     "rootDir": "./src",
     "outDir": "./lib/esm",
     "paths": {
+      "#candid": ["candid/index.ts"],
       "#principal": ["principal/index.ts"]
     }
   },
@@ -14,7 +15,6 @@
   "references": [
     { "path": "../agent" },
     { "path": "../auth-client" },
-    { "path": "../candid" },
     { "path": "../identity" },
     { "path": "../identity-secp256k1" }
   ]
