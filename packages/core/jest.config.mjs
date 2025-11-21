@@ -12,6 +12,7 @@ const config = {
     getProjectConfig('agent', { fakeTimers: { enableGlobally: true } }),
     getProjectConfig('candid'),
     getProjectConfig('identity'),
+    getProjectConfig('identity/secp256k1'),
     getProjectConfig('principal'),
   ],
 };
