@@ -14,7 +14,7 @@ import { RequestId, requestIdOf } from '../../request_id.ts';
 
 import { JSDOM } from 'jsdom';
 import { AnonymousIdentity, SignIdentity, Signature, uint8FromBufLike } from '../../index.ts';
-import { Ed25519KeyIdentity } from '@dfinity/identity';
+import { Ed25519KeyIdentity } from '#identity';
 import {
   AgentError,
   HttpErrorCode,

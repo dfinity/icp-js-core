@@ -1,8 +1,5 @@
 import { randomNumber } from './random.ts';
-import { Crypto } from '@peculiar/webcrypto';
 import { randomInt } from 'node:crypto';
-
-const webcrypto = new Crypto();
 
 function isInteger(num: number) {
   if (typeof num !== 'number') return false;
@@ -31,7 +28,7 @@ describe('randomNumber', () => {
   it('should use window.crypto if available', () => {
     global.window = {
       crypto: {
-        getRandomValues: webcrypto.getRandomValues,
+        getRandomValues: globalThis.crypto.getRandomValues,
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
@@ -42,7 +39,7 @@ describe('randomNumber', () => {
   });
   it('should use globabl webcrypto if available', () => {
     global.crypto = {
-      getRandomValues: webcrypto.getRandomValues,
+      getRandomValues: globalThis.crypto.getRandomValues,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
     const result = randomNumber();
