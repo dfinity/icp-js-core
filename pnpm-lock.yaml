@@ -207,28 +207,6 @@ importers:
         specifier: ^3.0.2
         version: 3.0.3
 
-  packages/auth-client:
-    dependencies:
-      '@dfinity/agent':
-        specifier: workspace:*
-        version: link:../agent
-      '@dfinity/identity':
-        specifier: workspace:*
-        version: link:../identity
-      '@dfinity/principal':
-        specifier: workspace:*
-        version: link:../principal
-      idb:
-        specifier: ^7.0.2
-        version: 7.1.1
-    devDependencies:
-      '@dfinity/candid':
-        specifier: workspace:*
-        version: link:../candid
-      jest-environment-jsdom:
-        specifier: ^29.7.0
-        version: 29.7.0
-
   packages/candid:
     dependencies:
       '@dfinity/principal':
@@ -2638,9 +2616,6 @@ packages:
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
-
-  idb@7.1.1:
-    resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
 
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
@@ -7333,8 +7308,6 @@ snapshots:
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
-
-  idb@7.1.1: {}
 
   ignore@5.3.2: {}
 
