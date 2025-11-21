@@ -36,7 +36,8 @@
     "build": "tsc -b && tsc -p tsconfig.cjs.json && cp src/package.json lib/esm/package.json",
     "build:watch": "tsc -b --watch",
     "bundle": "esbuild --bundle src/index.ts --outfile=dist/index.js --platform=browser",
-    "attw": "attw --pack . --profile node16"
+    "attw": "attw --pack . --profile node16",
+    "test": "jest"
   },
   "peerDependencies": {
     "@dfinity/agent": "workspace:*",
