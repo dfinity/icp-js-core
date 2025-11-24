@@ -44,6 +44,7 @@ enum IDLTypeIds {
 }
 
 const magicNumber = 'DIDL';
+const magicNumberArray = new TextEncoder().encode(magicNumber);
 const toReadableString_max = 400; // will not display arguments after 400chars. Makes sure 2mb blobs don't get inside the error
 
 function zipWith<TX, TY, TR>(xs: TX[], ys: TY[], f: (a: TX, b: TY) => TR): TR[] {
@@ -1955,7 +1956,6 @@ export function encode(argTypes: Array<Type<any>>, args: any[]): Uint8Array {
   const typeTable = new TypeTable();
   argTypes.forEach(t => t.buildTypeTable(typeTable));
 
-  const magic = new TextEncoder().encode(magicNumber);
   const table = typeTable.encode();
   const len = lebEncode(args.length);
   const typs = concat(...argTypes.map(t => t.encodeType(typeTable)));
@@ -1972,7 +1972,7 @@ export function encode(argTypes: Array<Type<any>>, args: any[]): Uint8Array {
     }),
   );
 
-  return concat(magic, table, len, typs, vals);
+  return concat(magicNumberArray, table, len, typs, vals);
 }
 
 /**
