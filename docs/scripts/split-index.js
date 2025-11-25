@@ -60,13 +60,19 @@ function processSubmodule(submodulePath) {
   console.log(`  Updated ${submoduleName}/api/index.md`);
 }
 
-const submodules = readdirSync(LIBS_DIR);
+function main() {
+  if (!existsSync(LIBS_DIR)) {
+    console.warn(`${LIBS_DIR} does not exist`);
+    return;
+  }
 
-for (const submodule of submodules) {
-  const submodulePath = join(LIBS_DIR, submodule);
-  
-  if (statSync(submodulePath).isDirectory()) {
-    processSubmodule(submodulePath);
+  const submodules = readdirSync(LIBS_DIR);
+  for (const submodule of submodules) {
+    const submodulePath = join(LIBS_DIR, submodule);
+    if (statSync(submodulePath).isDirectory()) {
+      processSubmodule(submodulePath);
+    }
   }
 }
 
+main();
