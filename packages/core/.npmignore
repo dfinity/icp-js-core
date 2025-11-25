@@ -1,5 +1,4 @@
-# We work with a safelist here, so block everything that's not permitted, and add packages
-# that are.
+# We work with a safelist here, so block everything that's not permitted, and add files that are.
 **
 
 !package.json
