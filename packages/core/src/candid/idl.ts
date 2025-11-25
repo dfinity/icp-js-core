@@ -1972,7 +1972,7 @@ export function encode(argTypes: Array<Type<any>>, args: any[]): Uint8Array {
     }),
   );
 
-  return concat(magicNumberArray, table, len, typs, vals);
+  return concat(magicNumberBytes, table, len, typs, vals);
 }
 
 /**
