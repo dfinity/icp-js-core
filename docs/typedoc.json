@@ -1,0 +1,33 @@
+{
+    "$schema": "https://typedoc-plugin-markdown.org/schema.json",
+    "entryPoints": [],
+    "tsconfig": "../packages/core/tsconfig.json",
+    "readme": "none",
+    "out": "src/content/tmp",
+    "plugin": [
+      "typedoc-plugin-markdown",
+      "typedoc-plugin-frontmatter",
+      "@dfinity/typedoc-plugin-icp-docs"
+    ],
+    "outputs": [
+      { "name": "markdown", "path": "src/content/tmp" },
+      { "name": "icp-docs", "path": "src/content/docs" }
+    ],
+    "projectDocuments": ["../CHANGELOG.md"],
+    "entryFileName": "index",
+    "hidePageTitle": true,
+    "hideBreadcrumbs": true,
+    "hidePageHeader": true,
+    "frontmatterGlobals": {
+      "editUrl": false,
+      "next": true,
+      "prev": true
+    },
+    "readmeFrontmatter": {
+      "editUrl": false,
+      "next": true,
+      "prev": true
+    },
+    "indexFrontmatter": {},
+    "frontmatterNamingConvention": "camelCase"
+}
