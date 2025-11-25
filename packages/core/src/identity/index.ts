@@ -1,5 +1,5 @@
 /**
- * @module api
+ * @module libs/identity
  */
 
 export * from './identity/ed25519.ts';

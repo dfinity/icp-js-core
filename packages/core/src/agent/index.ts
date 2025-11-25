@@ -1,5 +1,5 @@
 /**
- * @module api
+ * @module libs/agent
  */
 
 export * from './actor.ts';

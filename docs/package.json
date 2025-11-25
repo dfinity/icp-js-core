@@ -4,11 +4,13 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "build": "tsc -b tsconfig.libs.json && pnpm dlx tsx scripts/generate-docs.ts && pnpm dlx tsx scripts/output-docs.ts"
+    "prebuild": "rm -rf ./dist/${DOCS_VERSION:-local}/ && mkdir -p ./dist/${DOCS_VERSION:-local}/",
+    "build": "typedoc --options ./typedoc.json",
+    "postbuild": "cp -r ./src/content/docs/* ./dist/${DOCS_VERSION:-local}/"
   },
   "devDependencies": {
-    "@tsconfig/node-ts": "^23.6.1",
-    "@tsconfig/node22": "^22.0.2",
+    "@dfinity/typedoc-plugin-icp-docs": "^0.0.3",
+    "typedoc": "^0.28.10",
     "typedoc-plugin-frontmatter": "^1.3.0",
     "typedoc-plugin-markdown": "^4.8.1"
   }
