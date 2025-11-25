@@ -1,5 +1,5 @@
 /**
- * @module libs/principal
+ * @module api
  */
 
 export * from './principal.ts';

@@ -1,12 +1,6 @@
 {
     "$schema": "https://typedoc-plugin-markdown.org/schema.json",
-    "entryPoints": [
-        "../packages/core/src/agent/index.ts",
-        "../packages/core/src/candid/index.ts",
-        "../packages/core/src/identity/index.ts",
-        "../packages/core/src/identity/secp256k1/index.ts",
-        "../packages/core/src/principal/index.ts"
-    ],
+    "entryPoints": [],
     "tsconfig": "../packages/core/tsconfig.json",
     "readme": "none",
     "out": "src/content/tmp",

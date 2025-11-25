@@ -1,5 +1,5 @@
 /**
- * @module libs/candid
+ * @module api
  */
 
 export * from './candid-ui.ts';
