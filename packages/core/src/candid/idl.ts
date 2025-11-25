@@ -44,7 +44,7 @@ enum IDLTypeIds {
 }
 
 const magicNumber = 'DIDL';
-const magicNumberArray = new TextEncoder().encode(magicNumber);
+const magicNumberBytes = new TextEncoder().encode(magicNumber);
 const toReadableString_max = 400; // will not display arguments after 400chars. Makes sure 2mb blobs don't get inside the error
 
 function zipWith<TX, TY, TR>(xs: TX[], ys: TY[], f: (a: TX, b: TY) => TR): TR[] {
