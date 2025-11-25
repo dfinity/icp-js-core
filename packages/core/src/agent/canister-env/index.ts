@@ -1,6 +1,7 @@
 /**
  * @experimental
- * @module canister-env/api
+ * @see https://js.icp.build/core/latest/canister-environment
+ * @module libs/agent/canister-env/api
  */
 
 import { hexToBytes } from '@noble/hashes/utils';
