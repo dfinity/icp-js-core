@@ -2,7 +2,7 @@ import {
   type Agent,
   type HttpDetailsResponse,
   isV2ResponseBody,
-  isV3ResponseBody,
+  isV4ResponseBody,
   QueryResponseStatus,
 } from './agent/index.ts';
 import {
@@ -452,7 +452,7 @@ function _createActorMethod(
       });
       let reply: Uint8Array | undefined;
       let certificate: Certificate | undefined;
-      if (isV3ResponseBody(response.body)) {
+      if (isV4ResponseBody(response.body)) {
         if (agent.rootKey == null) {
           throw ExternalError.fromCode(new MissingRootKeyErrorCode());
         }
