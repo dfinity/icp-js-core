@@ -5,7 +5,7 @@
   "version": "0.0.1",
   "scripts": {
     "prebuild": "rm -rf ./dist/${DOCS_VERSION:-local}/ && mkdir -p ./dist/${DOCS_VERSION:-local}/",
-    "build": "typedoc --options ./typedoc.json",
+    "build": "typedoc --options ./typedoc.json && node scripts/split-index.js",
     "postbuild": "cp -r ./src/content/docs/* ./dist/${DOCS_VERSION:-local}/"
   },
   "devDependencies": {
