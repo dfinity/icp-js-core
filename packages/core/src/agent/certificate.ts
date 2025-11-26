@@ -12,7 +12,6 @@ import {
   UnknownError,
   HashTreeDecodeErrorCode,
   UNREACHABLE_ERROR,
-  MalformedLookupFoundValueErrorCode,
   MissingLookupValueErrorCode,
   UnexpectedErrorCode,
 } from './errors.ts';
@@ -815,6 +814,11 @@ function list_paths(path: Array<NodeLabel>, tree: HashTree): Array<Array<NodeLab
   }
 }
 
+type CheckCanisterRangesParams = {
+  canisterId: Principal;
+  subnetId: Principal;
+  tree: HashTree;
+};
 type CanisterRanges = Array<[Principal, Principal]>;
 
 /**
@@ -825,41 +829,36 @@ type CanisterRanges = Array<[Principal, Principal]>;
  * @param params.tree the hash tree in which to lookup the subnet's canister ranges
  * @returns {boolean} `true` if the canister is in the range, `false` otherwise
  */
-export function check_canister_ranges(params: {
-  canisterId: Principal;
-  subnetId: Principal;
-  tree: HashTree;
-}): boolean {
-  const { canisterId, subnetId, tree } = params;
-
-  const rangesLookupValue = lookupCanisterRanges(subnetId, tree);
+export function check_canister_ranges(params: CheckCanisterRangesParams): boolean {
+  const rangesLookupValue = lookupCanisterRanges(params);
   const ranges = decodeCanisterRanges(rangesLookupValue);
 
+  const { canisterId } = params;
   const canisterInRange = ranges.some(r => r[0].ltEq(canisterId) && r[1].gtEq(canisterId));
   return canisterInRange;
 }
 
-function lookupCanisterRanges(subnetId: Principal, tree: HashTree): Uint8Array {
-  const rangeLookup = lookup_path(['subnet', subnetId.toUint8Array(), 'canister_ranges'], tree);
-
-  if (rangeLookup.status !== LookupPathStatus.Found) {
+/**
+ * Lookup the canister ranges using the `/subnet/<subnet_id>/canister_ranges` path.
+ * Certificates returned by `/api/v3/canister/<effective_canister_id>/call`
+ * and `/api/v2/canister/<effective_canister_id>/read_state` use this path.
+ * @param params the parameters with which to lookup the canister ranges
+ * @param params.subnetId the subnet ID to lookup the canister ranges for
+ * @param params.tree the tree to search
+ * @returns the encoded canister ranges. Use {@link decodeCanisterRanges} to decode them.
+ * @see https://internetcomputer.org/docs/references/ic-interface-spec#http-read-state
+ */
+function lookupCanisterRanges({ subnetId, tree }: CheckCanisterRangesParams): Uint8Array {
+  const lookupResult = lookup_path(['subnet', subnetId.toUint8Array(), 'canister_ranges'], tree);
+  if (lookupResult.status !== LookupPathStatus.Found) {
     throw ProtocolError.fromCode(
       new LookupErrorCode(
         `Could not find canister ranges for subnet ${subnetId.toText()}`,
-        rangeLookup.status,
+        lookupResult.status,
       ),
     );
   }
-
-  if (!(rangeLookup.value instanceof Uint8Array)) {
-    throw ProtocolError.fromCode(
-      new MalformedLookupFoundValueErrorCode(
-        `Could not find canister ranges for subnet ${subnetId.toText()}`,
-      ),
-    );
-  }
-
-  return rangeLookup.value;
+  return lookupResult.value;
 }
 
 function decodeCanisterRanges(lookupValue: Uint8Array): CanisterRanges {
