@@ -5,7 +5,8 @@
       "../packages/core/src/agent/canister-env/index.ts",
       "../packages/core/src/candid/index.ts",
       "../packages/core/src/identity/index.ts",
-      "../packages/core/src/identity/secp256k1/index.ts"
+      "../packages/core/src/identity/secp256k1/index.ts",
+      "../packages/core/src/principal/index.ts"
     ],
     "tsconfig": "../packages/core/tsconfig.json",
     "readme": "none",
