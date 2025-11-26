@@ -1,5 +1,14 @@
 /**
- * @module api
+ * JavaScript and TypeScript module to work with Candid interfaces
+ *
+ * ## Usage
+ *
+ * ```ts
+ * import { IDL } from '@icp-sdk/core/candid';
+ * ```
+ *
+ * <!-- split here -->
+ * @module libs/candid/api
  */
 
 export * from './candid-ui.ts';
