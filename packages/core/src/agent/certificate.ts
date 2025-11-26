@@ -784,6 +784,37 @@ export function find_label(label: NodeLabel, tree: HashTree): LabelLookupResult 
   }
 }
 
+/**
+ * Ported from https://github.com/dfinity/response-verification/blob/a4b8b46bcf93f44ac30b5698e60bfd245e33ad4e/packages/ic-certification/src/hash_tree/mod.rs#L527-L541.
+ * @param path the path to prepend to the paths of the tree
+ * @param tree the tree to list the paths of
+ * @returns the paths of the tree
+ */
+// @ts-expect-error TODO: remove this once the function is used
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function list_paths(path: Array<NodeLabel>, tree: HashTree): Array<Array<NodeLabel>> {
+  switch (tree[0]) {
+    case NodeType.Empty | NodeType.Pruned: {
+      return [];
+    }
+    case NodeType.Leaf: {
+      return [path];
+    }
+    case NodeType.Fork: {
+      return list_paths(path, tree[1]).concat(list_paths(path, tree[2]));
+    }
+    case NodeType.Labeled: {
+      const label = tree[1];
+      const subtree = tree[2];
+      const pathWithLabel = [...path, label];
+      return list_paths(pathWithLabel, subtree);
+    }
+    default: {
+      throw UNREACHABLE_ERROR;
+    }
+  }
+}
+
 type CanisterRanges = Array<[Principal, Principal]>;
 
 /**
