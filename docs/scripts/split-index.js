@@ -61,11 +61,6 @@ function processSubmodule(submodulePath) {
 }
 
 function main() {
-  if (!existsSync(LIBS_DIR)) {
-    console.warn(`${LIBS_DIR} does not exist`);
-    return;
-  }
-
   const submodules = readdirSync(LIBS_DIR);
   for (const submodule of submodules) {
     const submodulePath = join(LIBS_DIR, submodule);
