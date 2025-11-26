@@ -2,7 +2,8 @@
     "$schema": "https://typedoc-plugin-markdown.org/schema.json",
     "entryPoints": [
       "../packages/core/src/agent/index.ts",
-      "../packages/core/src/agent/canister-env/index.ts"
+      "../packages/core/src/agent/canister-env/index.ts",
+      "../packages/core/src/candid/index.ts"
     ],
     "tsconfig": "../packages/core/tsconfig.json",
     "readme": "none",
