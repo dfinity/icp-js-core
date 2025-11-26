@@ -3,6 +3,7 @@
     "entryPoints": [
       "../packages/core/src/agent/index.ts",
       "../packages/core/src/agent/canister-env/index.ts",
+      "../packages/core/src/candid/index.ts",
       "../packages/core/src/principal/index.ts"
     ],
     "tsconfig": "../packages/core/tsconfig.json",
