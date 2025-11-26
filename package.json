@@ -76,11 +76,6 @@
   "license": "Apache-2.0",
   "size-limit": [
     {
-      "name": "@dfinity/assets",
-      "path": "./packages/assets/dist/index.js",
-      "limit": "57 kB"
-    },
-    {
       "name": "@icp-sdk/core",
       "path": "./packages/core/dist/index.js",
       "limit": "100 b"
