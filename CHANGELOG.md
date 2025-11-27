@@ -6,6 +6,7 @@
 - feat(assets)!: replaces `@dfinity/{agent,candid,principal}` deps with `@icp-sdk/core`
 - feat(assets)!: drops support for cjs for the `@dfinity/assets` package
 - feat(auth-client)!: `@dfinity/auth-client` has been deprecated. Migrate to [`@icp-sdk/auth`](https://js.icp.build/auth/latest/upgrading/v4)
+- feat(agent): lookup canister ranges using the `/canister_ranges/<subnet_id>/<ranges>` certificate path
 - refactor(agent): only declare IC URLs once in the `HttpAgent` class
 - refactor(agent): split inner logic of `check_canister_ranges` into functions
 - test(principal): remove unneeded dependency
