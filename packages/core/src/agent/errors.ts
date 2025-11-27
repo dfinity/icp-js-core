@@ -742,16 +742,16 @@ export class HttpErrorCode extends ErrorCode {
   }
 }
 
-export class HttpV3ApiNotSupportedErrorCode extends ErrorCode {
-  public name = 'HttpV3ApiNotSupportedErrorCode';
+export class HttpV4ApiNotSupportedErrorCode extends ErrorCode {
+  public name = 'HttpV4ApiNotSupportedErrorCode';
 
   constructor() {
     super();
-    Object.setPrototypeOf(this, HttpV3ApiNotSupportedErrorCode.prototype);
+    Object.setPrototypeOf(this, HttpV4ApiNotSupportedErrorCode.prototype);
   }
 
   public toErrorMessage(): string {
-    return 'HTTP request failed: v3 API is not supported';
+    return 'HTTP request failed: v4 API is not supported';
   }
 }
 

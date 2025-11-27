@@ -570,7 +570,7 @@ describe('makeActor', () => {
       });
     };
 
-    // Mock fetch to return a v3-style response with a dummy certificate
+    // Mock fetch to return a v4-style response with a dummy certificate
     const mockFetch = jest.fn(() => {
       const body = cbor.encode({ certificate: new Uint8Array([1, 2, 3]) });
       return Promise.resolve(
@@ -645,7 +645,7 @@ describe('makeActor', () => {
       });
     };
 
-    // Mock fetch to return a v3-style response with a dummy certificate
+    // Mock fetch to return a v4-style response with a dummy certificate
     const mockFetch = jest.fn(() => {
       const body = cbor.encode({ certificate: new Uint8Array([1, 2, 3]) });
       return Promise.resolve(
@@ -718,7 +718,7 @@ describe('makeActor', () => {
       });
     };
 
-    // Mock fetch to return a v3-style response with a dummy certificate
+    // Mock fetch to return a v4-style response with a dummy certificate
     const mockFetch = jest.fn(() => {
       const body = cbor.encode({ certificate: new Uint8Array([1, 2, 3]) });
       return Promise.resolve(

@@ -113,7 +113,7 @@ test('call', async () => {
 
   const callUrl = calls[0][0];
   const callParams = calls[0][1];
-  expect(callUrl.toString()).toBe(`http://127.0.0.1/api/v3/canister/${canisterId.toText()}/call`);
+  expect(callUrl.toString()).toBe(`http://127.0.0.1/api/v4/canister/${canisterId.toText()}/call`);
   expect(callParams.method).toEqual('POST');
 
   // Get the body from the request and ensure nonce matches
@@ -355,7 +355,7 @@ test('use anonymous principal if unspecified', async () => {
   expect(requestId).toBeTruthy();
 
   expect(calls[0][0].toString()).toBe(
-    `http://127.0.0.1/api/v3/canister/${canisterId.toText()}/call`,
+    `http://127.0.0.1/api/v4/canister/${canisterId.toText()}/call`,
   );
   const call2 = calls[0][1];
   expect(call2.method).toEqual('POST');
