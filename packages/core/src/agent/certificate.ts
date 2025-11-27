@@ -871,11 +871,8 @@ function lookupCanisterRanges(params: CheckCanisterRangesParams): Uint8Array {
   shardPaths.sort(uint8Compare);
 
   const shardDivision = getCanisterRangeShardPartitionPoint(shardPaths, canisterId);
-  if (shardDivision === 0) {
-    throw ProtocolError.fromCode(new CertificateNotAuthorizedErrorCode(canisterId, subnetId));
-  }
-
   const maxPotentialShard = shardPaths[shardDivision];
+
   const canisterRange = getCanisterRangeFromShards(maxPotentialShard, canisterRangeShards);
 
   return canisterRange;
