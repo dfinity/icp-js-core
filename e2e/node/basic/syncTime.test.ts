@@ -20,7 +20,7 @@ import {
   MockReplica,
   mockSyncTimeResponse,
   prepareV2ReadStateTimeResponse,
-  prepareV3Response,
+  prepareV4Response,
 } from '../utils/mock-replica.ts';
 import { randomIdentity, randomKeyPair } from '../utils/identity.ts';
 import { concatBytes } from '@noble/hashes/utils';
@@ -68,7 +68,7 @@ describe('syncTime', () => {
       const actor = await createActor(canisterId, { agent });
       const sender = identity.getPrincipal();
 
-      const { responseBody, requestId } = await prepareV3Response({
+      const { responseBody, requestId } = await prepareV4Response({
         canisterId,
         methodName: greetMethodName,
         arg: greetArgs,
@@ -79,23 +79,23 @@ describe('syncTime', () => {
         nonce,
       });
       const signature = await identity.sign(concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, requestId));
-      mockReplica.setV3CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(responseBody);
       });
 
       const actorResponse = await actor.greet.withOptions({ nonce })(greetReq);
       expect(actorResponse).toEqual(greetRes);
 
-      expect(mockReplica.getV3CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-      expectV3CallRequest(
-        mockReplica.getV3CallReq(canisterId.toString(), 0),
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+      expectV4CallRequest(
+        mockReplica.getV4CallReq(canisterId.toString(), 0),
         {
           nonce,
           sender,
           pubKey: identity.getPublicKey().toDer(),
           signature,
         },
-        'V3 call body',
+        'V4 call body',
       );
       expect(agent.hasSyncedTime()).toBe(false);
     });
@@ -109,7 +109,7 @@ describe('syncTime', () => {
       const actor = await createActor(canisterId, { agent });
       const sender = identity.getPrincipal();
 
-      mockReplica.setV3CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
       });
 
@@ -119,7 +119,7 @@ describe('syncTime', () => {
         canisterId,
       });
 
-      const { responseBody: callResponse, requestId } = await prepareV3Response({
+      const { responseBody: callResponse, requestId } = await prepareV4Response({
         canisterId,
         methodName: greetMethodName,
         arg: greetArgs,
@@ -130,17 +130,17 @@ describe('syncTime', () => {
         nonce,
       });
       const signature = await identity.sign(concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, requestId));
-      mockReplica.setV3CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(callResponse);
       });
 
       const actorResponse = await actor.greet.withOptions({ nonce })(greetReq);
 
       expect(actorResponse).toEqual(greetRes);
-      expect(mockReplica.getV3CallSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
 
-      const req = mockReplica.getV3CallReq(canisterId.toString(), 0);
-      expectV3CallRequest(
+      const req = mockReplica.getV4CallReq(canisterId.toString(), 0);
+      expectV4CallRequest(
         req,
         {
           nonce,
@@ -148,10 +148,10 @@ describe('syncTime', () => {
           pubKey: identity.getPublicKey().toDer(),
           signature,
         },
-        'V3 call body',
+        'V4 call body',
       );
 
-      const reqTwo = mockReplica.getV3CallReq(canisterId.toString(), 1);
+      const reqTwo = mockReplica.getV4CallReq(canisterId.toString(), 1);
       expect(reqTwo).toEqual(req);
 
       expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
@@ -167,14 +167,14 @@ describe('syncTime', () => {
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V3 read state body two',
+        'V4 read state body two',
       );
       expectV2ReadStateRequest(
         mockReplica.getV2ReadStateReq(canisterId.toString(), 2),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V3 read state body three',
+        'V4 read state body three',
       );
       expect(agent.hasSyncedTime()).toBe(true);
     });
@@ -187,7 +187,7 @@ describe('syncTime', () => {
       });
       const actor = await createActor(canisterId, { agent });
 
-      mockReplica.setV3CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
       });
 
@@ -197,7 +197,7 @@ describe('syncTime', () => {
         canisterId,
       });
 
-      mockReplica.setV3CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
       });
 
@@ -214,7 +214,7 @@ describe('syncTime', () => {
         );
       }
 
-      expect(mockReplica.getV3CallSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
       expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
       expect(agent.hasSyncedTime()).toBe(true);
     });
@@ -247,21 +247,21 @@ describe('syncTime', () => {
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V3 read state body one',
+        'V4 read state body one',
       );
       expectV2ReadStateRequest(
         mockReplica.getV2ReadStateReq(ICP_LEDGER, 1),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V3 read state body two',
+        'V4 read state body two',
       );
       expectV2ReadStateRequest(
         mockReplica.getV2ReadStateReq(ICP_LEDGER, 2),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V3 read state body three',
+        'V4 read state body three',
       );
       expect(agent.hasSyncedTime()).toBe(true);
     });
@@ -328,7 +328,7 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const { responseBody, requestId } = await prepareV3Response({
+      const { responseBody, requestId } = await prepareV4Response({
         canisterId,
         methodName: greetMethodName,
         arg: greetArgs,
@@ -339,16 +339,16 @@ describe('syncTime', () => {
         nonce,
       });
       const signature = await identity.sign(concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, requestId));
-      mockReplica.setV3CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(responseBody);
       });
 
       const actorResponse = await actor.greet.withOptions({ nonce })(greetReq);
       expect(actorResponse).toEqual(greetRes);
 
-      expect(mockReplica.getV3CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-      const req = mockReplica.getV3CallReq(canisterId.toString(), 0);
-      expectV3CallRequest(
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+      const req = mockReplica.getV4CallReq(canisterId.toString(), 0);
+      expectV4CallRequest(
         req,
         {
           nonce,
@@ -356,7 +356,7 @@ describe('syncTime', () => {
           pubKey: identity.getPublicKey().toDer(),
           signature,
         },
-        'V3 call body',
+        'V4 call body',
       );
 
       expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
@@ -365,21 +365,21 @@ describe('syncTime', () => {
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V3 read state body one',
+        'V4 read state body one',
       );
       expectV2ReadStateRequest(
         mockReplica.getV2ReadStateReq(canisterId.toString(), 1),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V3 read state body two',
+        'V4 read state body two',
       );
       expectV2ReadStateRequest(
         mockReplica.getV2ReadStateReq(canisterId.toString(), 2),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V3 read state body three',
+        'V4 read state body three',
       );
       expect(agent.hasSyncedTime()).toBe(true);
     });
@@ -400,7 +400,7 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const { responseBody, requestId } = await prepareV3Response({
+      const { responseBody, requestId } = await prepareV4Response({
         canisterId,
         methodName: greetMethodName,
         arg: greetArgs,
@@ -411,23 +411,23 @@ describe('syncTime', () => {
         nonce,
       });
       const signature = await identity.sign(concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, requestId));
-      mockReplica.setV3CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(responseBody);
       });
 
       const actorResponse = await actor.greet.withOptions({ nonce })(greetReq);
       expect(actorResponse).toEqual(greetRes);
 
-      expect(mockReplica.getV3CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-      expectV3CallRequest(
-        mockReplica.getV3CallReq(canisterId.toString(), 0),
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+      expectV4CallRequest(
+        mockReplica.getV4CallReq(canisterId.toString(), 0),
         {
           nonce,
           sender,
           pubKey: identity.getPublicKey().toDer(),
           signature,
         },
-        'V3 call body',
+        'V4 call body',
       );
 
       expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
@@ -451,7 +451,7 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const { responseBody, requestId } = await prepareV3Response({
+      const { responseBody, requestId } = await prepareV4Response({
         canisterId,
         methodName: greetMethodName,
         arg: greetArgs,
@@ -462,16 +462,16 @@ describe('syncTime', () => {
         nonce,
       });
       const signature = await identity.sign(concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, requestId));
-      mockReplica.setV3CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(responseBody);
       });
 
       const actorResponse = await actor.greet.withOptions({ nonce })(greetReq);
       expect(actorResponse).toEqual(greetRes);
 
-      expect(mockReplica.getV3CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-      const req = mockReplica.getV3CallReq(canisterId.toString(), 0);
-      expectV3CallRequest(
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+      const req = mockReplica.getV4CallReq(canisterId.toString(), 0);
+      expectV4CallRequest(
         req,
         {
           nonce,
@@ -479,7 +479,7 @@ describe('syncTime', () => {
           pubKey: identity.getPublicKey().toDer(),
           signature,
         },
-        'V3 call body',
+        'V4 call body',
       );
 
       expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
@@ -488,16 +488,16 @@ describe('syncTime', () => {
   });
 });
 
-interface ExpectedV3CallRequest {
+interface ExpectedV4CallRequest {
   nonce: Nonce;
   sender: Principal;
   pubKey: Uint8Array;
   signature: Signature;
 }
 
-function expectV3CallRequest(
+function expectV4CallRequest(
   actual: Signed<CallRequest>,
-  expected: ExpectedV3CallRequest,
+  expected: ExpectedV4CallRequest,
   snapshotName?: string,
 ) {
   expect(actual.content.nonce).toEqual(expected.nonce);
