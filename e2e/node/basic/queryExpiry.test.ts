@@ -374,9 +374,6 @@ describe('queryExpiry', () => {
       date: replicaDate,
       canisterId,
     });
-    mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-      res.status(200).send(subnetResponseBody);
-    });
 
     const actorResponse = await actor[greetMethodName](greetReq);
 
