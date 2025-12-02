@@ -34,8 +34,8 @@ const NANOSECONDS_TO_MSECS = 1_000_000;
 
 export enum MockReplicaSpyType {
   CallV3 = 'CallV3',
-  ReadStateV2 = 'ReadStateV2',
-  QueryV2 = 'QueryV2',
+  ReadStateV3 = 'ReadStateV3',
+  QueryV3 = 'QueryV3',
 }
 
 export type MockReplicaRequest = Request<{ canisterId: string }, Uint8Array, Uint8Array>;
@@ -46,8 +46,8 @@ export type MockReplicaSpy = Mock<MockReplicaSpyImpl>;
 
 export interface MockReplicaSpies {
   [MockReplicaSpyType.CallV3]?: MockReplicaSpy;
-  [MockReplicaSpyType.ReadStateV2]?: MockReplicaSpy;
-  [MockReplicaSpyType.QueryV2]?: MockReplicaSpy;
+  [MockReplicaSpyType.ReadStateV3]?: MockReplicaSpy;
+  [MockReplicaSpyType.QueryV3]?: MockReplicaSpy;
 }
 
 function fallbackSpyImpl(spyType: MockReplicaSpyType, canisterId: string): MockReplicaSpyImpl {
@@ -74,11 +74,11 @@ export class MockReplica {
     );
     app.post(
       '/api/v3/canister/:canisterId/read_state',
-      this.#createEndpointSpy(MockReplicaSpyType.ReadStateV2),
+      this.#createEndpointSpy(MockReplicaSpyType.ReadStateV3),
     );
     app.post(
       '/api/v3/canister/:canisterId/query',
-      this.#createEndpointSpy(MockReplicaSpyType.QueryV2),
+      this.#createEndpointSpy(MockReplicaSpyType.QueryV3),
     );
   }
 
@@ -105,24 +105,24 @@ export class MockReplica {
     this.#setSpyImplOnce(canisterId, MockReplicaSpyType.CallV3, impl);
   }
 
-  public setV2ReadStateSpyImplOnce(canisterId: string, impl: MockReplicaSpyImpl): void {
-    this.#setSpyImplOnce(canisterId, MockReplicaSpyType.ReadStateV2, impl);
+  public setV3ReadStateSpyImplOnce(canisterId: string, impl: MockReplicaSpyImpl): void {
+    this.#setSpyImplOnce(canisterId, MockReplicaSpyType.ReadStateV3, impl);
   }
 
-  public setV2QuerySpyImplOnce(canisterId: string, impl: MockReplicaSpyImpl): void {
-    this.#setSpyImplOnce(canisterId, MockReplicaSpyType.QueryV2, impl);
+  public setV3QuerySpyImplOnce(canisterId: string, impl: MockReplicaSpyImpl): void {
+    this.#setSpyImplOnce(canisterId, MockReplicaSpyType.QueryV3, impl);
   }
 
   public getV3CallSpy(canisterId: string): MockReplicaSpy {
     return this.#getSpy(canisterId, MockReplicaSpyType.CallV3);
   }
 
-  public getV2ReadStateSpy(canisterId: string): MockReplicaSpy {
-    return this.#getSpy(canisterId, MockReplicaSpyType.ReadStateV2);
+  public getV3ReadStateSpy(canisterId: string): MockReplicaSpy {
+    return this.#getSpy(canisterId, MockReplicaSpyType.ReadStateV3);
   }
 
-  public getV2QuerySpy(canisterId: string): MockReplicaSpy {
-    return this.#getSpy(canisterId, MockReplicaSpyType.QueryV2);
+  public getV3QuerySpy(canisterId: string): MockReplicaSpy {
+    return this.#getSpy(canisterId, MockReplicaSpyType.QueryV3);
   }
 
   public getV3CallReq(canisterId: string, callNumber: number): Signed<CallRequest> {
@@ -131,14 +131,14 @@ export class MockReplica {
     return Cbor.decode<Signed<CallRequest>>(req.body);
   }
 
-  public getV2ReadStateReq(canisterId: string, callNumber: number): UnSigned<ReadStateRequest> {
-    const [req] = this.#getCallParams(canisterId, callNumber, MockReplicaSpyType.ReadStateV2);
+  public getV3ReadStateReq(canisterId: string, callNumber: number): UnSigned<ReadStateRequest> {
+    const [req] = this.#getCallParams(canisterId, callNumber, MockReplicaSpyType.ReadStateV3);
 
     return Cbor.decode<UnSigned<ReadStateRequest>>(req.body);
   }
 
-  public getV2QueryReq(canisterId: string, callNumber: number): UnSigned<QueryRequest> {
-    const [req] = this.#getCallParams(canisterId, callNumber, MockReplicaSpyType.QueryV2);
+  public getV3QueryReq(canisterId: string, callNumber: number): UnSigned<QueryRequest> {
+    const [req] = this.#getCallParams(canisterId, callNumber, MockReplicaSpyType.QueryV3);
 
     return Cbor.decode<UnSigned<QueryRequest>>(req.body);
   }
@@ -305,26 +305,26 @@ export async function prepareV3Response({
   };
 }
 
-export interface V2ReadStateTimeOptions {
+export interface V3ReadStateTimeOptions {
   keyPair?: KeyPair;
   date?: Date;
 }
 
-export interface V2ReadStateResponse {
+export interface V3ReadStateResponse {
   responseBody: Uint8Array;
 }
 
 /**
  * Prepares a version 2 read state time response.
- * @param {V2ReadStateTimeOptions} options - The options for preparing the response.
+ * @param {V3ReadStateTimeOptions} options - The options for preparing the response.
  * @param {Date} options.date - The date for the response.
  * @param {KeyPair} options.keyPair - The key pair for signing.
- * @returns {Promise<V2ReadStateResponse>} A promise that resolves to the prepared response.
+ * @returns {Promise<V3ReadStateResponse>} A promise that resolves to the prepared response.
  */
-export async function prepareV2ReadStateTimeResponse({
+export async function prepareV3ReadStateTimeResponse({
   date,
   keyPair,
-}: V2ReadStateTimeOptions): Promise<V2ReadStateResponse> {
+}: V3ReadStateTimeOptions): Promise<V3ReadStateResponse> {
   keyPair = keyPair ?? randomKeyPair();
   date = date ?? new Date();
 
@@ -344,7 +344,7 @@ export async function prepareV2ReadStateTimeResponse({
   };
 }
 
-interface V2ReadStateSubnetOptions {
+interface V3ReadStateSubnetOptions {
   nodeIdentity: Ed25519KeyIdentity;
   canisterRanges: Array<[Uint8Array, Uint8Array]>;
   keyPair?: KeyPair;
@@ -353,19 +353,19 @@ interface V2ReadStateSubnetOptions {
 
 /**
  * Prepares a version 2 read state subnet response.
- * @param {V2ReadStateSubnetOptions} options - The options for preparing the response.
+ * @param {V3ReadStateSubnetOptions} options - The options for preparing the response.
  * @param {Ed25519KeyIdentity} options.nodeIdentity - The identity of the node.
  * @param {Array<[Uint8Array, Uint8Array]>} options.canisterRanges - The canister ranges for the subnet.
  * @param {KeyPair} options.keyPair - The key pair for signing.
  * @param {Date} options.date - The date for the response.
- * @returns {Promise<V2ReadStateResponse>} A promise that resolves to the prepared response.
+ * @returns {Promise<V3ReadStateResponse>} A promise that resolves to the prepared response.
  */
-export async function prepareV2ReadStateSubnetResponse({
+export async function prepareV3ReadStateSubnetResponse({
   nodeIdentity,
   canisterRanges,
   keyPair,
   date,
-}: V2ReadStateSubnetOptions): Promise<V2ReadStateResponse> {
+}: V3ReadStateSubnetOptions): Promise<V3ReadStateResponse> {
   keyPair = keyPair ?? randomKeyPair();
   date = date ?? new Date();
 
@@ -392,7 +392,7 @@ export async function prepareV2ReadStateSubnetResponse({
   };
 }
 
-interface V2QueryResponseOptions {
+interface V3QueryResponseOptions {
   canisterId: Principal | string;
   methodName: string;
   arg: Uint8Array;
@@ -404,14 +404,14 @@ interface V2QueryResponseOptions {
   date?: Date;
 }
 
-interface V2QueryResponse {
+interface V3QueryResponse {
   responseBody: Uint8Array;
   requestId: RequestId;
 }
 
 /**
  * Prepares a version 2 query response.
- * @param {V2QueryResponseOptions} options - The options for preparing the response.
+ * @param {V3QueryResponseOptions} options - The options for preparing the response.
  * @param {string} options.canisterId - The ID of the canister.
  * @param {string} options.methodName - The name of the method being called.
  * @param {Uint8Array} options.arg - The arguments for the method call.
@@ -421,9 +421,9 @@ interface V2QueryResponse {
  * @param {number} options.timeDiffMsecs - The time difference in milliseconds.
  * @param {Uint8Array} options.reply - The reply payload.
  * @param {Date} options.date - The date for the response.
- * @returns {Promise<V2QueryResponse>} A promise that resolves to the prepared response.
+ * @returns {Promise<V3QueryResponse>} A promise that resolves to the prepared response.
  */
-export async function prepareV2QueryResponse({
+export async function prepareV3QueryResponse({
   canisterId,
   methodName,
   arg,
@@ -433,7 +433,7 @@ export async function prepareV2QueryResponse({
   timeDiffMsecs,
   reply,
   date,
-}: V2QueryResponseOptions): Promise<V2QueryResponse> {
+}: V3QueryResponseOptions): Promise<V3QueryResponse> {
   canisterId = Principal.from(canisterId);
   sender = Principal.from(sender);
   ingressExpiryInMinutes = ingressExpiryInMinutes ?? 5;
@@ -530,17 +530,17 @@ export async function mockSyncTimeResponse({
   canisterId,
 }: MockSyncTimeResponseOptions) {
   canisterId = Principal.from(canisterId).toText();
-  const { responseBody: timeResponseBody } = await prepareV2ReadStateTimeResponse({
+  const { responseBody: timeResponseBody } = await prepareV3ReadStateTimeResponse({
     keyPair,
     date,
   });
-  mockReplica.setV2ReadStateSpyImplOnce(canisterId, (_req, res) => {
+  mockReplica.setV3ReadStateSpyImplOnce(canisterId, (_req, res) => {
     res.status(200).send(timeResponseBody);
   });
-  mockReplica.setV2ReadStateSpyImplOnce(canisterId, (_req, res) => {
+  mockReplica.setV3ReadStateSpyImplOnce(canisterId, (_req, res) => {
     res.status(200).send(timeResponseBody);
   });
-  mockReplica.setV2ReadStateSpyImplOnce(canisterId, (_req, res) => {
+  mockReplica.setV3ReadStateSpyImplOnce(canisterId, (_req, res) => {
     res.status(200).send(timeResponseBody);
   });
 }
