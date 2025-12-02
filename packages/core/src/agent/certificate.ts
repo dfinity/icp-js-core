@@ -16,6 +16,7 @@ import {
   UnexpectedErrorCode,
 } from './errors.ts';
 import { Principal } from '#principal';
+import { compare as uint8Compare } from '#candid';
 import * as bls from './utils/bls.ts';
 import { decodeTime } from './utils/leb.ts';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
@@ -789,8 +790,6 @@ export function find_label(label: NodeLabel, tree: HashTree): LabelLookupResult 
  * @param tree the tree to list the paths of
  * @returns the paths of the tree
  */
-// @ts-expect-error TODO: remove this once the function is used
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function list_paths(path: Array<NodeLabel>, tree: HashTree): Array<Array<NodeLabel>> {
   switch (tree[0]) {
     case NodeType.Empty | NodeType.Pruned: {
@@ -839,16 +838,56 @@ export function check_canister_ranges(params: CheckCanisterRangesParams): boolea
 }
 
 /**
- * Lookup the canister ranges using the `/subnet/<subnet_id>/canister_ranges` path.
- * Certificates returned by `/api/v3/canister/<effective_canister_id>/call`
- * and `/api/v2/canister/<effective_canister_id>/read_state` use this path.
+ * Lookup the canister ranges using the `/canister_ranges/<subnet_id>/<ranges>` path.
+ * Certificates returned by `/api/v4/canister/<effective_canister_id>/call`
+ * and `/api/v3/canister/<effective_canister_id>/read_state` use this path.
+ *
+ * If the new lookup is not found, it tries the fallback lookup with {@link lookupCanisterRangesFallback}.
  * @param params the parameters with which to lookup the canister ranges
  * @param params.subnetId the subnet ID to lookup the canister ranges for
  * @param params.tree the tree to search
+ * @param params.canisterId the canister ID to check
+ * @returns the encoded canister ranges. Use {@link decodeCanisterRanges} to decode them.
+ * @see https://internetcomputer.org/docs/references/ic-interface-spec#http-read-state
+ * @see https://internetcomputer.org/docs/references/ic-interface-spec#state-tree-canister-ranges
+ */
+function lookupCanisterRanges(params: CheckCanisterRangesParams): Uint8Array {
+  const { subnetId, tree, canisterId } = params;
+
+  const canisterRangeShardsLookup = lookup_subtree(
+    ['canister_ranges', subnetId.toUint8Array()],
+    tree,
+  );
+  if (canisterRangeShardsLookup.status !== LookupSubtreeStatus.Found) {
+    return lookupCanisterRangesFallback(subnetId, tree);
+  }
+
+  const canisterRangeShards = canisterRangeShardsLookup.value;
+
+  const shardPaths = getCanisterRangeShardPaths(canisterRangeShards);
+  if (shardPaths.length === 0) {
+    throw ProtocolError.fromCode(new CertificateNotAuthorizedErrorCode(canisterId, subnetId));
+  }
+  shardPaths.sort(uint8Compare);
+
+  const shardDivision = getCanisterRangeShardPartitionPoint(shardPaths, canisterId);
+  const maxPotentialShard = shardPaths[shardDivision];
+
+  const canisterRange = getCanisterRangeFromShards(maxPotentialShard, canisterRangeShards);
+
+  return canisterRange;
+}
+
+/**
+ * Lookup the canister ranges using the `/subnet/<subnet_id>/canister_ranges` path.
+ * Certificates returned by `/api/v3/canister/<effective_canister_id>/call`
+ * and `/api/v2/canister/<effective_canister_id>/read_state` use this path.
+ * @param subnetId the subnet ID to lookup the canister ranges for
+ * @param tree the tree to search
  * @returns the encoded canister ranges. Use {@link decodeCanisterRanges} to decode them.
  * @see https://internetcomputer.org/docs/references/ic-interface-spec#http-read-state
  */
-function lookupCanisterRanges({ subnetId, tree }: CheckCanisterRangesParams): Uint8Array {
+function lookupCanisterRangesFallback(subnetId: Principal, tree: HashTree): Uint8Array {
   const lookupResult = lookup_path(['subnet', subnetId.toUint8Array(), 'canister_ranges'], tree);
   if (lookupResult.status !== LookupPathStatus.Found) {
     throw ProtocolError.fromCode(
@@ -868,4 +907,66 @@ function decodeCanisterRanges(lookupValue: Uint8Array): CanisterRanges {
     Principal.fromUint8Array(v[1]),
   ]);
   return ranges;
+}
+
+function getCanisterRangeShardPaths(canisterRangeShards: HashTree): Array<NodeLabel> {
+  const shardPaths: Array<NodeLabel> = [];
+
+  for (const path of list_paths([], canisterRangeShards)) {
+    const firstLabel = path[0];
+    if (!firstLabel) {
+      throw ProtocolError.fromCode(new CertificateVerificationErrorCode('Path is invalid'));
+    }
+    shardPaths.push(firstLabel);
+  }
+
+  return shardPaths;
+}
+
+/**
+ * Finds the partition point that divides shard paths into two groups based on canister ID comparison.
+ * Uses binary search to partition the array where:
+ * - Elements at indices [0, partitionPoint) have values >= canisterId
+ * - Elements at indices [partitionPoint, length) have values < canisterId
+ * @param shardPaths Sorted array of shard paths to search through
+ * @param canisterId The canister ID to compare against
+ * @returns The index of the first shard that is less than the canister ID, or shardPaths.length if all shards are >= canisterId
+ */
+function getCanisterRangeShardPartitionPoint(
+  shardPaths: Array<NodeLabel>,
+  canisterId: Principal,
+): number {
+  const canisterIdBytes = canisterId.toUint8Array();
+  let left = 0;
+  let right = shardPaths.length;
+
+  // Binary search for the first element where shard < canisterId
+  while (left < right) {
+    const mid = Math.floor((left + right) / 2);
+    if (uint8Compare(shardPaths[mid], canisterIdBytes) <= 0) {
+      // Found an element <= canisterId, search left half for earlier occurrence
+      right = mid;
+    } else {
+      // Element is > canisterId, search right half
+      left = mid + 1;
+    }
+  }
+
+  return left;
+}
+
+function getCanisterRangeFromShards(
+  maxShardPath: NodeLabel,
+  canisterRangeShards: HashTree,
+): Uint8Array {
+  const canisterRange = lookup_path([maxShardPath], canisterRangeShards);
+  if (canisterRange.status !== LookupPathStatus.Found) {
+    throw ProtocolError.fromCode(
+      new LookupErrorCode(
+        `Could not find canister range for shard ${maxShardPath.toString()}`,
+        canisterRange.status,
+      ),
+    );
+  }
+  return canisterRange.value;
 }
