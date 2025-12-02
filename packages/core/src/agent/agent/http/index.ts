@@ -660,7 +660,7 @@ export class HttpAgent implements Agent {
 
     const delay = tries === 0 ? 0 : backoff.next();
 
-    const url = new URL(`/api/v2/canister/${ecid.toString()}/query`, this.host);
+    const url = new URL(`/api/v3/canister/${ecid.toString()}/query`, this.host);
 
     this.log.print(`fetching "${url.pathname}" with tries:`, {
       tries,
@@ -1119,7 +1119,7 @@ export class HttpAgent implements Agent {
       transformedRequest = await this.createReadStateRequest(fields, identity);
     }
 
-    const url = new URL(`/api/v2/canister/${canister.toString()}/read_state`, this.host);
+    const url = new URL(`/api/v3/canister/${canister.toString()}/read_state`, this.host);
 
     this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
 

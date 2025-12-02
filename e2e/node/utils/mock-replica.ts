@@ -73,11 +73,11 @@ export class MockReplica {
       this.#createEndpointSpy(MockReplicaSpyType.CallV3),
     );
     app.post(
-      '/api/v2/canister/:canisterId/read_state',
+      '/api/v3/canister/:canisterId/read_state',
       this.#createEndpointSpy(MockReplicaSpyType.ReadStateV2),
     );
     app.post(
-      '/api/v2/canister/:canisterId/query',
+      '/api/v3/canister/:canisterId/query',
       this.#createEndpointSpy(MockReplicaSpyType.QueryV2),
     );
   }
