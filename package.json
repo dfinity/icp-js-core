@@ -29,7 +29,6 @@
     "jest-cli": "^29.7.0",
     "jest-environment-jsdom": "29.7.0",
     "jest-environment-node": "^29.7.0",
-    "markdown-to-html-cli": "^4.1.0",
     "prettier": "^3.3.3",
     "prettier-plugin-motoko": "^0.8.4",
     "pretty-quick": "^4.0.0",
