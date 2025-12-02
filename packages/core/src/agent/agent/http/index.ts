@@ -1121,8 +1121,14 @@ export class HttpAgent implements Agent {
 
     const url = new URL(`/api/v2/canister/${canister.toString()}/read_state`, this.host);
 
-    this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
+    return await this.#readStateInner(url, transformedRequest, requestId);
+  }
 
+  async #readStateInner(
+    url: URL,
+    transformedRequest: ReadStateRequest,
+    requestId?: RequestId,
+  ): Promise<ReadStateResponse> {
     const backoff = this.#backoffStrategy();
     try {
       const { responseBodyBytes } = await this.#requestAndRetry({
@@ -1138,15 +1144,13 @@ export class HttpAgent implements Agent {
 
       const decodedResponse: ReadStateResponse = cbor.decode(responseBodyBytes);
 
-      this.log.print('Read state response:', decodedResponse);
-
       return decodedResponse;
     } catch (error) {
       let readStateError: AgentError;
       if (error instanceof AgentError) {
         // override the error code to include the request details
         error.code.requestContext = {
-          requestId,
+          requestId: requestId ?? requestIdOf(transformedRequest),
           senderPubKey: transformedRequest.body.sender_pubkey,
           senderSignature: transformedRequest.body.sender_sig,
           ingressExpiry: transformedRequest.body.content.ingress_expiry,
