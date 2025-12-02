@@ -1106,7 +1106,6 @@ export class HttpAgent implements Agent {
     if (request) {
       // This is a pre-signed request
       transformedRequest = request;
-      requestId = requestIdOf(transformedRequest);
     } else {
       // This is fields, we need to create a request
       requestId = getRequestId(fields);
