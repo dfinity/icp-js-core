@@ -20,7 +20,7 @@ import {
   UnexpectedErrorCode,
   UnknownError,
   HttpErrorCode,
-  HttpV3ApiNotSupportedErrorCode,
+  HttpV4ApiNotSupportedErrorCode,
   TransportError,
   HttpFetchErrorCode,
   AgentError,
@@ -570,9 +570,9 @@ export class HttpAgent implements Agent {
     const backoff = this.#backoffStrategy();
     const requestId = requestIdOf(submit);
     try {
-      // Attempt v3 sync call
+      // Attempt v4 sync call
       const requestSync = () => {
-        const url = new URL(`/api/v3/canister/${ecid.toText()}/call`, this.host);
+        const url = new URL(`/api/v4/canister/${ecid.toText()}/call`, this.host);
         this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
         return this.#fetch(url, {
           ...this.#callOptions,
@@ -613,14 +613,14 @@ export class HttpAgent implements Agent {
     } catch (error) {
       let callError: AgentError;
       if (error instanceof AgentError) {
-        // If the error is due to the v3 api not being supported, fall back to v2
-        if (error.hasCode(HttpV3ApiNotSupportedErrorCode)) {
-          this.log.warn('v3 api not supported. Fall back to v2');
+        // If the error is due to the v4 api not being supported, fall back to v2
+        if (error.hasCode(HttpV4ApiNotSupportedErrorCode)) {
+          this.log.warn('v4 api not supported. Fall back to v2');
           return this.call(
             canisterId,
             {
               ...options,
-              // disable v3 api
+              // disable v4 api
               callSync: false,
             },
             identity,
@@ -839,8 +839,8 @@ export class HttpAgent implements Agent {
 
     const responseText = await response.text();
 
-    if (response.status === HTTP_STATUS_NOT_FOUND && response.url.includes('api/v3')) {
-      throw ProtocolError.fromCode(new HttpV3ApiNotSupportedErrorCode());
+    if (response.status === HTTP_STATUS_NOT_FOUND && response.url.includes('api/v4')) {
+      throw ProtocolError.fromCode(new HttpV4ApiNotSupportedErrorCode());
     }
 
     // The error message comes from https://github.com/dfinity/ic/blob/23d5990bfc5277c32e54f0087b5a38fa412171e1/rs/validator/src/ingress_validation.rs#L233

@@ -4,7 +4,7 @@ import {
   Cbor,
   requestIdOf,
   SubmitRequestType,
-  v3ResponseBody,
+  v4ResponseBody,
   calculateIngressExpiry,
   Cert,
   reconstruct,
@@ -33,7 +33,7 @@ import { concatBytes, toBytes } from '@noble/hashes/utils';
 const NANOSECONDS_TO_MSECS = 1_000_000;
 
 export enum MockReplicaSpyType {
-  CallV3 = 'CallV3',
+  CallV4 = 'CallV4',
   ReadStateV3 = 'ReadStateV3',
   QueryV3 = 'QueryV3',
 }
@@ -45,7 +45,7 @@ export type MockReplicaSpyImpl = (req: MockReplicaRequest, res: MockReplicaRespo
 export type MockReplicaSpy = Mock<MockReplicaSpyImpl>;
 
 export interface MockReplicaSpies {
-  [MockReplicaSpyType.CallV3]?: MockReplicaSpy;
+  [MockReplicaSpyType.CallV4]?: MockReplicaSpy;
   [MockReplicaSpyType.ReadStateV3]?: MockReplicaSpy;
   [MockReplicaSpyType.QueryV3]?: MockReplicaSpy;
 }
@@ -69,8 +69,8 @@ export class MockReplica {
   ) {
     app.use(express.raw({ type: 'application/cbor' }));
     app.post(
-      '/api/v3/canister/:canisterId/call',
-      this.#createEndpointSpy(MockReplicaSpyType.CallV3),
+      '/api/v4/canister/:canisterId/call',
+      this.#createEndpointSpy(MockReplicaSpyType.CallV4),
     );
     app.post(
       '/api/v3/canister/:canisterId/read_state',
@@ -101,8 +101,8 @@ export class MockReplica {
     });
   }
 
-  public setV3CallSpyImplOnce(canisterId: string, impl: MockReplicaSpyImpl): void {
-    this.#setSpyImplOnce(canisterId, MockReplicaSpyType.CallV3, impl);
+  public setV4CallSpyImplOnce(canisterId: string, impl: MockReplicaSpyImpl): void {
+    this.#setSpyImplOnce(canisterId, MockReplicaSpyType.CallV4, impl);
   }
 
   public setV3ReadStateSpyImplOnce(canisterId: string, impl: MockReplicaSpyImpl): void {
@@ -113,8 +113,8 @@ export class MockReplica {
     this.#setSpyImplOnce(canisterId, MockReplicaSpyType.QueryV3, impl);
   }
 
-  public getV3CallSpy(canisterId: string): MockReplicaSpy {
-    return this.#getSpy(canisterId, MockReplicaSpyType.CallV3);
+  public getV4CallSpy(canisterId: string): MockReplicaSpy {
+    return this.#getSpy(canisterId, MockReplicaSpyType.CallV4);
   }
 
   public getV3ReadStateSpy(canisterId: string): MockReplicaSpy {
@@ -125,8 +125,8 @@ export class MockReplica {
     return this.#getSpy(canisterId, MockReplicaSpyType.QueryV3);
   }
 
-  public getV3CallReq(canisterId: string, callNumber: number): Signed<CallRequest> {
-    const [req] = this.#getCallParams(canisterId, callNumber, MockReplicaSpyType.CallV3);
+  public getV4CallReq(canisterId: string, callNumber: number): Signed<CallRequest> {
+    const [req] = this.#getCallParams(canisterId, callNumber, MockReplicaSpyType.CallV4);
 
     return Cbor.decode<Signed<CallRequest>>(req.body);
   }
@@ -219,7 +219,7 @@ export class MockReplica {
   }
 }
 
-interface V3ResponseOptions {
+interface V4ResponseOptions {
   canisterId: Principal | string;
   methodName: string;
   arg: Uint8Array;
@@ -232,14 +232,14 @@ interface V3ResponseOptions {
   nonce?: Nonce;
 }
 
-interface V3Response {
+interface V4Response {
   responseBody: Uint8Array;
   requestId: RequestId;
 }
 
 /**
  * Prepares a version 3 response for a canister call.
- * @param {V3ResponseOptions} options - The options for preparing the response.
+ * @param {V4ResponseOptions} options - The options for preparing the response.
  * @param {string} options.canisterId - The ID of the canister.
  * @param {string} options.methodName - The name of the method being called.
  * @param {Uint8Array} options.arg - The arguments for the method call.
@@ -250,9 +250,9 @@ interface V3Response {
  * @param {KeyPair} options.keyPair - The key pair for signing.
  * @param {Date} options.date - The date of the request.
  * @param {Uint8Array} options.nonce - The nonce for the request.
- * @returns {Promise<V3Response>} A promise that resolves to the prepared response.
+ * @returns {Promise<V4Response>} A promise that resolves to the prepared response.
  */
-export async function prepareV3Response({
+export async function prepareV4Response({
   canisterId,
   methodName,
   arg,
@@ -263,7 +263,7 @@ export async function prepareV3Response({
   keyPair,
   date,
   nonce,
-}: V3ResponseOptions): Promise<V3Response> {
+}: V4ResponseOptions): Promise<V4Response> {
   canisterId = Principal.from(canisterId);
   sender = Principal.from(sender);
   ingressExpiryInMinutes = ingressExpiryInMinutes ?? 5;
@@ -295,7 +295,7 @@ export async function prepareV3Response({
     tree,
     signature,
   };
-  const responseBody: v3ResponseBody = {
+  const responseBody: v4ResponseBody = {
     certificate: Cbor.encode(cert),
   };
 

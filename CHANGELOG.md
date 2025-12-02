@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 - feat(core)!: removes `@dfinity/{agent,candid,identity,identity-secp256k1,principal}` peer dependencies and moves their source code to the `@icp-sdk/core` package
+- feat(agent)!: use `/api/v4` for call requests
+  - Renames `v3ResponseBody` to `v4ResponseBody`
+  - Renames `isV3ResponseBody` to `isV4ResponseBody`
+  - Renames `HttpV3ApiNotSupportedErrorCode` to `HttpV4ApiNotSupportedErrorCode`
 - feat(agent)!: use `/api/v3` for query and read_state requests
 - feat(assets)!: replaces `@dfinity/{agent,candid,principal}` deps with `@icp-sdk/core`
 - feat(assets)!: drops support for cjs for the `@dfinity/assets` package

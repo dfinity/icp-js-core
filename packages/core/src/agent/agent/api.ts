@@ -133,23 +133,23 @@ export interface v2ResponseBody {
  * @returns boolean indicating if the body is a v2ResponseBody
  */
 export function isV2ResponseBody(
-  body: v2ResponseBody | v3ResponseBody | null,
+  body: v2ResponseBody | v4ResponseBody | null,
 ): body is v2ResponseBody {
   return body !== null && body !== undefined && 'reject_code' in body;
 }
 
-export interface v3ResponseBody {
+export interface v4ResponseBody {
   certificate: Uint8Array;
 }
 
 /**
- * Utility function to check if a body is a v3ResponseBody for type safety.
+ * Utility function to check if a body is a v4ResponseBody for type safety.
  * @param body The body to check
- * @returns boolean indicating if the body is a v3ResponseBody
+ * @returns boolean indicating if the body is a v4ResponseBody
  */
-export function isV3ResponseBody(
-  body: v2ResponseBody | v3ResponseBody | null,
-): body is v3ResponseBody {
+export function isV4ResponseBody(
+  body: v2ResponseBody | v4ResponseBody | null,
+): body is v4ResponseBody {
   return body !== null && body !== undefined && 'certificate' in body;
 }
 
@@ -159,7 +159,7 @@ export interface SubmitResponse {
     ok: boolean;
     status: number;
     statusText: string;
-    body: v2ResponseBody | v3ResponseBody | null;
+    body: v2ResponseBody | v4ResponseBody | null;
     headers: HttpHeaderField[];
   };
   requestDetails?: CallRequest;
