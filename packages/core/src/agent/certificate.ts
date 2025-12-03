@@ -24,6 +24,7 @@ import { uint8Equals } from './utils/buffer.ts';
 import { sha256 } from '@noble/hashes/sha2';
 import type { HttpAgent } from './agent/http/index.ts';
 import type { Agent } from './agent/api.ts';
+import { IC_STATE_ROOT_DOMAIN_SEPARATOR } from './constants.ts';
 
 const MINUTES_TO_MSEC = 60 * 1000;
 const HOURS_TO_MINUTES = 60;
@@ -265,7 +266,7 @@ export class Certificate {
     const derKey = await this._checkDelegationAndGetKey(this.cert.delegation);
     const sig = this.cert.signature;
     const key = extractDER(derKey);
-    const msg = concatBytes(domain_sep('ic-state-root'), rootHash);
+    const msg = concatBytes(IC_STATE_ROOT_DOMAIN_SEPARATOR, rootHash);
 
     const lookupTime = lookupResultToBuffer(this.lookup_path(['time']));
     if (!lookupTime) {

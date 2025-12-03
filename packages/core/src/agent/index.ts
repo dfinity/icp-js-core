@@ -99,6 +99,7 @@ export {
   IC_REQUEST_DOMAIN_SEPARATOR,
   IC_RESPONSE_DOMAIN_SEPARATOR,
   IC_REQUEST_AUTH_DELEGATION_DOMAIN_SEPARATOR,
+  IC_STATE_ROOT_DOMAIN_SEPARATOR,
 } from './constants.ts';
 export * from './der.ts';
 export * from './errors.ts';
