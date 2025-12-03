@@ -154,7 +154,7 @@ function isBufferGreaterThan(a: Uint8Array, b: Uint8Array): boolean {
 
 type VerifyFunc = (pk: Uint8Array, sig: Uint8Array, msg: Uint8Array) => Promise<boolean> | boolean;
 
-export type CertificateSubject =
+export type CertificatePrincipal =
   | {
       /**
        * The effective canister ID of the request when verifying a response, or
@@ -182,7 +182,7 @@ export interface CreateCertificateOptions {
   /**
    * The principal for which the certificate is being verified.
    */
-  subject: CertificateSubject;
+  principal: CertificatePrincipal;
   /**
    * BLS Verification strategy. Default strategy uses bls12_381 from @noble/curves
    */
@@ -233,7 +233,7 @@ export class Certificate {
     return new Certificate(
       options.certificate,
       options.rootKey,
-      options.subject,
+      options.principal,
       options.blsVerify ?? bls.blsVerify,
       options.maxAgeInMinutes,
       options.disableTimeVerification,
@@ -244,7 +244,7 @@ export class Certificate {
   private constructor(
     certificate: Uint8Array,
     private _rootKey: Uint8Array,
-    private _subject: CertificateSubject,
+    private _principal: CertificatePrincipal,
     private _blsVerify: VerifyFunc,
     private _maxAgeInMinutes: number = DEFAULT_CERTIFICATE_MAX_AGE_IN_MINUTES,
     disableTimeVerification: boolean = false,
@@ -354,7 +354,7 @@ export class Certificate {
     const cert = Certificate.createUnverified({
       certificate: d.certificate,
       rootKey: this._rootKey,
-      subject: this._subject,
+      principal: this._principal,
       blsVerify: this._blsVerify,
       disableTimeVerification: this.#disableTimeVerification,
       maxAgeInMinutes: DEFAULT_CERTIFICATE_DELEGATION_MAX_AGE_IN_MINUTES,
@@ -369,8 +369,8 @@ export class Certificate {
 
     let subnetId: Principal;
 
-    if (isSubjectCanister(this._subject)) {
-      const canisterId = this._subject.canisterId;
+    if (isCanisterPrincipal(this._principal)) {
+      const canisterId = this._principal.canisterId;
       subnetId = Principal.fromUint8Array(d.subnet_id);
 
       const canisterInRange = check_canister_ranges({
@@ -381,8 +381,8 @@ export class Certificate {
       if (!canisterInRange) {
         throw TrustError.fromCode(new CertificateNotAuthorizedErrorCode(canisterId, subnetId));
       }
-    } else if (isSubjectSubnet(this._subject)) {
-      subnetId = this._subject.subnetId;
+    } else if (isSubnetPrincipal(this._principal)) {
+      subnetId = this._principal.subnetId;
     } else {
       throw UNREACHABLE_ERROR;
     }
@@ -391,7 +391,7 @@ export class Certificate {
       cert.lookup_path(['subnet', subnetId.toUint8Array(), 'public_key']),
     );
     if (!publicKeyLookup) {
-      if (isSubjectSubnet(this._subject)) {
+      if (isSubnetPrincipal(this._principal)) {
         throw TrustError.fromCode(new CertificateNotAuthorizedForSubnetErrorCode(subnetId));
       } else {
         throw TrustError.fromCode(
@@ -409,24 +409,24 @@ export class Certificate {
       return;
     }
 
-    if (isSubjectCanister(this._subject)) {
-      await this.#agent.syncTime(this._subject.canisterId);
+    if (isCanisterPrincipal(this._principal)) {
+      await this.#agent.syncTime(this._principal.canisterId);
     } else {
       await this.#agent.syncTime();
     }
   }
 }
 
-function isSubjectSubnet<T extends CertificateSubject>(
-  subject: T,
-): subject is T & { subnetId: Principal } {
-  return 'subnetId' in subject;
+function isSubnetPrincipal<T extends CertificatePrincipal>(
+  principal: T,
+): principal is T & { subnetId: Principal } {
+  return 'subnetId' in principal;
 }
 
-function isSubjectCanister<T extends CertificateSubject>(
-  subject: T,
-): subject is T & { canisterId: Principal } {
-  return 'canisterId' in subject;
+function isCanisterPrincipal<T extends CertificatePrincipal>(
+  principal: T,
+): principal is T & { canisterId: Principal } {
+  return 'canisterId' in principal;
 }
 
 const DER_PREFIX = hexToBytes(

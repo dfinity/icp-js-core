@@ -599,8 +599,8 @@ describe('makeActor', () => {
     // Assert Certificate.create was called with the effectiveCanisterId
     expect(certificateCreateMock).toHaveBeenCalledTimes(1);
     const callArg = certificateCreateMock.mock.calls[0][0];
-    if ('canisterId' in callArg.subject) {
-      expect(Principal.from(callArg.subject.canisterId).toText()).toBe(
+    if ('canisterId' in callArg.principal) {
+      expect(Principal.from(callArg.principal.canisterId).toText()).toBe(
         effectiveCanisterId.toText(),
       );
     } else {
@@ -678,8 +678,8 @@ describe('makeActor', () => {
     // Assert Certificate.create was called with the target canisterId (since no effectiveCanisterId provided)
     expect(certificateCreateMock).toHaveBeenCalledTimes(1);
     const callArg = certificateCreateMock.mock.calls[0][0];
-    if ('canisterId' in callArg.subject) {
-      expect(Principal.from(callArg.subject.canisterId).toText()).toBe(canisterId.toText());
+    if ('canisterId' in callArg.principal) {
+      expect(Principal.from(callArg.principal.canisterId).toText()).toBe(canisterId.toText());
     } else {
       fail('subnetId should not be used for update calls');
     }
@@ -756,8 +756,8 @@ describe('makeActor', () => {
     // Assert Certificate.create was called with the effectiveCanisterId provided via withOptions
     expect(certificateCreateMock).toHaveBeenCalledTimes(1);
     const callArg = certificateCreateMock.mock.calls[0][0];
-    if ('canisterId' in callArg.subject) {
-      expect(Principal.from(callArg.subject.canisterId).toText()).toBe(
+    if ('canisterId' in callArg.principal) {
+      expect(Principal.from(callArg.principal.canisterId).toText()).toBe(
         effectiveCanisterId.toText(),
       );
     } else {

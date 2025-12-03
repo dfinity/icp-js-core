@@ -175,7 +175,7 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
         const certificate = await Certificate.create({
           certificate: response.certificate,
           rootKey,
-          subject: { canisterId },
+          principal: { canisterId },
           disableTimeVerification: disableCertificateTimeVerification,
           agent,
         });

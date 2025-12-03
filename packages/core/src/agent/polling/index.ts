@@ -156,7 +156,7 @@ export async function pollForResponse(
   const cert = await Certificate.create({
     certificate: state.certificate,
     rootKey: agent.rootKey,
-    subject: { canisterId },
+    principal: { canisterId },
     blsVerify: options.blsVerify,
     agent,
   });

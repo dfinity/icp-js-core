@@ -532,7 +532,7 @@ class Asset {
     const cert = await Certificate.create({
       certificate,
       rootKey: agent.rootKey,
-      subject: { canisterId },
+      principal: { canisterId },
     }).catch(() => Promise.resolve());
 
     if (!cert) {

@@ -172,7 +172,7 @@ describe('node keys', () => {
     jest.setSystemTime(new Date(Date.parse('2023-09-27T19:38:58.129Z')));
     await Cert.Certificate.create({
       certificate: hexToBytes(mainnetApplicationLegacy),
-      subject: { canisterId: Principal.fromText('erxue-5aaaa-aaaab-qaagq-cai') },
+      principal: { canisterId: Principal.fromText('erxue-5aaaa-aaaab-qaagq-cai') },
       rootKey: hexToBytes(IC_ROOT_KEY),
     });
 
@@ -190,7 +190,7 @@ describe('node keys', () => {
     jest.setSystemTime(new Date(Date.parse('2023-09-27T19:58:19.412Z')));
     await Cert.Certificate.create({
       certificate: hexToBytes(mainnetSystem),
-      subject: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
+      principal: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
       rootKey: hexToBytes(IC_ROOT_KEY),
     });
 
@@ -208,7 +208,7 @@ describe('node keys', () => {
     jest.setSystemTime(new Date(Date.parse('2023-09-27T20:14:59.406Z')));
     await Cert.Certificate.create({
       certificate: hexToBytes(localApplication),
-      subject: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
+      principal: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
       rootKey: hexToBytes(IC_ROOT_KEY),
     });
 
@@ -226,7 +226,7 @@ describe('node keys', () => {
     jest.setSystemTime(new Date(Date.parse('2023-09-27T20:15:03.406Z')));
     await Cert.Certificate.create({
       certificate: hexToBytes(localSystem),
-      subject: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
+      principal: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
       rootKey: hexToBytes(IC_ROOT_KEY),
     });
 
