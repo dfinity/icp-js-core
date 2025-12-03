@@ -154,7 +154,7 @@ function isBufferGreaterThan(a: Uint8Array, b: Uint8Array): boolean {
 
 type VerifyFunc = (pk: Uint8Array, sig: Uint8Array, msg: Uint8Array) => Promise<boolean> | boolean;
 
-type CertificateSubject =
+export type CertificateSubject =
   | {
       /**
        * The effective canister ID of the request when verifying a response, or
