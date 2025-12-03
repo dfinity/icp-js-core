@@ -89,29 +89,9 @@ export class CustomPath implements CustomPath {
 }
 
 /**
- * @deprecated Use {@link CustomPath} instead
- * @param {string} key the key to use to access the returned value in the canisterStatus map
- * @param {string} path the path to the desired value, represented as a string
- * @param {string} decodeStrategy the strategy to use to decode the returned value
- */
-export interface MetaData {
-  kind: 'metadata';
-  key: string;
-  path: string | Uint8Array;
-  decodeStrategy: 'cbor' | 'hex' | 'leb128' | 'utf-8' | 'raw';
-}
-
-/**
  * Pre-configured fields for canister status paths
  */
-export type Path =
-  | 'time'
-  | 'controllers'
-  | 'subnet'
-  | 'module_hash'
-  | 'candid'
-  | MetaData
-  | CustomPath;
+export type Path = 'time' | 'controllers' | 'subnet' | 'module_hash' | 'candid' | CustomPath;
 
 export type StatusMap = Map<Path | string, Status>;
 

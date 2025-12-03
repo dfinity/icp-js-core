@@ -112,7 +112,6 @@ export * from './utils/buffer.ts';
 export * from './utils/random.ts';
 export * as polling from './polling/index.ts';
 import * as CanisterStatus from './canisterStatus/index.ts';
-export { CanisterStatus };
 /**
  * The CanisterStatus utility is used to request structured data directly from the IC public API. This data can be accessed using agent.readState, but CanisterStatus provides a helpful abstraction with some known paths.
  *
@@ -120,6 +119,7 @@ export { CanisterStatus };
  *
  * The primary method for this namespace is {@link CanisterStatus.request}
  */
+export { CanisterStatus };
 
 export { Cbor, ToCborValue } from './cbor.ts';
 export * from './polling/index.ts';
