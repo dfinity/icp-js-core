@@ -13,8 +13,10 @@ import { type Agent, HttpAgent, IC_ROOT_KEY } from './agent/index.ts';
 import {
   CertificateHasTooManyDelegationsErrorCode,
   CertificateNotAuthorizedErrorCode,
+  CertificateNotAuthorizedForSubnetErrorCode,
   CertificateTimeErrorCode,
   CertificateVerificationErrorCode,
+  LookupErrorCode,
   ProtocolError,
   TrustError,
   UnexpectedErrorCode,
@@ -23,6 +25,7 @@ import {
 } from './errors.ts';
 import { utf8ToBytes, hexToBytes, bytesToHex } from '@noble/hashes/utils';
 import { uint8Equals } from './utils/buffer.ts';
+import { goldenCertificates } from './agent/http/__certificates__/goldenCertificates.ts';
 
 const MINUTES_TO_MSEC = 60 * 1000;
 
@@ -1034,4 +1037,117 @@ test('certificate verification fails on nested delegations', async () => {
       CertificateHasTooManyDelegationsErrorCode,
     );
   }
+});
+
+test('certificate verification fails if a subnet ID is provided as the principal', async () => {
+  jest.setSystemTime(parseTimeFromCert(SAMPLE_CERT_BYTES));
+
+  expect.assertions(2);
+  try {
+    await Cert.Certificate.create({
+      certificate: SAMPLE_CERT_BYTES,
+      rootKey: hexToBytes(IC_ROOT_KEY),
+      principal: {
+        subnetId: Principal.fromText(
+          'utdle-wwxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr2x-52oxl-bea',
+        ),
+      },
+    });
+  } catch (error) {
+    expect(error).toBeInstanceOf(TrustError);
+    expect((error as TrustError).cause.code).toBeInstanceOf(
+      CertificateNotAuthorizedForSubnetErrorCode,
+    );
+  }
+});
+
+describe('subnet certificates', () => {
+  const certBytes = hexToBytes(goldenCertificates.mainnetApplicationO3ow2);
+  const certTime = parseTimeFromCert(certBytes).getTime();
+  const subnetId = Principal.fromText(
+    'o3ow2-2ipam-6fcjo-3j5vt-fzbge-2g7my-5fz2m-p4o2t-dwlc4-gt2q7-5ae',
+  );
+
+  beforeEach(() => {
+    jest.setSystemTime(certTime);
+  });
+
+  it('certificate creation passes if the certificate is from a subnet', async () => {
+    const cert = await Cert.Certificate.create({
+      certificate: certBytes,
+      rootKey: hexToBytes(IC_ROOT_KEY),
+      principal: { subnetId },
+    });
+    expect(cert).toBeInstanceOf(Cert.Certificate);
+  });
+
+  it('certificate creation fails if the certificate is from another subnet', async () => {
+    const anotherSubnetId = Principal.fromText(
+      'uzr34-akd3s-xrdag-3ql62-ocgoh-ld2ao-tamcv-54e7j-krwgb-2gm4z-oqe',
+    );
+
+    expect.assertions(2);
+    try {
+      await Cert.Certificate.create({
+        certificate: certBytes,
+        rootKey: hexToBytes(IC_ROOT_KEY),
+        principal: { subnetId: anotherSubnetId },
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(TrustError);
+      expect((error as TrustError).cause.code).toBeInstanceOf(
+        CertificateNotAuthorizedForSubnetErrorCode,
+      );
+    }
+  });
+
+  test('certificate verification fails if the time of the certificate is > 5 minutes in the past', async () => {
+    const tenMinutesFuture = parseTimeFromCert(SAMPLE_CERT_BYTES).getTime() + 10 * MINUTES_TO_MSEC;
+    jest.setSystemTime(new Date(tenMinutesFuture));
+
+    expect.assertions(2);
+    try {
+      await Cert.Certificate.create({
+        certificate: certBytes,
+        rootKey: hexToBytes(IC_ROOT_KEY),
+        principal: { subnetId },
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(TrustError);
+      expect((error as TrustError).cause.code).toBeInstanceOf(CertificateTimeErrorCode);
+    }
+  });
+
+  it('certificate verification fails if the time of the certificate is > 5 minutes in the future', async () => {
+    const tenMinutesPast = certTime - 10 * MINUTES_TO_MSEC;
+    jest.setSystemTime(new Date(tenMinutesPast));
+
+    expect.assertions(2);
+    try {
+      await Cert.Certificate.create({
+        certificate: certBytes,
+        rootKey: hexToBytes(IC_ROOT_KEY),
+        principal: { subnetId },
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(TrustError);
+      expect((error as TrustError).cause.code).toBeInstanceOf(CertificateTimeErrorCode);
+    }
+  });
+
+  it('certificate verification fails if a canister ID is provided as the principal', async () => {
+    const canisterId = Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai');
+
+    expect.assertions(2);
+    try {
+      await Cert.Certificate.create({
+        certificate: certBytes,
+        rootKey: hexToBytes(IC_ROOT_KEY),
+        principal: { canisterId },
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(ProtocolError);
+      expect((error as ProtocolError).cause.code).toBeInstanceOf(LookupErrorCode);
+    }
+  });
 });
