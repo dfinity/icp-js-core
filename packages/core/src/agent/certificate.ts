@@ -412,6 +412,7 @@ export class Certificate {
     if (isCanisterPrincipal(this._principal)) {
       await this.#agent.syncTime(this._principal.canisterId);
     } else {
+      // TODO: sync time with subnet once the agent supports it
       await this.#agent.syncTime();
     }
   }
