@@ -7,6 +7,8 @@
   - Renames `v3ResponseBody` to `v4ResponseBody`
   - Renames `isV3ResponseBody` to `isV4ResponseBody`
   - Renames `HttpV3ApiNotSupportedErrorCode` to `HttpV4ApiNotSupportedErrorCode`
+- feat(agent)!: supports both subnet id and canister id for certificate verification
+  - The `canisterId` option has been replaced with the `subject` option in the `Certificate.create` options object
 - feat(assets)!: replaces `@dfinity/{agent,candid,principal}` deps with `@icp-sdk/core`
 - feat(assets)!: drops support for cjs for the `@dfinity/assets` package
 - feat(auth-client)!: `@dfinity/auth-client` has been deprecated. Migrate to [`@icp-sdk/auth`](https://js.icp.build/auth/latest/upgrading/v4)

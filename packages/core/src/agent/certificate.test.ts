@@ -596,7 +596,7 @@ test('delegation works for canisters within the subnet range', async () => {
       Cert.Certificate.create({
         certificate: SAMPLE_CERT_BYTES,
         rootKey: hexToBytes(IC_ROOT_KEY),
-        canisterId,
+        subject: { canisterId },
         blsVerify: async () => true,
       }),
     ).resolves.not.toThrow();
@@ -620,7 +620,7 @@ test('delegation check fails for canisters outside of the subnet range', async (
       await Cert.Certificate.create({
         certificate: SAMPLE_CERT_BYTES,
         rootKey: hexToBytes(IC_ROOT_KEY),
-        canisterId: canisterId,
+        subject: { canisterId },
       });
     } catch (error) {
       expect(error).toBeInstanceOf(TrustError);
@@ -644,7 +644,7 @@ test('certificate verification fails for an invalid signature', async () => {
     await Cert.Certificate.create({
       certificate: badCertEncoded,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+      subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
     });
   } catch (error) {
     expect(error).toBeInstanceOf(TrustError);
@@ -660,7 +660,7 @@ test('certificate verification fails if the time of the certificate is > 5 minut
     await Cert.Certificate.create({
       certificate: SAMPLE_CERT_BYTES,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+      subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
       blsVerify: async () => true,
     });
   } catch (error) {
@@ -683,7 +683,7 @@ test('certificate creation passes if the time of the certificate is > 5 minutes 
   const cert = await Cert.Certificate.create({
     certificate: SAMPLE_CERT_BYTES,
     rootKey: hexToBytes(IC_ROOT_KEY),
-    canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+    subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
     blsVerify: async () => true,
     disableTimeVerification: true,
   });
@@ -701,7 +701,7 @@ test('certificate creation fails if the time of the certificate is > 5 minutes i
     await Cert.Certificate.create({
       certificate: SAMPLE_CERT_BYTES,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+      subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
       blsVerify: async () => true,
       agent: {} as Agent,
     });
@@ -734,7 +734,7 @@ test('certificate creation passes if the time of the certificate is > 5 minutes 
   const cert = await Cert.Certificate.create({
     certificate: SAMPLE_CERT_BYTES,
     rootKey: hexToBytes(IC_ROOT_KEY),
-    canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+    subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
     blsVerify: async () => true,
     agent,
   });
@@ -762,7 +762,7 @@ test('certificate creation passes if the time of the certificate is > 5 minutes 
   const cert = await Cert.Certificate.create({
     certificate: SAMPLE_CERT_BYTES,
     rootKey: hexToBytes(IC_ROOT_KEY),
-    canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+    subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
     blsVerify: async () => true,
     agent,
   });
@@ -789,7 +789,7 @@ test('certificate creation fails if the time of the certificate is > 5 minutes i
     await Cert.Certificate.create({
       certificate: SAMPLE_CERT_BYTES,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+      subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
       blsVerify: async () => true,
       agent,
     });
@@ -831,7 +831,7 @@ test('certificate creation fails if the time of the certificate is > max age min
     await Cert.Certificate.create({
       certificate: SAMPLE_CERT_BYTES,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+      subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
       blsVerify: async () => true,
       maxAgeInMinutes,
       agent,
@@ -853,7 +853,7 @@ test('certificate verification fails if the time of the certificate is > 5 minut
     await Cert.Certificate.create({
       certificate: SAMPLE_CERT_BYTES,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+      subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
       blsVerify: async () => true,
     });
   } catch (error) {
@@ -869,7 +869,7 @@ test('certificate creation passes if the time of the certificate is > 5 minutes 
   const cert = await Cert.Certificate.create({
     certificate: SAMPLE_CERT_BYTES,
     rootKey: hexToBytes(IC_ROOT_KEY),
-    canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+    subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
     blsVerify: async () => true,
     disableTimeVerification: true,
   });
@@ -884,7 +884,7 @@ test('certificate verification fails if the time of the certificate is > 5 minut
     await Cert.Certificate.create({
       certificate: SAMPLE_CERT_BYTES,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+      subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
       blsVerify: async () => true,
       agent: {} as Agent,
     });
@@ -917,7 +917,7 @@ test('certificate creation passes if the time of the certificate is > 5 minutes 
   const cert = await Cert.Certificate.create({
     certificate: SAMPLE_CERT_BYTES,
     rootKey: hexToBytes(IC_ROOT_KEY),
-    canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+    subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
     blsVerify: async () => true,
     agent,
   });
@@ -945,7 +945,7 @@ test('certificate creation passes if the time of the certificate is > 5 minutes 
   const cert = await Cert.Certificate.create({
     certificate: SAMPLE_CERT_BYTES,
     rootKey: hexToBytes(IC_ROOT_KEY),
-    canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+    subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
     blsVerify: async () => true,
     agent,
   });
@@ -975,7 +975,7 @@ test('certificate creation fails if the time of the certificate is > 5 minutes i
     await Cert.Certificate.create({
       certificate: SAMPLE_CERT_BYTES,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai'),
+      subject: { canisterId: Principal.fromText('ivg37-qiaaa-aaaab-aaaga-cai') },
       blsVerify: async () => true,
       agent,
     });
@@ -1014,7 +1014,7 @@ test('certificate verification fails on nested delegations', async () => {
     await Cert.Certificate.create({
       certificate: overlyNested,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: canisterId,
+      subject: { canisterId },
     });
   } catch (error) {
     expect(error).toBeInstanceOf(ProtocolError);
@@ -1026,7 +1026,7 @@ test('certificate verification fails on nested delegations', async () => {
     await Cert.Certificate.create({
       certificate: overlyNested,
       rootKey: hexToBytes(IC_ROOT_KEY),
-      canisterId: canisterId,
+      subject: { canisterId },
     });
   } catch (error) {
     expect(error).toBeInstanceOf(ProtocolError);

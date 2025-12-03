@@ -1396,7 +1396,7 @@ export class HttpAgent implements Agent {
     const canisterCertificate = await Certificate.create({
       certificate: canisterReadState.certificate,
       rootKey: this.rootKey!,
-      canisterId: effectiveCanisterId,
+      subject: { canisterId: effectiveCanisterId },
       agent: this,
     });
 
