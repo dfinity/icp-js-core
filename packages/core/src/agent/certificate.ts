@@ -14,6 +14,7 @@ import {
   UNREACHABLE_ERROR,
   MissingLookupValueErrorCode,
   UnexpectedErrorCode,
+  CertificateNotAuthorizedForSubnetErrorCode,
 } from './errors.ts';
 import { Principal } from '#principal';
 import { compare as uint8Compare } from '#candid';
@@ -153,6 +154,21 @@ function isBufferGreaterThan(a: Uint8Array, b: Uint8Array): boolean {
 
 type VerifyFunc = (pk: Uint8Array, sig: Uint8Array, msg: Uint8Array) => Promise<boolean> | boolean;
 
+export type CertificatePrincipal =
+  | {
+      /**
+       * The effective canister ID of the request when verifying a response, or
+       * the signing canister ID when verifying a certified variable.
+       */
+      canisterId: Principal;
+    }
+  | {
+      /**
+       * The subnet ID when verifying a certificate from a subnet.
+       */
+      subnetId: Principal;
+    };
+
 export interface CreateCertificateOptions {
   /**
    * The bytes encoding the certificate to be verified
@@ -164,10 +180,9 @@ export interface CreateCertificateOptions {
    */
   rootKey: Uint8Array;
   /**
-   * The effective canister ID of the request when verifying a response, or
-   * the signing canister ID when verifying a certified variable.
+   * The principal for which the certificate is being verified.
    */
-  canisterId: Principal;
+  principal: CertificatePrincipal;
   /**
    * BLS Verification strategy. Default strategy uses bls12_381 from @noble/curves
    */
@@ -218,7 +233,7 @@ export class Certificate {
     return new Certificate(
       options.certificate,
       options.rootKey,
-      options.canisterId,
+      options.principal,
       options.blsVerify ?? bls.blsVerify,
       options.maxAgeInMinutes,
       options.disableTimeVerification,
@@ -229,7 +244,7 @@ export class Certificate {
   private constructor(
     certificate: Uint8Array,
     private _rootKey: Uint8Array,
-    private _canisterId: Principal,
+    private _principal: CertificatePrincipal,
     private _blsVerify: VerifyFunc,
     private _maxAgeInMinutes: number = DEFAULT_CERTIFICATE_MAX_AGE_IN_MINUTES,
     disableTimeVerification: boolean = false,
@@ -296,7 +311,7 @@ export class Certificate {
         this.#agent &&
         !this.#agent.hasSyncedTime()
       ) {
-        await this.#agent.syncTime(this._canisterId);
+        await this._syncTime();
         return await this.verify();
       }
 
@@ -339,7 +354,7 @@ export class Certificate {
     const cert = Certificate.createUnverified({
       certificate: d.certificate,
       rootKey: this._rootKey,
-      canisterId: this._canisterId,
+      principal: this._principal,
       blsVerify: this._blsVerify,
       disableTimeVerification: this.#disableTimeVerification,
       maxAgeInMinutes: DEFAULT_CERTIFICATE_DELEGATION_MAX_AGE_IN_MINUTES,
@@ -352,30 +367,67 @@ export class Certificate {
 
     await cert.verify();
 
-    const subnetIdBytes = d.subnet_id;
-    const subnetId = Principal.fromUint8Array(subnetIdBytes);
+    let subnetId: Principal;
 
-    const canisterInRange = check_canister_ranges({
-      canisterId: this._canisterId,
-      subnetId,
-      tree: cert.cert.tree,
-    });
-    if (!canisterInRange) {
-      throw TrustError.fromCode(new CertificateNotAuthorizedErrorCode(this._canisterId, subnetId));
+    if (isCanisterPrincipal(this._principal)) {
+      const canisterId = this._principal.canisterId;
+      subnetId = Principal.fromUint8Array(d.subnet_id);
+
+      const canisterInRange = check_canister_ranges({
+        canisterId,
+        subnetId,
+        tree: cert.cert.tree,
+      });
+      if (!canisterInRange) {
+        throw TrustError.fromCode(new CertificateNotAuthorizedErrorCode(canisterId, subnetId));
+      }
+    } else if (isSubnetPrincipal(this._principal)) {
+      subnetId = this._principal.subnetId;
+    } else {
+      throw UNREACHABLE_ERROR;
     }
 
     const publicKeyLookup = lookupResultToBuffer(
-      cert.lookup_path(['subnet', subnetIdBytes, 'public_key']),
+      cert.lookup_path(['subnet', subnetId.toUint8Array(), 'public_key']),
     );
     if (!publicKeyLookup) {
-      throw TrustError.fromCode(
-        new MissingLookupValueErrorCode(
-          `Could not find subnet key for subnet ID ${subnetId.toText()}`,
-        ),
-      );
+      if (isSubnetPrincipal(this._principal)) {
+        throw TrustError.fromCode(new CertificateNotAuthorizedForSubnetErrorCode(subnetId));
+      } else {
+        throw TrustError.fromCode(
+          new MissingLookupValueErrorCode(
+            `Could not find subnet key for subnet ID ${subnetId.toText()}`,
+          ),
+        );
+      }
     }
     return publicKeyLookup;
   }
+
+  private async _syncTime(): Promise<void> {
+    if (!this.#agent) {
+      return;
+    }
+
+    if (isCanisterPrincipal(this._principal)) {
+      await this.#agent.syncTime(this._principal.canisterId);
+    } else {
+      // TODO: sync time with subnet once the agent supports it
+      await this.#agent.syncTime();
+    }
+  }
+}
+
+function isSubnetPrincipal<T extends CertificatePrincipal>(
+  principal: T,
+): principal is T & { subnetId: Principal } {
+  return 'subnetId' in principal;
+}
+
+function isCanisterPrincipal<T extends CertificatePrincipal>(
+  principal: T,
+): principal is T & { canisterId: Principal } {
+  return 'canisterId' in principal;
 }
 
 const DER_PREFIX = hexToBytes(

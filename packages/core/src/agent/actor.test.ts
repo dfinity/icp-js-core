@@ -599,7 +599,13 @@ describe('makeActor', () => {
     // Assert Certificate.create was called with the effectiveCanisterId
     expect(certificateCreateMock).toHaveBeenCalledTimes(1);
     const callArg = certificateCreateMock.mock.calls[0][0];
-    expect(Principal.from(callArg.canisterId).toText()).toBe(effectiveCanisterId.toText());
+    if ('canisterId' in callArg.principal) {
+      expect(Principal.from(callArg.principal.canisterId).toText()).toBe(
+        effectiveCanisterId.toText(),
+      );
+    } else {
+      fail('subnetId should not be used for update calls');
+    }
   });
 
   it('should verify certificate using canisterId when effectiveCanisterId is not provided', async () => {
@@ -672,7 +678,11 @@ describe('makeActor', () => {
     // Assert Certificate.create was called with the target canisterId (since no effectiveCanisterId provided)
     expect(certificateCreateMock).toHaveBeenCalledTimes(1);
     const callArg = certificateCreateMock.mock.calls[0][0];
-    expect(Principal.from(callArg.canisterId).toText()).toBe(canisterId.toText());
+    if ('canisterId' in callArg.principal) {
+      expect(Principal.from(callArg.principal.canisterId).toText()).toBe(canisterId.toText());
+    } else {
+      fail('subnetId should not be used for update calls');
+    }
   });
 
   it('should verify certificate using effectiveCanisterId passed via withOptions for update calls', async () => {
@@ -746,7 +756,13 @@ describe('makeActor', () => {
     // Assert Certificate.create was called with the effectiveCanisterId provided via withOptions
     expect(certificateCreateMock).toHaveBeenCalledTimes(1);
     const callArg = certificateCreateMock.mock.calls[0][0];
-    expect(Principal.from(callArg.canisterId).toText()).toBe(effectiveCanisterId.toText());
+    if ('canisterId' in callArg.principal) {
+      expect(Principal.from(callArg.principal.canisterId).toText()).toBe(
+        effectiveCanisterId.toText(),
+      );
+    } else {
+      fail('subnetId should not be used for update calls');
+    }
   });
 });
 

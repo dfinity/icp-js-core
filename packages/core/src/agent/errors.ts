@@ -260,6 +260,19 @@ export class CertificateNotAuthorizedErrorCode extends ErrorCode {
   }
 }
 
+export class CertificateNotAuthorizedForSubnetErrorCode extends ErrorCode {
+  public name = 'CertificateNotAuthorizedForSubnetErrorCode';
+
+  constructor(public readonly subnetId: Principal) {
+    super();
+    Object.setPrototypeOf(this, CertificateNotAuthorizedForSubnetErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return `The certificate is not authorized for subnet ${this.subnetId.toText()}`;
+  }
+}
+
 export class LookupErrorCode extends ErrorCode {
   public name = 'LookupErrorCode';
 
