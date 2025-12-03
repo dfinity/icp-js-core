@@ -8,7 +8,6 @@ import {
   calculateIngressExpiry,
   Cert,
   reconstruct,
-  domain_sep,
   Nonce,
   RequestId,
   ReadStateResponse,
@@ -20,6 +19,7 @@ import {
   hashOfMap,
   QueryResponseReplied,
   IC_RESPONSE_DOMAIN_SEPARATOR,
+  IC_STATE_ROOT_DOMAIN_SEPARATOR,
   QueryResponseStatus,
   ReadRequestType,
 } from '@icp-sdk/core/agent';
@@ -503,7 +503,7 @@ function createQueryReplyMessage({
 
 async function signTree(tree: HashTree, keyPair: KeyPair): Promise<Uint8Array> {
   const rootHash = await reconstruct(tree);
-  const msg = concatBytes(domain_sep('ic-state-root'), rootHash);
+  const msg = concatBytes(IC_STATE_ROOT_DOMAIN_SEPARATOR, rootHash);
   return signBls(msg, keyPair.privateKey);
 }
 
