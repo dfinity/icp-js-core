@@ -22,9 +22,8 @@ import * as cbor from '../cbor.ts';
 import { decodeTime } from '../utils/leb.ts';
 import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils';
 import {
-  type SubnetStatus,
-  type Status,
-  type StatusMap,
+  type BaseSubnetStatus,
+  type BaseStatus,
   CustomPath,
   decodeValue,
   decodeControllers,
@@ -35,18 +34,17 @@ import {
 } from '../utils/readState.ts';
 
 // Re-export shared types for backwards compatibility
-export {
-  type SubnetStatus,
-  type Status,
-  type StatusMap,
-  type DecodeStrategy,
-  CustomPath,
-} from '../utils/readState.ts';
+export { type DecodeStrategy, CustomPath } from '../utils/readState.ts';
+
+export type SubnetStatus = BaseSubnetStatus;
+export type Status = BaseStatus | SubnetStatus;
 
 /**
  * Pre-configured fields for canister status paths
  */
 export type Path = 'time' | 'controllers' | 'subnet' | 'module_hash' | 'candid' | CustomPath;
+
+export type StatusMap = Map<Path | string, Status>;
 
 export type CanisterStatusOptions = {
   /**
@@ -72,6 +70,10 @@ export type CanisterStatusOptions = {
 /**
  * Requests information from a canister's `read_state` endpoint.
  * Can be used to request information about the canister's controllers, time, module hash, candid interface, and more.
+ *
+ * > [!WARNING]
+ * > Requesting the `subnet` path from the canister status might be deprecated in the future.
+ * > Use {@link https://js.icp.build/core/latest/libs/agent/api/namespaces/subnetstatus/functions/request | SubnetStatus.request} to fetch subnet information instead.
  * @param {CanisterStatusOptions} options The configuration for the canister status request.
  * @see {@link CanisterStatusOptions} for detailed options.
  * @returns {Promise<StatusMap>} A map populated with data from the requested paths. Each path is a key in the map, and the value is the data obtained from the certificate for that path.
@@ -83,7 +85,7 @@ export type CanisterStatusOptions = {
  *
  * const controllers = status.get('controllers');
  */
-export const request = async (options: CanisterStatusOptions): Promise<StatusMap<Path>> => {
+export const request = async (options: CanisterStatusOptions): Promise<StatusMap> => {
   const { agent, paths, disableCertificateTimeVerification = false } = options;
   const canisterId = Principal.from(options.canisterId);
 
@@ -200,7 +202,7 @@ export const fetchNodeKeys = (
   certificate: Uint8Array,
   canisterId: Principal,
   root_key?: Uint8Array,
-): SubnetStatus => {
+): BaseSubnetStatus => {
   if (!canisterId._isPrincipal) {
     throw InputError.fromCode(new UnexpectedErrorCode('Invalid canisterId'));
   }

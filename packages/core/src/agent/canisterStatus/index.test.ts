@@ -158,7 +158,8 @@ describe('Canister Status utility', () => {
     ]);
     expect(status.get('time')).toMatchSnapshot();
     // Expect null for a failed result
-    expect(status.get('asdf' as unknown as Path)).toBe(null);
+    expect(status.get('subnet')).toBe(null);
+    expect(status.get('asdf')).toBe(null);
     // Expect undefined for unset value
     expect(status.get('test123')).toBe(undefined);
     expect(consoleSpy).toBeCalledTimes(3);

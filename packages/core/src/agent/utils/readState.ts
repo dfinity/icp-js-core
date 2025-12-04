@@ -27,46 +27,31 @@ export const IC_ROOT_SUBNET_ID = Principal.fromText(
   'tdb26-jop6k-aogll-7ltgs-eruif-6kk7m-qpktf-gdiqx-mxtrf-vb5e6-eqe',
 );
 
+export type SubnetNodeKeys = Map<string, DerEncodedPublicKey>;
+
 /**
  * Represents the useful information about a subnet
- * @param {string} subnetId the principal id of the canister's subnet
- * @param {string[]} nodeKeys the keys of the individual nodes in the subnet
  */
-export type SubnetStatus = {
-  // Principal as a string
+export type BaseSubnetStatus = {
+  /**
+   * The subnet ID
+   */
   subnetId: string;
-  nodeKeys: Map<string, DerEncodedPublicKey>;
-  metrics?: SubnetMetrics;
+  /**
+   * The node keys of the subnet
+   */
+  nodeKeys: SubnetNodeKeys;
+  /**
+   * Not supported
+   */
+  metrics?: never;
 };
 
 /**
- * Subnet metrics data structure
- */
-export type SubnetMetrics = {
-  num_canisters: bigint;
-  canister_state_bytes: bigint;
-  consumed_cycles_total: {
-    current: bigint;
-    deleted: bigint;
-  };
-  update_transactions_total: bigint;
-};
-
-/**
- * Types of an entry on the status map.
+ * Base types of an entry on the status map.
  * An entry of null indicates that the request failed, due to lack of permissions or the result being missing.
  */
-export type Status =
-  | string
-  | Uint8Array
-  | Date
-  | Uint8Array[]
-  | Principal[]
-  | SubnetStatus
-  | bigint
-  | null;
-
-export type StatusMap<P> = Map<P | string, Status>;
+export type BaseStatus = string | Uint8Array | Date | Uint8Array[] | Principal[] | bigint | null;
 
 /**
  * Decode strategy for custom paths
@@ -96,7 +81,7 @@ export class CustomPath implements CustomPath {
  * @param strategy the decode strategy to use
  * @returns the decoded value
  */
-export function decodeValue(data: Uint8Array, strategy: DecodeStrategy): Status {
+export function decodeValue(data: Uint8Array, strategy: DecodeStrategy): BaseStatus {
   switch (strategy) {
     case 'raw':
       return data;
@@ -156,7 +141,7 @@ export function isCustomPath<T>(path: T): path is T & { key: string; path: unkno
 export function lookupNodeKeysFromCertificate(
   certificate: Cert,
   subnetId: Principal,
-): Map<string, DerEncodedPublicKey> {
+): SubnetNodeKeys {
   const subnetLookupResult = lookup_subtree(
     ['subnet', subnetId.toUint8Array(), 'node'],
     certificate.tree,
