@@ -374,7 +374,7 @@ describe('queryExpiry', () => {
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
   });
 
-  it.only('should succeed if clock is drifted by more than 5 minutes in the future without syncing it', async () => {
+  it('should succeed if clock is drifted by more than 5 minutes in the future without syncing it', async () => {
     const timeDiffMsecs = 6 * MINUTE_TO_MSECS;
     const replicaDate = new Date(now.getTime() + timeDiffMsecs);
 
