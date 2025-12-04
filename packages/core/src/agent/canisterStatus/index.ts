@@ -70,6 +70,7 @@ export type CanisterStatusOptions = {
 /**
  * Requests information from a canister's `read_state` endpoint.
  * Can be used to request information about the canister's controllers, time, module hash, candid interface, and more.
+ * @deprecated Requesting the `subnet` path from the canister status might be deprecated in the future. Use {@link https://js.icp.build/core/latest/libs/agent/api/namespaces/subnetstatus/functions/request | SubnetStatus.request} to fetch subnet information instead.
  * @param {CanisterStatusOptions} options The configuration for the canister status request.
  * @see {@link CanisterStatusOptions} for detailed options.
  * @returns {Promise<StatusMap>} A map populated with data from the requested paths. Each path is a key in the map, and the value is the data obtained from the certificate for that path.
