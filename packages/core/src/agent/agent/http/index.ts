@@ -56,7 +56,7 @@ import {
   type HttpHeaderField,
 } from './types.ts';
 import { type SubnetStatus, request as canisterStatusRequest } from '../../canisterStatus/index.ts';
-import { type HashTree, lookup_path, LookupPathStatus } from '../../certificate.ts';
+import { Certificate, type HashTree, lookup_path, LookupPathStatus } from '../../certificate.ts';
 import { ed25519 } from '@noble/curves/ed25519';
 import { ExpirableMap } from '../../utils/expirableMap.ts';
 import { Ed25519PublicKey } from '../../public_key.ts';
@@ -67,7 +67,7 @@ import {
   ExponentialBackoff,
 } from '../../polling/backoff.ts';
 import { decodeTime } from '../../utils/leb.ts';
-import { concatBytes, hexToBytes } from '@noble/hashes/utils';
+import { concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
 export * from './transforms.ts';
@@ -1106,7 +1106,6 @@ export class HttpAgent implements Agent {
     if (request) {
       // This is a pre-signed request
       transformedRequest = request;
-      requestId = requestIdOf(transformedRequest);
     } else {
       // This is fields, we need to create a request
       requestId = getRequestId(fields);
@@ -1121,8 +1120,35 @@ export class HttpAgent implements Agent {
 
     const url = new URL(`/api/v3/canister/${canister.toString()}/read_state`, this.host);
 
-    this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
+    return await this.#readStateInner(url, transformedRequest, requestId);
+  }
 
+  /**
+   * Reads the state of a subnet from the `/api/v3/subnet/{subnetId}/read_state` endpoint.
+   * @param subnetId The ID of the subnet to read the state of. If you have a canister ID, you can use {@link HttpAgent.getSubnetIdFromCanister | getSubnetIdFromCanister} to get the subnet ID.
+   * @param options The options for the read state request.
+   * @returns The response from the read state request.
+   */
+  public async readSubnetState(
+    subnetId: Principal | string,
+    options: ReadStateOptions,
+  ): Promise<ReadStateResponse> {
+    await this.#rootKeyGuard();
+
+    const url = new URL(`/api/v3/subnet/${subnetId.toString()}/read_state`, this.host);
+    const transformedRequest: ReadStateRequest = await this.createReadStateRequest(
+      options,
+      this.#identity ?? undefined,
+    );
+
+    return await this.#readStateInner(url, transformedRequest);
+  }
+
+  async #readStateInner(
+    url: URL,
+    transformedRequest: ReadStateRequest,
+    requestId?: RequestId,
+  ): Promise<ReadStateResponse> {
     const backoff = this.#backoffStrategy();
     try {
       const { responseBodyBytes } = await this.#requestAndRetry({
@@ -1138,15 +1164,13 @@ export class HttpAgent implements Agent {
 
       const decodedResponse: ReadStateResponse = cbor.decode(responseBodyBytes);
 
-      this.log.print('Read state response:', decodedResponse);
-
       return decodedResponse;
     } catch (error) {
       let readStateError: AgentError;
       if (error instanceof AgentError) {
         // override the error code to include the request details
         error.code.requestContext = {
-          requestId,
+          requestId: requestId ?? requestIdOf(transformedRequest),
           senderPubKey: transformedRequest.body.sender_pubkey,
           senderSignature: transformedRequest.body.sender_sig,
           ingressExpiry: transformedRequest.body.content.ingress_expiry,
@@ -1354,6 +1378,32 @@ export class HttpAgent implements Agent {
     }
     // If the subnet status is not returned, return undefined
     return undefined;
+  }
+
+  /**
+   * Returns the subnet ID for a given canister ID, by looking at the certificate delegation
+   * returned by the canister's state obtained by requesting the `/time` path with {@link HttpAgent.readState | readState}.
+   * @param canisterId The canister ID to get the subnet ID for.
+   * @returns The subnet ID for the given canister ID.
+   */
+  public async getSubnetIdFromCanister(canisterId: Principal | string): Promise<Principal> {
+    const effectiveCanisterId = Principal.from(canisterId);
+    await this.#asyncGuard(effectiveCanisterId);
+
+    const canisterReadState = await this.readState(effectiveCanisterId, {
+      paths: [[utf8ToBytes('time')]],
+    });
+    const canisterCertificate = await Certificate.create({
+      certificate: canisterReadState.certificate,
+      rootKey: this.rootKey!,
+      principal: { canisterId: effectiveCanisterId },
+      agent: this,
+    });
+
+    if (!canisterCertificate.cert.delegation) {
+      return Principal.selfAuthenticating(this.rootKey!);
+    }
+    return Principal.fromUint8Array(new Uint8Array(canisterCertificate.cert.delegation.subnet_id));
   }
 
   protected _transform(request: HttpAgentRequest): Promise<HttpAgentRequest> {

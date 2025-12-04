@@ -33,7 +33,7 @@ test('read_state', async () => {
   const cert = await Certificate.create({
     certificate: response.certificate,
     rootKey: resolvedAgent.rootKey,
-    canisterId: ecid,
+    principal: { canisterId: ecid },
   });
 
   const timeLookup = cert.lookup_path(validTimePath);
@@ -67,7 +67,7 @@ test('read_state with passed request', async () => {
   const cert = await Certificate.create({
     certificate: response.certificate,
     rootKey: resolvedAgent.rootKey,
-    canisterId: canisterId,
+    principal: { canisterId: canisterId },
   });
   expect(cert.lookup_path([utf8ToBytes('Time')])).toEqual({
     status: LookupPathStatus.Unknown,

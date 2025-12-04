@@ -99,6 +99,7 @@ export {
   IC_REQUEST_DOMAIN_SEPARATOR,
   IC_RESPONSE_DOMAIN_SEPARATOR,
   IC_REQUEST_AUTH_DELEGATION_DOMAIN_SEPARATOR,
+  IC_STATE_ROOT_DOMAIN_SEPARATOR,
 } from './constants.ts';
 export * from './der.ts';
 export * from './errors.ts';
@@ -111,7 +112,7 @@ export * from './utils/buffer.ts';
 export * from './utils/random.ts';
 export * as polling from './polling/index.ts';
 import * as CanisterStatus from './canisterStatus/index.ts';
-export { CanisterStatus };
+import * as SubnetStatus from './subnetStatus/index.ts';
 /**
  * The CanisterStatus utility is used to request structured data directly from the IC public API. This data can be accessed using agent.readState, but CanisterStatus provides a helpful abstraction with some known paths.
  *
@@ -119,6 +120,12 @@ export { CanisterStatus };
  *
  * The primary method for this namespace is {@link CanisterStatus.request}
  */
-
+export { CanisterStatus };
+/**
+ * The SubnetStatus utility is used to request structured data directly from the IC public API. This data can be accessed using agent.readSubnetState, but SubnetStatus provides a helpful abstraction with some known paths.
+ *
+ * The primary method for this namespace is {@link SubnetStatus.request}
+ */
+export { SubnetStatus };
 export { Cbor, ToCborValue } from './cbor.ts';
 export * from './polling/index.ts';

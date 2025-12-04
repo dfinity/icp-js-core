@@ -3,14 +3,10 @@ import {
   CertificateVerificationErrorCode,
   MissingRootKeyErrorCode,
   CertificateNotAuthorizedErrorCode,
-  LookupErrorCode,
-  DerKeyLengthMismatchErrorCode,
   ExternalError,
-  ProtocolError,
   TrustError,
   AgentError,
   UnknownError,
-  HashTreeDecodeErrorCode,
   UnexpectedErrorCode,
   InputError,
   CertificateTimeErrorCode,
@@ -19,99 +15,34 @@ import { HttpAgent } from '../agent/http/index.ts';
 import {
   type Cert,
   Certificate,
-  flatten_forks,
   check_canister_ranges,
-  LookupPathStatus,
-  lookup_path,
   lookupResultToBuffer,
-  lookup_subtree,
-  type LabeledHashTree,
-  LookupSubtreeStatus,
 } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
-import { decodeLeb128, decodeTime } from '../utils/leb.ts';
-import { type DerEncodedPublicKey } from '../auth.ts';
+import { decodeTime } from '../utils/leb.ts';
 import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils';
+import {
+  type BaseSubnetStatus,
+  type BaseStatus,
+  CustomPath,
+  decodeValue,
+  decodeControllers,
+  encodeMetadataPath,
+  isCustomPath,
+  lookupNodeKeysFromCertificate,
+  IC_ROOT_SUBNET_ID,
+} from '../utils/readState.ts';
 
-/**
- * Represents the useful information about a subnet
- * @param {string} subnetId the principal id of the canister's subnet
- * @param {string[]} nodeKeys the keys of the individual nodes in the subnet
- */
-export type SubnetStatus = {
-  // Principal as a string
-  subnetId: string;
-  nodeKeys: Map<string, DerEncodedPublicKey>;
-  metrics?: {
-    num_canisters: bigint;
-    canister_state_bytes: bigint;
-    consumed_cycles_total: {
-      current: bigint;
-      deleted: bigint;
-    };
-    update_transactions_total: bigint;
-  };
-};
+// Re-export shared types for backwards compatibility
+export { type DecodeStrategy, CustomPath } from '../utils/readState.ts';
 
-/**
- * Types of an entry on the canisterStatus map.
- * An entry of null indicates that the request failed, due to lack of permissions or the result being missing.
- */
-export type Status =
-  | string
-  | Uint8Array
-  | Date
-  | Uint8Array[]
-  | Principal[]
-  | SubnetStatus
-  | bigint
-  | null;
-
-/**
- * Interface to define a custom path. Nested paths will be represented as individual buffers, and can be created from text using TextEncoder.
- * @param {string} key the key to use to access the returned value in the canisterStatus map
- * @param {Uint8Array[]} path the path to the desired value, represented as an array of buffers
- * @param {string} decodeStrategy the strategy to use to decode the returned value
- */
-export class CustomPath implements CustomPath {
-  public key: string;
-  public path: Uint8Array[] | string;
-  public decodeStrategy: 'cbor' | 'hex' | 'leb128' | 'utf-8' | 'raw';
-  constructor(
-    key: string,
-    path: Uint8Array[] | string,
-    decodeStrategy: 'cbor' | 'hex' | 'leb128' | 'utf-8' | 'raw',
-  ) {
-    this.key = key;
-    this.path = path;
-    this.decodeStrategy = decodeStrategy;
-  }
-}
-
-/**
- * @deprecated Use {@link CustomPath} instead
- * @param {string} key the key to use to access the returned value in the canisterStatus map
- * @param {string} path the path to the desired value, represented as a string
- * @param {string} decodeStrategy the strategy to use to decode the returned value
- */
-export interface MetaData {
-  kind: 'metadata';
-  key: string;
-  path: string | Uint8Array;
-  decodeStrategy: 'cbor' | 'hex' | 'leb128' | 'utf-8' | 'raw';
-}
+export type SubnetStatus = BaseSubnetStatus;
+export type Status = BaseStatus | SubnetStatus;
 
 /**
  * Pre-configured fields for canister status paths
  */
-export type Path =
-  | 'time'
-  | 'controllers'
-  | 'subnet'
-  | 'module_hash'
-  | 'candid'
-  | MetaData
-  | CustomPath;
+export type Path = 'time' | 'controllers' | 'subnet' | 'module_hash' | 'candid' | CustomPath;
 
 export type StatusMap = Map<Path | string, Status>;
 
@@ -139,6 +70,7 @@ export type CanisterStatusOptions = {
 /**
  * Requests information from a canister's `read_state` endpoint.
  * Can be used to request information about the canister's controllers, time, module hash, candid interface, and more.
+ * @deprecated Requesting the `subnet` path from the canister status might be deprecated in the future. Use {@link https://js.icp.build/core/latest/libs/agent/api/namespaces/subnetstatus/functions/request | SubnetStatus.request} to fetch subnet information instead.
  * @param {CanisterStatusOptions} options The configuration for the canister status request.
  * @see {@link CanisterStatusOptions} for detailed options.
  * @returns {Promise<StatusMap>} A map populated with data from the requested paths. Each path is a key in the map, and the value is the data obtained from the certificate for that path.
@@ -175,7 +107,7 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
         const certificate = await Certificate.create({
           certificate: response.certificate,
           rootKey,
-          canisterId,
+          principal: { canisterId },
           disableTimeVerification: disableCertificateTimeVerification,
           agent,
         });
@@ -229,27 +161,8 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
             }
             default: {
               // Check for CustomPath signature
-              if (typeof path !== 'string' && 'key' in path && 'path' in path) {
-                switch (path.decodeStrategy) {
-                  case 'raw':
-                    status.set(path.key, data);
-                    break;
-                  case 'leb128': {
-                    status.set(path.key, decodeLeb128(data));
-                    break;
-                  }
-                  case 'cbor': {
-                    status.set(path.key, cbor.decode(data));
-                    break;
-                  }
-                  case 'hex': {
-                    status.set(path.key, bytesToHex(data));
-                    break;
-                  }
-                  case 'utf-8': {
-                    status.set(path.key, new TextDecoder().decode(data));
-                  }
-                }
+              if (isCustomPath(path)) {
+                status.set(path.key, decodeValue(data, path.decodeStrategy));
               }
             }
           }
@@ -263,7 +176,7 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
         ) {
           throw error;
         }
-        if (typeof path !== 'string' && 'key' in path && 'path' in path) {
+        if (isCustomPath(path)) {
           status.set(path.key, null);
         } else {
           status.set(path, null);
@@ -286,37 +199,21 @@ export const fetchNodeKeys = (
   certificate: Uint8Array,
   canisterId: Principal,
   root_key?: Uint8Array,
-): SubnetStatus => {
+): BaseSubnetStatus => {
   if (!canisterId._isPrincipal) {
     throw InputError.fromCode(new UnexpectedErrorCode('Invalid canisterId'));
   }
   const cert = cbor.decode<Cert>(certificate);
-  const tree = cert.tree;
-  let delegation = cert.delegation;
+  const { delegation, tree } = cert;
   let subnetId: Principal;
   if (delegation && delegation.subnet_id) {
     subnetId = Principal.fromUint8Array(new Uint8Array(delegation.subnet_id));
-  }
-
-  // On local replica, with System type subnet, there is no delegation
-  else if (!delegation && typeof root_key !== 'undefined') {
+  } else if (!delegation && typeof root_key !== 'undefined') {
+    // On local replica, with System type subnet, there is no delegation
     subnetId = Principal.selfAuthenticating(new Uint8Array(root_key));
-    delegation = {
-      subnet_id: subnetId.toUint8Array(),
-      certificate: new Uint8Array(0),
-    };
-  }
-  // otherwise use default NNS subnet id
-  else {
-    subnetId = Principal.selfAuthenticating(
-      Principal.fromText(
-        'tdb26-jop6k-aogll-7ltgs-eruif-6kk7m-qpktf-gdiqx-mxtrf-vb5e6-eqe',
-      ).toUint8Array(),
-    );
-    delegation = {
-      subnet_id: subnetId.toUint8Array(),
-      certificate: new Uint8Array(0),
-    };
+  } else {
+    // otherwise use default NNS subnet id
+    subnetId = IC_ROOT_SUBNET_ID;
   }
 
   const canisterInRange = check_canister_ranges({ canisterId, subnetId, tree });
@@ -324,39 +221,10 @@ export const fetchNodeKeys = (
     throw TrustError.fromCode(new CertificateNotAuthorizedErrorCode(canisterId, subnetId));
   }
 
-  const subnetLookupResult = lookup_subtree(['subnet', delegation.subnet_id, 'node'], tree);
-  if (subnetLookupResult.status !== LookupSubtreeStatus.Found) {
-    throw ProtocolError.fromCode(new LookupErrorCode('Node not found', subnetLookupResult.status));
-  }
-  if (subnetLookupResult.value instanceof Uint8Array) {
-    throw UnknownError.fromCode(new HashTreeDecodeErrorCode('Invalid node tree'));
-  }
-
-  // The forks are all labeled trees with the <node_id> label
-  const nodeForks = flatten_forks(subnetLookupResult.value) as Array<LabeledHashTree>;
-  const nodeKeys = new Map<string, DerEncodedPublicKey>();
-
-  nodeForks.forEach(fork => {
-    const node_id = Principal.from(fork[1]).toText();
-    const publicKeyLookupResult = lookup_path(['public_key'], fork[2]);
-    if (publicKeyLookupResult.status !== LookupPathStatus.Found) {
-      throw ProtocolError.fromCode(
-        new LookupErrorCode('Public key not found', publicKeyLookupResult.status),
-      );
-    }
-
-    const derEncodedPublicKey = publicKeyLookupResult.value;
-    if (derEncodedPublicKey.byteLength !== 44) {
-      throw ProtocolError.fromCode(
-        new DerKeyLengthMismatchErrorCode(44, derEncodedPublicKey.byteLength),
-      );
-    } else {
-      nodeKeys.set(node_id, derEncodedPublicKey as DerEncodedPublicKey);
-    }
-  });
+  const nodeKeys = lookupNodeKeysFromCertificate(cert, subnetId);
 
   return {
-    subnetId: Principal.fromUint8Array(new Uint8Array(delegation.subnet_id)).toText(),
+    subnetId: subnetId.toText(),
     nodeKeys,
   };
 };
@@ -381,16 +249,12 @@ export const encodePath = (path: Path, canisterId: Principal): Uint8Array[] => {
       ];
     default: {
       // Check for CustomPath signature
-      if ('key' in path && 'path' in path) {
+      if (isCustomPath(path)) {
         // For simplified metadata queries
         if (typeof path['path'] === 'string' || path['path'] instanceof Uint8Array) {
-          const metaPath = path.path;
-          const encoded = typeof metaPath === 'string' ? utf8ToBytes(metaPath) : metaPath;
-
-          return [utf8ToBytes('canister'), canisterUint8Array, utf8ToBytes('metadata'), encoded];
-
-          // For non-metadata, return the provided custompath
+          return encodeMetadataPath(path.path, canisterUint8Array);
         } else {
+          // For non-metadata, return the provided custom path
           return path['path'];
         }
       }
@@ -401,12 +265,4 @@ export const encodePath = (path: Path, canisterId: Principal): Uint8Array[] => {
       `Error while encoding your path for canister status. Please ensure that your path ${path} was formatted correctly.`,
     ),
   );
-};
-
-// Controllers are CBOR-encoded buffers
-const decodeControllers = (buf: Uint8Array): Principal[] => {
-  const controllersRaw = cbor.decode<Uint8Array[]>(buf);
-  return controllersRaw.map(buf => {
-    return Principal.fromUint8Array(buf);
-  });
 };

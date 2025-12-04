@@ -158,7 +158,8 @@ describe('Canister Status utility', () => {
     ]);
     expect(status.get('time')).toMatchSnapshot();
     // Expect null for a failed result
-    expect(status.get('asdf' as unknown as Path)).toBe(null);
+    expect(status.get('subnet')).toBe(null);
+    expect(status.get('asdf')).toBe(null);
     // Expect undefined for unset value
     expect(status.get('test123')).toBe(undefined);
     expect(consoleSpy).toBeCalledTimes(3);
@@ -172,7 +173,7 @@ describe('node keys', () => {
     jest.setSystemTime(new Date(Date.parse('2023-09-27T19:38:58.129Z')));
     await Cert.Certificate.create({
       certificate: hexToBytes(mainnetApplicationLegacy),
-      canisterId: Principal.fromText('erxue-5aaaa-aaaab-qaagq-cai'),
+      principal: { canisterId: Principal.fromText('erxue-5aaaa-aaaab-qaagq-cai') },
       rootKey: hexToBytes(IC_ROOT_KEY),
     });
 
@@ -190,7 +191,7 @@ describe('node keys', () => {
     jest.setSystemTime(new Date(Date.parse('2023-09-27T19:58:19.412Z')));
     await Cert.Certificate.create({
       certificate: hexToBytes(mainnetSystem),
-      canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai'),
+      principal: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
       rootKey: hexToBytes(IC_ROOT_KEY),
     });
 
@@ -208,7 +209,7 @@ describe('node keys', () => {
     jest.setSystemTime(new Date(Date.parse('2023-09-27T20:14:59.406Z')));
     await Cert.Certificate.create({
       certificate: hexToBytes(localApplication),
-      canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai'),
+      principal: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
       rootKey: hexToBytes(IC_ROOT_KEY),
     });
 
@@ -226,7 +227,7 @@ describe('node keys', () => {
     jest.setSystemTime(new Date(Date.parse('2023-09-27T20:15:03.406Z')));
     await Cert.Certificate.create({
       certificate: hexToBytes(localSystem),
-      canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai'),
+      principal: { canisterId: Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai') },
       rootKey: hexToBytes(IC_ROOT_KEY),
     });
 

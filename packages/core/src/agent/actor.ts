@@ -460,7 +460,7 @@ function _createActorMethod(
         certificate = await Certificate.create({
           certificate: cert,
           rootKey: agent.rootKey,
-          canisterId: ecid,
+          principal: { canisterId: ecid },
           blsVerify,
           agent,
         });
