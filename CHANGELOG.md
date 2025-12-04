@@ -13,6 +13,7 @@
 - feat(assets)!: drops support for cjs for the `@dfinity/assets` package
 - feat(auth-client)!: `@dfinity/auth-client` has been deprecated. Migrate to [`@icp-sdk/auth`](https://js.icp.build/auth/latest/upgrading/v4)
 - feat(agent): lookup canister ranges using the `/canister_ranges/<subnet_id>/<ranges>` certificate path
+- feat(agent): introduce the `lookupCanisterRanges`, `lookupCanisterRangesFallback`, and `decodeCanisterRanges` utility functions to lookup canister ranges from certificate trees
 - feat(agent): introduce the `getSubnetIdFromCanister` and `readSubnetState` methods in the `HttpAgent` class
 - feat(agent): introduce the `SubnetStatus` utility namespace to request subnet information directly from the IC public API
 - feat(agent): export `IC_STATE_ROOT_DOMAIN_SEPARATOR` constant
