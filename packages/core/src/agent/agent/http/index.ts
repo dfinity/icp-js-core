@@ -55,7 +55,9 @@ import {
   type ReadStateRequest,
   type HttpHeaderField,
 } from './types.ts';
-import { type SubnetStatus, request as canisterStatusRequest } from '../../canisterStatus/index.ts';
+import { request as canisterStatusRequest } from '../../canisterStatus/index.ts';
+import { request as subnetStatusRequest } from '../../subnetStatus/index.ts';
+import { type SubnetNodeKeys } from '../../utils/readState.ts';
 import { Certificate, type HashTree, lookup_path, LookupPathStatus } from '../../certificate.ts';
 import { ed25519 } from '@noble/curves/ed25519';
 import { ExpirableMap } from '../../utils/expirableMap.ts';
@@ -315,7 +317,7 @@ export class HttpAgent implements Agent {
   #queryPipeline: HttpAgentRequestTransformFn[] = [];
   #updatePipeline: HttpAgentRequestTransformFn[] = [];
 
-  #subnetKeys: ExpirableMap<string, SubnetStatus> = new ExpirableMap({
+  #subnetKeys: ExpirableMap<string, SubnetNodeKeys> = new ExpirableMap({
     expirationTime: 5 * MINUTE_TO_MSECS,
   });
   #verifyQuerySignatures = true;
@@ -933,17 +935,17 @@ export class HttpAgent implements Agent {
       };
     };
 
-    const getSubnetStatus = async (): Promise<SubnetStatus> => {
-      const cachedSubnetStatus = this.#subnetKeys.get(ecid.toString());
-      if (cachedSubnetStatus) {
-        return cachedSubnetStatus;
+    const getSubnetNodeKeys = async (): Promise<SubnetNodeKeys> => {
+      const cachedSubnetNodeKeys = this.#subnetKeys.get(ecid.toString());
+      if (cachedSubnetNodeKeys) {
+        return cachedSubnetNodeKeys;
       }
       await this.fetchSubnetKeys(ecid.toString());
-      const subnetStatus = this.#subnetKeys.get(ecid.toString());
-      if (!subnetStatus) {
+      const subnetNodeKeys = this.#subnetKeys.get(ecid.toString());
+      if (!subnetNodeKeys) {
         throw TrustError.fromCode(new MissingSignatureErrorCode());
       }
-      return subnetStatus;
+      return subnetNodeKeys;
     };
 
     try {
@@ -953,16 +955,19 @@ export class HttpAgent implements Agent {
       }
 
       // Make query and fetch subnet keys in parallel
-      const [queryWithDetails, subnetStatus] = await Promise.all([makeQuery(), getSubnetStatus()]);
+      const [queryWithDetails, subnetNodeKeys] = await Promise.all([
+        makeQuery(),
+        getSubnetNodeKeys(),
+      ]);
 
       try {
-        return this.#verifyQueryResponse(queryWithDetails, subnetStatus);
+        return this.#verifyQueryResponse(queryWithDetails, subnetNodeKeys);
       } catch {
         // In case the node signatures have changed, refresh the subnet keys and try again
         this.log.warn('Query response verification failed. Retrying with fresh subnet keys.');
         this.#subnetKeys.delete(ecid.toString());
-        const updatedSubnetStatus = await getSubnetStatus();
-        return this.#verifyQueryResponse(queryWithDetails, updatedSubnetStatus);
+        const updatedSubnetNodeKeys = await getSubnetNodeKeys();
+        return this.#verifyQueryResponse(queryWithDetails, updatedSubnetNodeKeys);
       }
     } catch (error) {
       let queryError: AgentError;
@@ -986,12 +991,12 @@ export class HttpAgent implements Agent {
   /**
    * See https://internetcomputer.org/docs/current/references/ic-interface-spec/#http-query for details on validation
    * @param queryResponse - The response from the query
-   * @param subnetStatus - The subnet status, including all node keys
+   * @param subnetNodeKeys - The subnet node keys
    * @returns ApiQueryResponse
    */
   #verifyQueryResponse = (
     queryResponse: ApiQueryResponse,
-    subnetStatus: SubnetStatus,
+    subnetNodeKeys: SubnetNodeKeys,
   ): ApiQueryResponse => {
     if (this.#verifyQuerySignatures === false) {
       // This should not be called if the user has disabled verification
@@ -1030,7 +1035,7 @@ export class HttpAgent implements Agent {
       const separatorWithHash = concatBytes(IC_RESPONSE_DOMAIN_SEPARATOR, hash);
 
       // FIX: check for match without verifying N times
-      const pubKey = subnetStatus.nodeKeys.get(nodeId);
+      const pubKey = subnetNodeKeys.get(nodeId);
       if (!pubKey) {
         throw ProtocolError.fromCode(new MalformedPublicKeyErrorCode());
       }
@@ -1362,21 +1367,25 @@ export class HttpAgent implements Agent {
     this.#identity = Promise.resolve(identity);
   }
 
-  public async fetchSubnetKeys(canisterId: Principal | string) {
+  public async fetchSubnetKeys(
+    canisterId: Principal | string,
+  ): Promise<SubnetNodeKeys | undefined> {
     const effectiveCanisterId: Principal = Principal.from(canisterId);
     await this.#asyncGuard(effectiveCanisterId);
-    const response = await canisterStatusRequest({
-      canisterId: effectiveCanisterId,
-      paths: ['subnet'],
+
+    const subnetId = await this.getSubnetIdFromCanister(effectiveCanisterId);
+
+    const response = await subnetStatusRequest({
+      subnetId,
+      paths: ['nodeKeys'],
       agent: this,
     });
 
-    const subnetResponse = response.get('subnet');
-    if (subnetResponse && typeof subnetResponse === 'object' && 'nodeKeys' in subnetResponse) {
-      this.#subnetKeys.set(effectiveCanisterId.toText(), subnetResponse as SubnetStatus);
-      return subnetResponse as SubnetStatus;
+    const nodeKeys = response.get('nodeKeys') as SubnetNodeKeys | undefined;
+    if (nodeKeys) {
+      this.#subnetKeys.set(effectiveCanisterId.toText(), nodeKeys);
+      return nodeKeys;
     }
-    // If the subnet status is not returned, return undefined
     return undefined;
   }
 
@@ -1398,6 +1407,7 @@ export class HttpAgent implements Agent {
       rootKey: this.rootKey!,
       principal: { canisterId: effectiveCanisterId },
       agent: this,
+      disableTimeVerification: true, // avoid extra calls to syncTime
     });
 
     if (!canisterCertificate.cert.delegation) {
