@@ -1226,7 +1226,7 @@ export class HttpAgent implements Agent {
   }
 
   /**
-   * Allows agent to sync its time with the network. Can be called during intialization or mid-lifecycle if the device's clock has drifted away from the network time. This is necessary to set the Expiry for a request
+   * Allows agent to sync its time with the network. Can be called during initialization or mid-lifecycle if the device's clock has drifted away from the network time. This is necessary to set the Expiry for a request
    * @param {Principal} canisterIdOverride - Pass a canister ID if you need to sync the time with a particular subnet. Uses the ICP ledger canister by default.
    */
   public async syncTime(canisterIdOverride?: Principal): Promise<void> {
@@ -1271,18 +1271,7 @@ export class HttpAgent implements Agent {
               }, []),
           );
 
-          const maxReplicaTime = replicaTimes.reduce<number>((max, current) => {
-            return typeof current === 'number' && current > max ? current : max;
-          }, 0);
-
-          if (maxReplicaTime > 0) {
-            this.#timeDiffMsecs = maxReplicaTime - callTime;
-            this.#hasSyncedTime = true;
-            this.log.notify({
-              message: `Syncing time: offset of ${this.#timeDiffMsecs}`,
-              level: 'info',
-            });
-          }
+          this.#setTimeDiffMsecs(callTime, replicaTimes);
         } catch (error) {
           const syncTimeError =
             error instanceof AgentError
@@ -1297,6 +1286,69 @@ export class HttpAgent implements Agent {
     await this.#syncTimePromise.finally(() => {
       this.#syncTimePromise = null;
     });
+  }
+
+  /**
+   * Allows agent to sync its time with the network.
+   * @param {Principal} subnetId - Pass the subnet ID you need to sync the time with.
+   */
+  public async syncTimeWithSubnet(subnetId: Principal): Promise<void> {
+    await this.#rootKeyGuard();
+    const callTime = Date.now();
+
+    try {
+      const anonymousAgent = HttpAgent.createSync({
+        identity: new AnonymousIdentity(),
+        host: this.host.toString(),
+        fetch: this.#fetch,
+        retryTimes: 0,
+        rootKey: this.rootKey ?? undefined,
+        shouldSyncTime: false,
+      });
+
+      const replicaTimes = await Promise.all(
+        Array(3)
+          .fill(null)
+          .map(async () => {
+            const status = await subnetStatusRequest({
+              subnetId,
+              agent: anonymousAgent,
+              paths: ['time'],
+              disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
+            });
+
+            const date = status.get('time');
+            if (date instanceof Date) {
+              return date.getTime();
+            }
+          }, []),
+      );
+
+      this.#setTimeDiffMsecs(callTime, replicaTimes);
+    } catch (error) {
+      const syncTimeError =
+        error instanceof AgentError
+          ? error
+          : UnknownError.fromCode(new UnexpectedErrorCode(error));
+      this.log.error('Caught exception while attempting to sync time with subnet', syncTimeError);
+
+      throw syncTimeError;
+    }
+  }
+
+  #setTimeDiffMsecs(callTime: number, replicaTimes: Array<number | undefined>): void {
+    const maxReplicaTime = replicaTimes.reduce<number>((max, current) => {
+      return typeof current === 'number' && current > max ? current : max;
+    }, 0);
+
+    if (maxReplicaTime > 0) {
+      this.#timeDiffMsecs = maxReplicaTime - callTime;
+      this.#hasSyncedTime = true;
+      this.log.notify({
+        message: `Syncing time: offset of ${this.#timeDiffMsecs}`,
+        level: 'info',
+      });
+    }
   }
 
   public async status(): Promise<JsonObject> {
