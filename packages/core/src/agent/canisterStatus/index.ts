@@ -2,9 +2,7 @@ import { Principal } from '#principal';
 import {
   CertificateVerificationErrorCode,
   MissingRootKeyErrorCode,
-  CertificateNotAuthorizedErrorCode,
   ExternalError,
-  TrustError,
   AgentError,
   UnknownError,
   UnexpectedErrorCode,
@@ -12,12 +10,7 @@ import {
   CertificateTimeErrorCode,
 } from '../errors.ts';
 import { HttpAgent } from '../agent/http/index.ts';
-import {
-  type Cert,
-  Certificate,
-  check_canister_ranges,
-  lookupResultToBuffer,
-} from '../certificate.ts';
+import { type Cert, Certificate, lookupResultToBuffer } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
 import { decodeTime } from '../utils/leb.ts';
 import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils';
@@ -198,6 +191,14 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
   return status;
 };
 
+/**
+ * Lookup node keys from a certificate for a given canister.
+ * The certificate is assumed to be already verified, including whether the canister is in range of the subnet.
+ * @param certificate the certificate to lookup node keys from
+ * @param canisterId the canister ID to lookup node keys for
+ * @param root_key the root key to use to lookup node keys
+ * @returns a map of node IDs to public keys
+ */
 export const fetchNodeKeys = (
   certificate: Uint8Array,
   canisterId: Principal,
@@ -207,7 +208,7 @@ export const fetchNodeKeys = (
     throw InputError.fromCode(new UnexpectedErrorCode('Invalid canisterId'));
   }
   const cert = cbor.decode<Cert>(certificate);
-  const { delegation, tree } = cert;
+  const { delegation } = cert;
   let subnetId: Principal;
   if (delegation && delegation.subnet_id) {
     subnetId = Principal.fromUint8Array(new Uint8Array(delegation.subnet_id));
@@ -217,11 +218,6 @@ export const fetchNodeKeys = (
   } else {
     // otherwise use default NNS subnet id
     subnetId = IC_ROOT_SUBNET_ID;
-  }
-
-  const canisterInRange = check_canister_ranges({ canisterId, subnetId, tree });
-  if (!canisterInRange) {
-    throw TrustError.fromCode(new CertificateNotAuthorizedErrorCode(canisterId, subnetId));
   }
 
   const nodeKeys = lookupNodeKeysFromCertificate(cert, subnetId);
