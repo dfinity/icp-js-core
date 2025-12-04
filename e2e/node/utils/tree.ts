@@ -116,6 +116,7 @@ export function createTimeTree(date: Date): HashTree {
 
 interface SubnetTreeOptions {
   subnetId: Uint8Array;
+  subnetPublicKey: Uint8Array;
   nodeIdentity: Ed25519KeyIdentity;
   canisterRanges: Array<[Uint8Array, Uint8Array]>;
   date: Date;
@@ -125,6 +126,7 @@ interface SubnetTreeOptions {
  * Creates a subnet hash tree.
  * @param {SubnetTreeOptions} options - The options for the subnet tree.
  * @param {Uint8Array} options.subnetId - The ID of the subnet.
+ * @param {Uint8Array} options.subnetPublicKey - The DER-encoded public key of the subnet.
  * @param {Ed25519KeyIdentity} options.nodeIdentity - The identity of the node.
  * @param {Array<[Uint8Array, Uint8Array]>} options.canisterRanges - The canister ranges for the subnet.
  * @param {Date} options.date - The timestamp for the tree.
@@ -132,6 +134,7 @@ interface SubnetTreeOptions {
  */
 export function createSubnetTree({
   subnetId,
+  subnetPublicKey,
   nodeIdentity,
   canisterRanges,
   date,
@@ -141,12 +144,15 @@ export function createSubnetTree({
     labeled('subnet',
       labeled(subnetId,
         fork(
-          labeled('canister_ranges', leaf(Cbor.encode(canisterRanges))),
-          labeled('node',
-            labeled(nodeIdentity.getPrincipal().toUint8Array(),
-              labeled('public_key', leaf(nodeIdentity.getPublicKey().toDer())),
+          fork(
+            labeled('canister_ranges', leaf(Cbor.encode(canisterRanges))),
+            labeled('node',
+              labeled(nodeIdentity.getPrincipal().toUint8Array(),
+                labeled('public_key', leaf(nodeIdentity.getPublicKey().toDer())),
+              ),
             ),
           ),
+          labeled('public_key', leaf(subnetPublicKey)),
         ),
       ),
     ),
