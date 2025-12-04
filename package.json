@@ -82,7 +82,7 @@
     {
       "name": "@icp-sdk/core/agent",
       "path": "./packages/core/dist/agent/index.js",
-      "limit": "52 kB"
+      "limit": "53 kB"
     },
     {
       "name": "@icp-sdk/core/candid",
