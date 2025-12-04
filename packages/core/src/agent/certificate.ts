@@ -866,12 +866,17 @@ function list_paths(path: Array<NodeLabel>, tree: HashTree): Array<Array<NodeLab
   }
 }
 
-type CheckCanisterRangesParams = {
+export type CheckCanisterRangesParams = {
   canisterId: Principal;
   subnetId: Principal;
   tree: HashTree;
 };
-type CanisterRanges = Array<[Principal, Principal]>;
+
+/**
+ * Canister ranges in the form of an array of [start, end] principal tuples,
+ * usually decoded from the certificate.
+ */
+export type CanisterRanges = Array<[Principal, Principal]>;
 
 /**
  * Check if a canister ID falls within the canister ranges of a given subnet
@@ -904,7 +909,7 @@ export function check_canister_ranges(params: CheckCanisterRangesParams): boolea
  * @see https://internetcomputer.org/docs/references/ic-interface-spec#http-read-state
  * @see https://internetcomputer.org/docs/references/ic-interface-spec#state-tree-canister-ranges
  */
-function lookupCanisterRanges(params: CheckCanisterRangesParams): Uint8Array {
+export function lookupCanisterRanges(params: CheckCanisterRangesParams): Uint8Array {
   const { subnetId, tree, canisterId } = params;
 
   const canisterRangeShardsLookup = lookup_subtree(
@@ -940,7 +945,7 @@ function lookupCanisterRanges(params: CheckCanisterRangesParams): Uint8Array {
  * @returns the encoded canister ranges. Use {@link decodeCanisterRanges} to decode them.
  * @see https://internetcomputer.org/docs/references/ic-interface-spec#http-read-state
  */
-function lookupCanisterRangesFallback(subnetId: Principal, tree: HashTree): Uint8Array {
+export function lookupCanisterRangesFallback(subnetId: Principal, tree: HashTree): Uint8Array {
   const lookupResult = lookup_path(['subnet', subnetId.toUint8Array(), 'canister_ranges'], tree);
   if (lookupResult.status !== LookupPathStatus.Found) {
     throw ProtocolError.fromCode(
@@ -953,7 +958,12 @@ function lookupCanisterRangesFallback(subnetId: Principal, tree: HashTree): Uint
   return lookupResult.value;
 }
 
-function decodeCanisterRanges(lookupValue: Uint8Array): CanisterRanges {
+/**
+ * Decode canister ranges from CBOR-encoded buffer
+ * @param lookupValue the CBOR-encoded value read from the certificate
+ * @returns an array of canister range tuples [start, end]
+ */
+export function decodeCanisterRanges(lookupValue: Uint8Array): CanisterRanges {
   const ranges_arr = cbor.decode<Array<[Uint8Array, Uint8Array]>>(lookupValue);
   const ranges: CanisterRanges = ranges_arr.map(v => [
     Principal.fromUint8Array(v[0]),

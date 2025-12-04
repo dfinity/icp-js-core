@@ -2,57 +2,65 @@ import { Principal } from '#principal';
 import {
   CertificateVerificationErrorCode,
   MissingRootKeyErrorCode,
-  CertificateNotAuthorizedErrorCode,
   ExternalError,
-  TrustError,
   AgentError,
   UnknownError,
   UnexpectedErrorCode,
-  InputError,
   CertificateTimeErrorCode,
+  ProtocolError,
+  LookupErrorCode,
 } from '../errors.ts';
 import { HttpAgent } from '../agent/http/index.ts';
 import {
   type Cert,
+  type CanisterRanges,
   Certificate,
-  check_canister_ranges,
   lookupResultToBuffer,
+  decodeCanisterRanges,
+  lookup_path,
+  LookupPathStatus,
 } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
 import { decodeTime } from '../utils/leb.ts';
-import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils';
+import { utf8ToBytes } from '@noble/hashes/utils';
 import {
-  type BaseSubnetStatus,
   type BaseStatus,
+  type BaseSubnetStatus,
+  type SubnetNodeKeys,
   CustomPath,
   decodeValue,
-  decodeControllers,
-  encodeMetadataPath,
   isCustomPath,
   lookupNodeKeysFromCertificate,
   IC_ROOT_SUBNET_ID,
 } from '../utils/readState.ts';
 
-// Re-export shared types for backwards compatibility
-export { type DecodeStrategy, CustomPath } from '../utils/readState.ts';
+// Re-export shared types and functions
+export { type DecodeStrategy, CustomPath, IC_ROOT_SUBNET_ID } from '../utils/readState.ts';
 
-export type SubnetStatus = BaseSubnetStatus;
-export type Status = BaseStatus | SubnetStatus;
+export type SubnetStatus = BaseSubnetStatus & {
+  /**
+   * The public key of the subnet
+   */
+  publicKey: Uint8Array;
+};
+
+export type Status = BaseStatus | SubnetNodeKeys | CanisterRanges;
 
 /**
- * Pre-configured fields for canister status paths
+ * Pre-configured fields for subnet status paths
  */
-export type Path = 'time' | 'controllers' | 'subnet' | 'module_hash' | 'candid' | CustomPath;
+export type Path = 'time' | 'canisterRanges' | 'publicKey' | 'nodeKeys' | CustomPath;
 
 export type StatusMap = Map<Path | string, Status>;
 
-export type CanisterStatusOptions = {
+export type SubnetStatusOptions = {
   /**
-   * The effective canister ID to use in the underlying {@link HttpAgent.readState} call.
+   * The subnet ID to query. Use {@link IC_ROOT_SUBNET_ID} for the IC mainnet root subnet.
+   * You can use {@link HttpAgent.getSubnetIdFromCanister} to get a subnet ID from a canister.
    */
-  canisterId: Principal;
+  subnetId: Principal;
   /**
-   * The agent to use to make the canister request. Must be authenticated.
+   * The agent to use to make the subnet request.
    */
   agent: HttpAgent;
   /**
@@ -68,28 +76,30 @@ export type CanisterStatusOptions = {
 };
 
 /**
- * Requests information from a canister's `read_state` endpoint.
- * Can be used to request information about the canister's controllers, time, module hash, candid interface, and more.
- * @param {CanisterStatusOptions} options The configuration for the canister status request.
- * @see {@link CanisterStatusOptions} for detailed options.
+ * Requests information from a subnet's `read_state` endpoint.
+ * Can be used to request information about the subnet's time, canister ranges, public key, node keys, and metrics.
+ * @param {SubnetStatusOptions} options The configuration for the subnet status request.
+ * @see {@link SubnetStatusOptions} for detailed options.
  * @returns {Promise<StatusMap>} A map populated with data from the requested paths. Each path is a key in the map, and the value is the data obtained from the certificate for that path.
  * @example
- * const status = await canisterStatus({
- *   paths: ['controllers', 'candid'],
- *   ...options
+ * const status = await subnetStatus.request({
+ *   subnetId: IC_ROOT_SUBNET_ID,
+ *   paths: ['time', 'nodeKeys'],
+ *   agent,
  * });
  *
- * const controllers = status.get('controllers');
+ * const time = status.get('time');
+ * const nodeKeys = status.get('nodeKeys');
  */
-export const request = async (options: CanisterStatusOptions): Promise<StatusMap> => {
+export async function request(options: SubnetStatusOptions): Promise<StatusMap> {
   const { agent, paths, disableCertificateTimeVerification = false } = options;
-  const canisterId = Principal.from(options.canisterId);
+  const subnetId = Principal.from(options.subnetId);
 
   const uniquePaths = [...new Set(paths)];
   const status = new Map<string | Path, Status>();
 
   const promises = uniquePaths.map((path, index) => {
-    const encodedPath = encodePath(path, canisterId);
+    const encodedPath = encodePath(path, subnetId);
 
     return (async () => {
       try {
@@ -99,37 +109,36 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
 
         const rootKey = agent.rootKey;
 
-        const response = await agent.readState(canisterId, {
+        const response = await agent.readSubnetState(subnetId, {
           paths: [encodedPath],
         });
 
         const certificate = await Certificate.create({
           certificate: response.certificate,
           rootKey,
-          principal: { canisterId },
+          principal: { subnetId },
           disableTimeVerification: disableCertificateTimeVerification,
           agent,
         });
 
-        const lookup = (cert: Certificate, path: Path) => {
-          if (path === 'subnet') {
-            const data = fetchNodeKeys(response.certificate, canisterId, rootKey);
+        const lookup = (cert: Certificate, lookupPath: Path) => {
+          if (lookupPath === 'nodeKeys') {
+            // For node keys, we need to parse the certificate directly
+            const data = lookupNodeKeysFromCertificate(cert.cert, subnetId);
             return {
-              path,
+              path: lookupPath,
               data,
             };
           } else {
             return {
-              path,
+              path: lookupPath,
               data: lookupResultToBuffer(cert.lookup_path(encodedPath)),
             };
           }
         };
 
-        // must pass in the rootKey if we have no delegation
         const { path, data } = lookup(certificate, uniquePaths[index]);
         if (!data) {
-          // Typically, the cert lookup will throw
           console.warn(`Expected to find result for path ${path}, but instead found nothing.`);
           if (typeof path === 'string') {
             status.set(path, null);
@@ -142,20 +151,16 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
               status.set(path, decodeTime(data));
               break;
             }
-            case 'controllers': {
-              status.set(path, decodeControllers(data));
+            case 'canisterRanges': {
+              status.set(path, decodeCanisterRanges(data));
               break;
             }
-            case 'module_hash': {
-              status.set(path, bytesToHex(data));
-              break;
-            }
-            case 'subnet': {
+            case 'publicKey': {
               status.set(path, data);
               break;
             }
-            case 'candid': {
-              status.set(path, new TextDecoder().decode(data));
+            case 'nodeKeys': {
+              status.set(path, data);
               break;
             }
             default: {
@@ -192,68 +197,66 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
   await Promise.all(promises);
 
   return status;
-};
+}
 
-export const fetchNodeKeys = (
-  certificate: Uint8Array,
-  canisterId: Principal,
-  root_key?: Uint8Array,
-): BaseSubnetStatus => {
-  if (!canisterId._isPrincipal) {
-    throw InputError.fromCode(new UnexpectedErrorCode('Invalid canisterId'));
-  }
+/**
+ * Fetch subnet info including node keys from a certificate
+ * @param certificate the certificate bytes
+ * @param subnetId the subnet ID
+ * @returns SubnetStatus with subnet ID and node keys
+ */
+export function lookupSubnetInfo(certificate: Uint8Array, subnetId: Principal): SubnetStatus {
   const cert = cbor.decode<Cert>(certificate);
-  const { delegation, tree } = cert;
-  let subnetId: Principal;
-  if (delegation && delegation.subnet_id) {
-    subnetId = Principal.fromUint8Array(new Uint8Array(delegation.subnet_id));
-  } else if (!delegation && typeof root_key !== 'undefined') {
-    // On local replica, with System type subnet, there is no delegation
-    subnetId = Principal.selfAuthenticating(new Uint8Array(root_key));
-  } else {
-    // otherwise use default NNS subnet id
-    subnetId = IC_ROOT_SUBNET_ID;
-  }
-
-  const canisterInRange = check_canister_ranges({ canisterId, subnetId, tree });
-  if (!canisterInRange) {
-    throw TrustError.fromCode(new CertificateNotAuthorizedErrorCode(canisterId, subnetId));
-  }
-
   const nodeKeys = lookupNodeKeysFromCertificate(cert, subnetId);
+  const publicKey = lookupSubnetPublicKey(cert, subnetId);
 
   return {
     subnetId: subnetId.toText(),
     nodeKeys,
+    publicKey,
   };
-};
+}
 
-export const encodePath = (path: Path, canisterId: Principal): Uint8Array[] => {
-  const canisterUint8Array = canisterId.toUint8Array();
+function lookupSubnetPublicKey(certificate: Cert, subnetId: Principal): Uint8Array {
+  const subnetLookupResult = lookup_path(
+    ['subnet', subnetId.toUint8Array(), 'public_key'],
+    certificate.tree,
+  );
+  if (subnetLookupResult.status !== LookupPathStatus.Found) {
+    throw ProtocolError.fromCode(
+      new LookupErrorCode('Public key not found', subnetLookupResult.status),
+    );
+  }
+  return subnetLookupResult.value;
+}
+
+/**
+ * Encode a path for subnet state queries
+ * @param path the path to encode
+ * @param subnetId the subnet ID
+ * @returns the encoded path as an array of Uint8Arrays
+ */
+export function encodePath(path: Path, subnetId: Principal): Uint8Array[] {
+  const subnetUint8Array = subnetId.toUint8Array();
   switch (path) {
     case 'time':
       return [utf8ToBytes('time')];
-    case 'controllers':
-      return [utf8ToBytes('canister'), canisterUint8Array, utf8ToBytes('controllers')];
-    case 'module_hash':
-      return [utf8ToBytes('canister'), canisterUint8Array, utf8ToBytes('module_hash')];
-    case 'subnet':
-      return [utf8ToBytes('subnet')];
-    case 'candid':
-      return [
-        utf8ToBytes('canister'),
-        canisterUint8Array,
-        utf8ToBytes('metadata'),
-        utf8ToBytes('candid:service'),
-      ];
+    case 'canisterRanges':
+      return [utf8ToBytes('canister_ranges'), subnetUint8Array];
+    case 'publicKey':
+      return [utf8ToBytes('subnet'), subnetUint8Array, utf8ToBytes('public_key')];
+    case 'nodeKeys':
+      return [utf8ToBytes('subnet'), subnetUint8Array, utf8ToBytes('node')];
     default: {
       // Check for CustomPath signature
       if (isCustomPath(path)) {
-        // For simplified metadata queries
         if (typeof path['path'] === 'string' || path['path'] instanceof Uint8Array) {
-          return encodeMetadataPath(path.path, canisterUint8Array);
+          // For string paths, treat as a subnet path segment
+          const encoded =
+            typeof path['path'] === 'string' ? utf8ToBytes(path['path']) : path['path'];
+          return [utf8ToBytes('subnet'), subnetUint8Array, encoded];
         } else {
-          // For non-metadata, return the provided custom path
+          // For non-simple paths, return the provided custom path
           return path['path'];
         }
       }
@@ -261,7 +264,7 @@ export const encodePath = (path: Path, canisterId: Principal): Uint8Array[] => {
   }
   throw UnknownError.fromCode(
     new UnexpectedErrorCode(
-      `Error while encoding your path for canister status. Please ensure that your path ${path} was formatted correctly.`,
+      `Error while encoding your path for subnet status. Please ensure that your path ${path} was formatted correctly.`,
     ),
   );
-};
+}
