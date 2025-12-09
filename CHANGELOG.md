@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [5.0.0-beta.1] - 2025-12-09
+
 - feat(core)!: removes `@dfinity/{agent,candid,identity,identity-secp256k1,principal}` peer dependencies and moves their source code to the `@icp-sdk/core` package
 - feat(agent)!: use `/api/v4` for call requests
   - Renames `v3ResponseBody` to `v4ResponseBody`
