@@ -117,7 +117,7 @@ export function createTimeTree(date: Date): HashTree {
 interface SubnetTreeOptions {
   subnetId: Uint8Array;
   subnetPublicKey: Uint8Array;
-  nodeIdentity: Ed25519KeyIdentity;
+  nodeIdentity?: Ed25519KeyIdentity;
   canisterRanges: Array<[Uint8Array, Uint8Array]>;
   date: Date;
 }
@@ -127,7 +127,7 @@ interface SubnetTreeOptions {
  * @param {SubnetTreeOptions} options - The options for the subnet tree.
  * @param {Uint8Array} options.subnetId - The ID of the subnet.
  * @param {Uint8Array} options.subnetPublicKey - The DER-encoded public key of the subnet.
- * @param {Ed25519KeyIdentity} options.nodeIdentity - The identity of the node.
+ * @param {Ed25519KeyIdentity} options.nodeIdentity - The identity of the node. Omit this for delegation trees.
  * @param {Array<[Uint8Array, Uint8Array]>} options.canisterRanges - The canister ranges for the subnet.
  * @param {Date} options.date - The timestamp for the tree.
  * @returns {HashTree} A subnet hash tree.
@@ -139,21 +139,37 @@ export function createSubnetTree({
   canisterRanges,
   date,
 }: SubnetTreeOptions): HashTree {
+  let subnetSubtree: HashTree;
+
+  const canisterRangesSubtree = labeled('canister_ranges', leaf(Cbor.encode(canisterRanges)));
+  const publicKeySubtree = labeled('public_key', leaf(subnetPublicKey));
+
+  if (nodeIdentity) {
+    // prettier-ignore
+    subnetSubtree = fork(
+      fork(
+        canisterRangesSubtree,
+        labeled('node',
+          labeled(nodeIdentity.getPrincipal().toUint8Array(),
+            labeled('public_key', leaf(nodeIdentity.getPublicKey().toDer())),
+          ),
+        ),
+      ),
+      publicKeySubtree,
+    );
+  } else {
+    // prettier-ignore
+    subnetSubtree = fork(
+      canisterRangesSubtree,
+      publicKeySubtree,
+    );
+  }
+
   // prettier-ignore
   return fork(
     labeled('subnet',
       labeled(subnetId,
-        fork(
-          fork(
-            labeled('canister_ranges', leaf(Cbor.encode(canisterRanges))),
-            labeled('node',
-              labeled(nodeIdentity.getPrincipal().toUint8Array(),
-                labeled('public_key', leaf(nodeIdentity.getPublicKey().toDer())),
-              ),
-            ),
-          ),
-          labeled('public_key', leaf(subnetPublicKey)),
-        ),
+        subnetSubtree,
       ),
     ),
     createTimeTree(date),

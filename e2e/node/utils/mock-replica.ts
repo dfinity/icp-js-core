@@ -379,7 +379,6 @@ export async function prepareV3ReadStateResponse({
     delegatedKeyPair: keyPair,
     keyPair: rootSubnetKeyPair ?? keyPair,
     canisterRanges,
-    nodeIdentity,
     date,
   });
 
@@ -640,7 +639,6 @@ type CreateDelegationCertificateOptions = {
   delegatedKeyPair: KeyPair;
   keyPair: KeyPair;
   canisterRanges: Array<[Uint8Array, Uint8Array]>;
-  nodeIdentity: Ed25519KeyIdentity;
   date?: Date;
 };
 
@@ -648,11 +646,9 @@ async function createDelegationCertificate({
   delegatedKeyPair,
   keyPair,
   canisterRanges,
-  nodeIdentity,
   date,
 }: CreateDelegationCertificateOptions): Promise<NonNullable<Cert['delegation']>> {
   date = date ?? new Date();
-  nodeIdentity = nodeIdentity ?? randomIdentity();
   const delegatedSubnetId = Principal.selfAuthenticating(
     delegatedKeyPair.publicKeyDer,
   ).toUint8Array();
@@ -660,7 +656,6 @@ async function createDelegationCertificate({
   const tree = createSubnetTree({
     subnetId: delegatedSubnetId,
     subnetPublicKey: delegatedKeyPair.publicKeyDer,
-    nodeIdentity,
     canisterRanges,
     date,
   });
