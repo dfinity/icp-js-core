@@ -59,7 +59,6 @@ import { request as canisterStatusRequest } from '../../canisterStatus/index.ts'
 import { request as subnetStatusRequest } from '../../subnetStatus/index.ts';
 import { lookupNodeKeysFromCertificate, type SubnetNodeKeys } from '../../utils/readState.ts';
 import {
-  Cert,
   Certificate,
   getSubnetIdFromCertificate,
   type HashTree,
@@ -1441,18 +1440,9 @@ export class HttpAgent implements Agent {
     });
 
     const subnetId = getSubnetIdFromCertificate(canisterCertificate.cert, rootKey);
-
-    let nodeKeys: SubnetNodeKeys | undefined;
-    if (canisterCertificate.cert.delegation) {
-      const delegationCertificate = cbor.decode<Cert>(
-        canisterCertificate.cert.delegation.certificate,
-      );
-      nodeKeys = lookupNodeKeysFromCertificate(delegationCertificate, subnetId);
-    } else {
-      nodeKeys = lookupNodeKeysFromCertificate(canisterCertificate.cert, subnetId);
-    }
-
+    const nodeKeys = lookupNodeKeysFromCertificate(canisterCertificate.cert, subnetId);
     this.#subnetKeys.set(effectiveCanisterId.toText(), nodeKeys);
+
     return nodeKeys;
   }
 
