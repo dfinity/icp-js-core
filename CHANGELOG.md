@@ -7,6 +7,7 @@
   - Renames `v3ResponseBody` to `v4ResponseBody`
   - Renames `isV3ResponseBody` to `isV4ResponseBody`
   - Renames `HttpV3ApiNotSupportedErrorCode` to `HttpV4ApiNotSupportedErrorCode`
+- feat(agent)!: use `/api/v3` for query and read_state requests
 - feat(agent)!: supports both subnet id and canister id for certificate verification
   - The `canisterId` option has been replaced with the `principal` option in the `Certificate.create` options object
 - feat(assets)!: replaces `@dfinity/{agent,candid,principal}` deps with `@icp-sdk/core`

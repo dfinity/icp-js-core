@@ -16,12 +16,7 @@ import { Principal } from '@icp-sdk/core/principal';
 import { IDL } from '@icp-sdk/core/candid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createActor } from '../canisters/counter.ts';
-import {
-  MockReplica,
-  mockSyncTimeResponse,
-  prepareV2ReadStateTimeResponse,
-  prepareV4Response,
-} from '../utils/mock-replica.ts';
+import { MockReplica, mockSyncTimeResponse, prepareV4Response } from '../utils/mock-replica.ts';
 import { randomIdentity, randomKeyPair } from '../utils/identity.ts';
 import { concatBytes } from '@noble/hashes/utils';
 
@@ -154,27 +149,27 @@ describe('syncTime', () => {
       const reqTwo = mockReplica.getV4CallReq(canisterId.toString(), 1);
       expect(reqTwo).toEqual(req);
 
-      expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(canisterId.toString(), 0),
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(canisterId.toString(), 0),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V2 read state body one',
+        'V3 read state body one',
       );
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(canisterId.toString(), 1),
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(canisterId.toString(), 1),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V4 read state body two',
+        'V3 read state body two',
       );
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(canisterId.toString(), 2),
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(canisterId.toString(), 2),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V4 read state body three',
+        'V3 read state body three',
       );
       expect(agent.hasSyncedTime()).toBe(true);
     });
@@ -215,24 +210,17 @@ describe('syncTime', () => {
       }
 
       expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
-      expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
       expect(agent.hasSyncedTime()).toBe(true);
     });
   });
 
   describe('on async creation', () => {
-    it('should sync time on when enabled', async () => {
-      const { responseBody: readStateResponse } = await prepareV2ReadStateTimeResponse({
+    it('should sync time when enabled', async () => {
+      await mockSyncTimeResponse({
+        mockReplica,
         keyPair,
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(ICP_LEDGER, (_req, res) => {
-        res.status(200).send(readStateResponse);
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(ICP_LEDGER, (_req, res) => {
-        res.status(200).send(readStateResponse);
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(ICP_LEDGER, (_req, res) => {
-        res.status(200).send(readStateResponse);
+        canisterId: ICP_LEDGER,
       });
 
       const agent = await HttpAgent.create({
@@ -241,56 +229,53 @@ describe('syncTime', () => {
         shouldSyncTime: true,
       });
 
-      expect(mockReplica.getV2ReadStateSpy(ICP_LEDGER)).toHaveBeenCalledTimes(3);
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(ICP_LEDGER, 0),
+      expect(mockReplica.getV3ReadStateSpy(ICP_LEDGER)).toHaveBeenCalledTimes(3);
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(ICP_LEDGER, 0),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V4 read state body one',
+        'V3 read state body one',
       );
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(ICP_LEDGER, 1),
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(ICP_LEDGER, 1),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V4 read state body two',
+        'V3 read state body two',
       );
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(ICP_LEDGER, 2),
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(ICP_LEDGER, 2),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V4 read state body three',
+        'V3 read state body three',
       );
       expect(agent.hasSyncedTime()).toBe(true);
     });
 
     it('should not sync time by default', async () => {
-      const { responseBody: readStateResponse } = await prepareV2ReadStateTimeResponse({
+      await mockSyncTimeResponse({
+        mockReplica,
         keyPair,
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(ICP_LEDGER, (_req, res) => {
-        res.status(200).send(readStateResponse);
+        canisterId: ICP_LEDGER,
       });
 
       const agent = await HttpAgent.create({
         host: mockReplica.address,
         rootKey: keyPair.publicKeyDer,
-        shouldSyncTime: false,
         identity: anonIdentity,
       });
 
-      expect(mockReplica.getV2ReadStateSpy(ICP_LEDGER)).toHaveBeenCalledTimes(0);
+      expect(mockReplica.getV3ReadStateSpy(ICP_LEDGER)).toHaveBeenCalledTimes(0);
       expect(agent.hasSyncedTime()).toBe(false);
     });
 
     it('should not sync time when explicitly disabled', async () => {
-      const { responseBody: readStateResponse } = await prepareV2ReadStateTimeResponse({
+      await mockSyncTimeResponse({
+        mockReplica,
         keyPair,
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(ICP_LEDGER, (_req, res) => {
-        res.status(200).send(readStateResponse);
+        canisterId: ICP_LEDGER,
       });
 
       const agent = await HttpAgent.create({
@@ -300,7 +285,7 @@ describe('syncTime', () => {
         identity: anonIdentity,
       });
 
-      expect(mockReplica.getV2ReadStateSpy(ICP_LEDGER)).toHaveBeenCalledTimes(0);
+      expect(mockReplica.getV3ReadStateSpy(ICP_LEDGER)).toHaveBeenCalledTimes(0);
       expect(agent.hasSyncedTime()).toBe(false);
     });
   });
@@ -315,17 +300,10 @@ describe('syncTime', () => {
       });
       const actor = await createActor(canisterId, { agent });
 
-      const { responseBody: readStateResponse } = await prepareV2ReadStateTimeResponse({
+      await mockSyncTimeResponse({
+        mockReplica,
         keyPair,
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-        res.status(200).send(readStateResponse);
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-        res.status(200).send(readStateResponse);
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-        res.status(200).send(readStateResponse);
+        canisterId,
       });
 
       const { responseBody, requestId } = await prepareV4Response({
@@ -359,27 +337,27 @@ describe('syncTime', () => {
         'V4 call body',
       );
 
-      expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(canisterId.toString(), 0),
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(canisterId.toString(), 0),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V4 read state body one',
+        'V3 read state body one',
       );
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(canisterId.toString(), 1),
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(canisterId.toString(), 1),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V4 read state body two',
+        'V3 read state body two',
       );
-      expectV2ReadStateRequest(
-        mockReplica.getV2ReadStateReq(canisterId.toString(), 2),
+      expectV3ReadStateRequest(
+        mockReplica.getV3ReadStateReq(canisterId.toString(), 2),
         {
           sender: anonIdentity.getPrincipal(),
         },
-        'V4 read state body three',
+        'V3 read state body three',
       );
       expect(agent.hasSyncedTime()).toBe(true);
     });
@@ -393,11 +371,10 @@ describe('syncTime', () => {
       const actor = await createActor(canisterId, { agent });
       const sender = identity.getPrincipal();
 
-      const { responseBody: readStateResponse } = await prepareV2ReadStateTimeResponse({
+      await mockSyncTimeResponse({
+        mockReplica,
         keyPair,
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-        res.status(200).send(readStateResponse);
+        canisterId,
       });
 
       const { responseBody, requestId } = await prepareV4Response({
@@ -430,7 +407,7 @@ describe('syncTime', () => {
         'V4 call body',
       );
 
-      expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
       expect(agent.hasSyncedTime()).toBe(false);
     });
 
@@ -444,11 +421,10 @@ describe('syncTime', () => {
       const actor = await createActor(canisterId, { agent });
       const sender = identity.getPrincipal();
 
-      const { responseBody: readStateResponse } = await prepareV2ReadStateTimeResponse({
+      await mockSyncTimeResponse({
+        mockReplica,
         keyPair,
-      });
-      mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-        res.status(200).send(readStateResponse);
+        canisterId,
       });
 
       const { responseBody, requestId } = await prepareV4Response({
@@ -482,7 +458,7 @@ describe('syncTime', () => {
         'V4 call body',
       );
 
-      expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
       expect(agent.hasSyncedTime()).toBe(false);
     });
   });
@@ -518,13 +494,13 @@ function expectV4CallRequest(
   );
 }
 
-interface ExpectedV2ReadStateRequest {
+interface ExpectedV3ReadStateRequest {
   sender: Principal;
 }
 
-function expectV2ReadStateRequest(
+function expectV3ReadStateRequest(
   actual: UnSigned<ReadStateRequest>,
-  expected: ExpectedV2ReadStateRequest,
+  expected: ExpectedV3ReadStateRequest,
   snapshotName?: string,
 ) {
   expect(actual.content.sender).toEqual(expected.sender.toUint8Array());

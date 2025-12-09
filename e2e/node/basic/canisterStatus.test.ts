@@ -12,7 +12,7 @@ import { getCanisterId } from '../utils/canisterid.ts';
 import {
   MockReplica,
   mockSyncTimeResponse,
-  prepareV2ReadStateSubnetResponse,
+  prepareV3ReadStateSubnetResponse,
 } from '../utils/mock-replica.ts';
 import { randomIdentity, randomKeyPair } from '../utils/identity.ts';
 
@@ -92,14 +92,14 @@ describe('canister status', () => {
         identity,
       });
 
-      const { responseBody: subnetResponseBody } = await prepareV2ReadStateSubnetResponse({
+      const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
         keyPair: subnetKeyPair,
         date: replicaDate,
       });
       // first try, fails
-      mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(subnetResponseBody);
       });
       // syncs time
@@ -124,7 +124,7 @@ describe('canister status', () => {
         expect(err.cause.code).toBeInstanceOf(CertificateTimeErrorCode);
         expect(err.message).toContain('Certificate is signed more than 5 minutes in the past');
       }
-      expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
     });
 
     it('should sync time and succeed if the certificate is not fresh', async () => {
@@ -137,14 +137,14 @@ describe('canister status', () => {
         identity,
       });
 
-      const { responseBody: subnetResponseBody } = await prepareV2ReadStateSubnetResponse({
+      const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
         keyPair: subnetKeyPair,
         date: replicaDate,
       });
       // first try, fails
-      mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(subnetResponseBody);
       });
       // sync time, we return the replica date to make the agent sync time properly
@@ -162,7 +162,7 @@ describe('canister status', () => {
           paths: ['subnet'],
         }),
       ).resolves.not.toThrow();
-      expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
     });
 
     it('should not sync time and succeed if the certificate is not fresh and disableTimeVerification is true', async () => {
@@ -175,13 +175,13 @@ describe('canister status', () => {
         identity,
       });
 
-      const { responseBody: subnetResponseBody } = await prepareV2ReadStateSubnetResponse({
+      const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
         keyPair: subnetKeyPair,
         date: replicaDate,
       });
-      mockReplica.setV2ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
+      mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(subnetResponseBody);
       });
 
@@ -193,7 +193,7 @@ describe('canister status', () => {
           disableCertificateTimeVerification: true,
         }),
       ).resolves.not.toThrow();
-      expect(mockReplica.getV2ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
     });
   });
 });

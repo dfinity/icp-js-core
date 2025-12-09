@@ -171,7 +171,7 @@ describe('makeActor', () => {
     });
 
     expect(calls[1][0].toString()).toEqual(
-      `http://127.0.0.1/api/v2/canister/${canisterId.toText()}/read_state`,
+      `http://127.0.0.1/api/v3/canister/${canisterId.toText()}/read_state`,
     );
     expect(calls[1][1]).toEqual({
       method: 'POST',
