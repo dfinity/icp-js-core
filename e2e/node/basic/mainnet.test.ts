@@ -6,8 +6,8 @@ import {
   CanisterStatus,
   polling,
   requestIdOf,
-  TrustError,
-  MissingSignatureErrorCode,
+  ProtocolError,
+  DerKeyLengthMismatchErrorCode,
 } from '@icp-sdk/core/agent';
 import { IDL } from '@icp-sdk/core/candid';
 import { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
@@ -206,9 +206,9 @@ test('it should allow you to set an incorrect root key', async () => {
   try {
     await actor.whoami();
   } catch (error) {
-    expect(error).toBeInstanceOf(TrustError);
-    const errorCode = (error as TrustError).cause.code;
-    expect(errorCode).toBeInstanceOf(MissingSignatureErrorCode);
+    expect(error).toBeInstanceOf(ProtocolError);
+    const errorCode = (error as ProtocolError).cause.code;
+    expect(errorCode).toBeInstanceOf(DerKeyLengthMismatchErrorCode);
     expect(errorCode.requestContext).toBeDefined();
   }
 });

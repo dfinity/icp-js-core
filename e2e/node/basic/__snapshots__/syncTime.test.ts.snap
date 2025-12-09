@@ -116,29 +116,6 @@ exports[`syncTime > on error > should not sync time by default > V4 call body 1`
 }
 `;
 
-exports[`syncTime > on error > should sync time when the local time does not match the subnet time > V2 read state body one 1`] = `
-{
-  "content": {
-    "ingress_expiry": 1746103140000000000n,
-    "paths": [
-      [
-        {
-          "data": [
-            116,
-            105,
-            109,
-            101,
-          ],
-          "type": "Buffer",
-        },
-      ],
-    ],
-    "request_type": "read_state",
-    "sender": Any<Uint8Array>,
-  },
-}
-`;
-
 exports[`syncTime > on error > should sync time when the local time does not match the subnet time > V3 read state body one 1`] = `
 {
   "content": {
