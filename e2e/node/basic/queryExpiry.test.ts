@@ -2,11 +2,9 @@ import { beforeEach, describe, it, vi, expect } from 'vitest';
 import {
   mockReadStateNodeKeysResponse,
   MockReplica,
-  mockSyncSubnetTimeResponse,
   mockSyncTimeResponse,
   prepareV3QueryResponse,
   prepareV3ReadStateResponse,
-  prepareV3ReadStateSubnetResponse,
 } from '../utils/mock-replica.ts';
 import { IDL } from '@icp-sdk/core/candid';
 import { Principal } from '@icp-sdk/core/principal';
@@ -33,8 +31,8 @@ describe('queryExpiry', () => {
   const greetArgs = IDL.encode([IDL.Text], [greetReq]);
   const greetReply = IDL.encode([IDL.Text], [greetRes]);
 
+  const rootSubnetKeyPair = randomKeyPair();
   const subnetKeyPair = randomKeyPair();
-  const subnetId = Principal.selfAuthenticating(subnetKeyPair.publicKeyDer);
   const nodeIdentity = randomIdentity();
   const identity = randomIdentity();
 
@@ -49,7 +47,7 @@ describe('queryExpiry', () => {
   it('should not retry if the timestamp is within the max ingress expiry', async () => {
     const agent = await HttpAgent.create({
       host: mockReplica.address,
-      rootKey: subnetKeyPair.publicKeyDer,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
       identity,
     });
     const actor = await createActor(canisterId, { agent });
@@ -68,26 +66,15 @@ describe('queryExpiry', () => {
       res.status(200).send(responseBody);
     });
 
-    // Get subnet id from canister
+    // Get node keys from certificate delegation
     const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
       nodeIdentity,
       canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+      rootSubnetKeyPair,
       keyPair: subnetKeyPair,
     });
     mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
       res.status(200).send(readStateResponseBody);
-    });
-
-    // Get node key from subnet
-    const subnetId = Principal.selfAuthenticating(subnetKeyPair.publicKeyDer);
-    const { responseBody: readSubnetStateResponseBody } = await prepareV3ReadStateSubnetResponse({
-      nodeIdentity,
-      canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
-      keyPair: subnetKeyPair,
-      date: now,
-    });
-    mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetId.toString(), (_req, res) => {
-      res.status(200).send(readSubnetStateResponseBody);
     });
 
     const actorResponse = await actor[greetMethodName](greetReq);
@@ -95,7 +82,6 @@ describe('queryExpiry', () => {
     expect(actorResponse).toEqual(greetRes);
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
     expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(1);
 
     const req = mockReplica.getV3QueryReq(canisterId.toString(), 0);
     expect(requestIdOf(req.content)).toEqual(requestId);
@@ -110,7 +96,7 @@ describe('queryExpiry', () => {
 
     const agent = await HttpAgent.create({
       host: mockReplica.address,
-      rootKey: subnetKeyPair.publicKeyDer,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
       identity,
       retryTimes: 0,
     });
@@ -135,11 +121,12 @@ describe('queryExpiry', () => {
       mockReplica,
       nodeIdentity,
       canisterId,
+      rootSubnetKeyPair,
       subnetKeyPair,
       date: futureDate, // make sure the certificate is fresh for these calls
     });
 
-    expect.assertions(6);
+    expect.assertions(5);
 
     try {
       await actor[greetMethodName](greetReq);
@@ -150,7 +137,6 @@ describe('queryExpiry', () => {
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
     // Early promise failure stops these requests, even though the agent makes them
     expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
-    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(0);
   });
 
   it('should retry and fail if the timestamp is outside the max ingress expiry (with retry)', async () => {
@@ -159,7 +145,7 @@ describe('queryExpiry', () => {
 
     const agent = await HttpAgent.create({
       host: mockReplica.address,
-      rootKey: subnetKeyPair.publicKeyDer,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
       identity,
       retryTimes: 3,
     });
@@ -191,30 +177,19 @@ describe('queryExpiry', () => {
     // advance to go over the max ingress expiry (5 minutes)
     advanceTimeByMilliseconds(timeDiffMsecs);
 
-    // Get subnet id from canister
+    // Get node key from subnet
     const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
       nodeIdentity,
       canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+      rootSubnetKeyPair,
       keyPair: subnetKeyPair,
-      date: now,
+      date: futureDate, // we don't want this call to fail in this case, so we return the proper date
     });
     mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
       res.status(200).send(readStateResponseBody);
     });
 
-    // Get node key from subnet, fails for certificate freshness checks
-    const subnetId = Principal.selfAuthenticating(subnetKeyPair.publicKeyDer);
-    const { responseBody: readSubnetStateResponseBody } = await prepareV3ReadStateSubnetResponse({
-      nodeIdentity,
-      canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
-      keyPair: subnetKeyPair,
-      date: futureDate,
-    });
-    mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetId.toString(), (_req, res) => {
-      res.status(200).send(readSubnetStateResponseBody);
-    });
-
-    expect.assertions(6);
+    expect.assertions(5);
 
     try {
       await actor[greetMethodName](greetReq);
@@ -224,13 +199,12 @@ describe('queryExpiry', () => {
 
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(4);
     expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(1);
   });
 
   it('should not retry if the timestamp is outside the max ingress expiry (verifyQuerySignatures=false)', async () => {
     const agent = await HttpAgent.create({
       host: mockReplica.address,
-      rootKey: subnetKeyPair.publicKeyDer,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
       identity,
       retryTimes: 3,
       verifyQuerySignatures: false,
@@ -269,6 +243,7 @@ describe('queryExpiry', () => {
       const replicaDate = new Date(now.getTime() + timeDiffMsecs);
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair: subnetKeyPair,
         date: replicaDate,
         canisterId: ICP_LEDGER,
@@ -276,7 +251,7 @@ describe('queryExpiry', () => {
 
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: subnetKeyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
         shouldSyncTime: true,
         retryTimes: 0,
@@ -303,6 +278,7 @@ describe('queryExpiry', () => {
         mockReplica,
         nodeIdentity,
         canisterId,
+        rootSubnetKeyPair,
         subnetKeyPair,
         date: replicaDate,
       });
@@ -312,7 +288,6 @@ describe('queryExpiry', () => {
       expect(actorResponse).toEqual(greetRes);
       expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-      expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(1);
 
       const req = mockReplica.getV3QueryReq(canisterId.toString(), 0);
       expect(requestIdOf(req.content)).toEqual(requestId);
@@ -325,7 +300,7 @@ describe('queryExpiry', () => {
 
     const agent = await HttpAgent.create({
       host: mockReplica.address,
-      rootKey: subnetKeyPair.publicKeyDer,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
       identity,
       shouldSyncTime: false,
       retryTimes: 0,
@@ -364,7 +339,7 @@ describe('queryExpiry', () => {
 
     const agent = await HttpAgent.create({
       host: mockReplica.address,
-      rootKey: subnetKeyPair.publicKeyDer,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
       identity,
       shouldSyncTime: false,
       retryTimes: 0,
@@ -391,23 +366,24 @@ describe('queryExpiry', () => {
       mockReplica,
       nodeIdentity,
       canisterId,
+      rootSubnetKeyPair,
       subnetKeyPair,
       date: replicaDate,
     });
 
-    // Certificate time is in the future, so the agent will sync time with the subnet
-    await mockSyncSubnetTimeResponse({
+    await mockSyncTimeResponse({
       mockReplica,
+      rootSubnetKeyPair,
       keyPair: subnetKeyPair,
       date: replicaDate,
+      canisterId,
     });
 
     const actorResponse = await actor[greetMethodName](greetReq);
 
     expect(actorResponse).toEqual(greetRes);
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(4);
+    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
 
     const req = mockReplica.getV3QueryReq(canisterId.toString(), 0);
     expect(requestIdOf(req.content)).toEqual(requestId);

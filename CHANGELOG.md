@@ -17,6 +17,7 @@
 - feat(agent): introduce the `lookupCanisterRanges`, `lookupCanisterRangesFallback`, and `decodeCanisterRanges` utility functions to lookup canister ranges from certificate trees
 - feat(agent): introduce the `getSubnetIdFromCanister` and `readSubnetState` methods in the `HttpAgent` class
 - feat(agent): introduce the `syncTimeWithSubnet` method in the `HttpAgent` class to sync the time with a particular subnet
+- feat(agent): introduce the `getSubnetIdFromCertificate` method in the `Certificate` namespace to retrieve the subnet ID from a certificate
 - feat(agent): introduce the `SubnetStatus` utility namespace to request subnet information directly from the IC public API
 - feat(agent): export `IC_STATE_ROOT_DOMAIN_SEPARATOR` constant
 - refactor(agent): only declare IC URLs once in the `HttpAgent` class
