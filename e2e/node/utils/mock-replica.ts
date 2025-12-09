@@ -586,6 +586,45 @@ export async function mockSyncTimeResponse({
   });
 }
 
+type MockSyncSubnetTimeResponseOptions = {
+  mockReplica: MockReplica;
+  keyPair: KeyPair;
+  date?: Date;
+};
+
+/**
+ * A shortcut to prepare the mock replica to respond to the sync subnet time request.
+ * It mocks the read subnet state endpoint 3 times.
+ * @param {MockSyncTimeResponseOptions} options - The options for preparing the response.
+ * @param {MockReplica} options.mockReplica - The mock replica to prepare.
+ * @param {KeyPair} options.keyPair - The key pair for signing.
+ * @param {Date} options.date - The date to use for the returned certificate `time` field. Optional.
+ */
+export async function mockSyncSubnetTimeResponse({
+  mockReplica,
+  keyPair,
+  date,
+}: MockSyncSubnetTimeResponseOptions) {
+  const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
+  const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
+    keyPair,
+    date,
+    canisterRanges: [], // not needed for subnet time
+    nodeIdentity: randomIdentity(),
+  });
+
+  const subnetIdString = subnetId.toString();
+  mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetIdString, (_req, res) => {
+    res.status(200).send(subnetResponseBody);
+  });
+  mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetIdString, (_req, res) => {
+    res.status(200).send(subnetResponseBody);
+  });
+  mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetIdString, (_req, res) => {
+    res.status(200).send(subnetResponseBody);
+  });
+}
+
 async function createDelegationCertificate(
   subnetId: Uint8Array,
   keyPair: KeyPair,
@@ -611,4 +650,55 @@ async function createDelegationCertificate(
     subnet_id: subnetId,
     certificate: Cbor.encode(cert),
   };
+}
+
+type MockReadStateNodeKeysResponseOptions = {
+  mockReplica: MockReplica;
+  nodeIdentity: Ed25519KeyIdentity;
+  canisterId: Principal | string;
+  subnetKeyPair: KeyPair;
+  date?: Date;
+};
+
+/**
+ * A shortcut to prepare the mock replica to respond to the read state node keys request.
+ * Prepares one read state and one read subnet state response.
+ * @param {MockReadStateNodeKeysResponseOptions} options - The options for preparing the response.
+ * @param {MockReplica} options.mockReplica - The mock replica to prepare.
+ * @param {Ed25519KeyIdentity} options.nodeIdentity - The identity of the node.
+ * @param {string} options.canisterId - The ID of the canister.
+ * @param {KeyPair} options.subnetKeyPair - The key pair for signing the subnet.
+ * @param {Date} options.date - The date to use for the returned certificate `time` field. Optional.
+ */
+export async function mockReadStateNodeKeysResponse({
+  mockReplica,
+  nodeIdentity,
+  canisterId,
+  subnetKeyPair,
+  date,
+}: MockReadStateNodeKeysResponseOptions) {
+  canisterId = Principal.from(canisterId);
+  const canisterIdBytes = canisterId.toUint8Array();
+
+  const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
+    nodeIdentity,
+    canisterRanges: [[canisterIdBytes, canisterIdBytes]],
+    keyPair: subnetKeyPair,
+    date,
+  });
+  mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
+    res.status(200).send(readStateResponseBody);
+  });
+
+  // Get node key from subnet
+  const subnetId = Principal.selfAuthenticating(subnetKeyPair.publicKeyDer);
+  const { responseBody: readSubnetStateResponseBody } = await prepareV3ReadStateSubnetResponse({
+    nodeIdentity,
+    canisterRanges: [[canisterIdBytes, canisterIdBytes]],
+    keyPair: subnetKeyPair,
+    date,
+  });
+  mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetId.toString(), (_req, res) => {
+    res.status(200).send(readSubnetStateResponseBody);
+  });
 }

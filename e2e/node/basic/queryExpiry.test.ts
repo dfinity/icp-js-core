@@ -1,6 +1,8 @@
 import { beforeEach, describe, it, vi, expect } from 'vitest';
 import {
+  mockReadStateNodeKeysResponse,
   MockReplica,
+  mockSyncSubnetTimeResponse,
   mockSyncTimeResponse,
   prepareV3QueryResponse,
   prepareV3ReadStateResponse,
@@ -11,7 +13,6 @@ import { Principal } from '@icp-sdk/core/principal';
 import { randomIdentity, randomKeyPair } from '../utils/identity.ts';
 import {
   CertificateOutdatedErrorCode,
-  CertificateTimeErrorCode,
   HttpAgent,
   requestIdOf,
   TrustError,
@@ -33,6 +34,7 @@ describe('queryExpiry', () => {
   const greetReply = IDL.encode([IDL.Text], [greetRes]);
 
   const subnetKeyPair = randomKeyPair();
+  const subnetId = Principal.selfAuthenticating(subnetKeyPair.publicKeyDer);
   const nodeIdentity = randomIdentity();
   const identity = randomIdentity();
 
@@ -128,18 +130,16 @@ describe('queryExpiry', () => {
       res.status(200).send(responseBody);
     });
 
-    // Get subnet id from canister
-    const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
+    // Get node key from subnet
+    await mockReadStateNodeKeysResponse({
+      mockReplica,
       nodeIdentity,
-      canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
-      keyPair: subnetKeyPair,
-      date: futureDate, // make sure the certificate is fresh for this call
-    });
-    mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-      res.status(200).send(readStateResponseBody);
+      canisterId,
+      subnetKeyPair,
+      date: futureDate, // make sure the certificate is fresh for these calls
     });
 
-    expect.assertions(5);
+    expect.assertions(6);
 
     try {
       await actor[greetMethodName](greetReq);
@@ -150,6 +150,7 @@ describe('queryExpiry', () => {
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
     // Early promise failure stops these requests, even though the agent makes them
     expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
+    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(0);
   });
 
   it('should retry and fail if the timestamp is outside the max ingress expiry (with retry)', async () => {
@@ -173,6 +174,15 @@ describe('queryExpiry', () => {
       reply: greetReply,
       nodeIdentity,
       date: now,
+    });
+    mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(responseBody);
+    });
+    mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(responseBody);
+    });
+    mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(responseBody);
     });
     mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
       res.status(200).send(responseBody);
@@ -204,27 +214,16 @@ describe('queryExpiry', () => {
       res.status(200).send(readSubnetStateResponseBody);
     });
 
-    // sync time, keeping a date in the future to make sure the agent still has outdated time
-    await mockSyncTimeResponse({
-      mockReplica,
-      keyPair: subnetKeyPair,
-      date: futureDate,
-      canisterId,
-    });
-
     expect.assertions(6);
 
     try {
       await actor[greetMethodName](greetReq);
     } catch (e) {
-      expect(e).toBeInstanceOf(TrustError);
-      const err = e as TrustError;
-      expect(err.cause.code).toBeInstanceOf(CertificateTimeErrorCode);
-      expect(err.message).toContain('Certificate is signed more than 5 minutes in the past.');
+      expectCertificateOutdatedError(e);
     }
 
-    expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
+    expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(4);
+    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
     expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(1);
   });
 
@@ -259,7 +258,6 @@ describe('queryExpiry', () => {
 
     expect(actorResponse).toEqual(greetRes);
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
   });
 
   it.each([
@@ -301,26 +299,12 @@ describe('queryExpiry', () => {
       });
 
       // Get subnet id from canister
-      const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
+      await mockReadStateNodeKeysResponse({
+        mockReplica,
         nodeIdentity,
-        canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
-        keyPair: subnetKeyPair,
+        canisterId,
+        subnetKeyPair,
         date: replicaDate,
-      });
-      mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-        res.status(200).send(readStateResponseBody);
-      });
-
-      // Get node key from subnet
-      const subnetId = Principal.selfAuthenticating(subnetKeyPair.publicKeyDer);
-      const { responseBody: readSubnetStateResponseBody } = await prepareV3ReadStateSubnetResponse({
-        nodeIdentity,
-        canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
-        keyPair: subnetKeyPair,
-        date: replicaDate,
-      });
-      mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetId.toString(), (_req, res) => {
-        res.status(200).send(readSubnetStateResponseBody);
       });
 
       const actorResponse = await actor[greetMethodName](greetReq);
@@ -402,42 +386,28 @@ describe('queryExpiry', () => {
       res.status(200).send(responseBody);
     });
 
-    // Get subnet id from canister
-    const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
-      nodeIdentity,
-      canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
-      keyPair: subnetKeyPair,
-      date: replicaDate,
-    });
-    mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-      res.status(200).send(readStateResponseBody);
-    });
-
     // Get node key from subnet
-    const subnetId = Principal.selfAuthenticating(subnetKeyPair.publicKeyDer);
-    const { responseBody: readSubnetStateResponseBody } = await prepareV3ReadStateSubnetResponse({
+    await mockReadStateNodeKeysResponse({
+      mockReplica,
       nodeIdentity,
-      canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
-      keyPair: subnetKeyPair,
+      canisterId,
+      subnetKeyPair,
       date: replicaDate,
     });
-    mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetId.toString(), (_req, res) => {
-      res.status(200).send(readSubnetStateResponseBody);
-    });
 
-    await mockSyncTimeResponse({
+    // Certificate time is in the future, so the agent will sync time with the subnet
+    await mockSyncSubnetTimeResponse({
       mockReplica,
       keyPair: subnetKeyPair,
       date: replicaDate,
-      canisterId,
     });
 
     const actorResponse = await actor[greetMethodName](greetReq);
 
     expect(actorResponse).toEqual(greetRes);
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
-    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
-    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(1);
+    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(4);
 
     const req = mockReplica.getV3QueryReq(canisterId.toString(), 0);
     expect(requestIdOf(req.content)).toEqual(requestId);
