@@ -1327,9 +1327,7 @@ export class HttpAgent implements Agent {
       this.#setTimeDiffMsecs(callTime, replicaTimes);
     } catch (error) {
       const syncTimeError =
-        error instanceof AgentError
-          ? error
-          : UnknownError.fromCode(new UnexpectedErrorCode(error));
+        error instanceof AgentError ? error : UnknownError.fromCode(new UnexpectedErrorCode(error));
       this.log.error('Caught exception while attempting to sync time with subnet', syncTimeError);
 
       throw syncTimeError;
