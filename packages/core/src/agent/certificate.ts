@@ -214,8 +214,9 @@ export interface CreateCertificateOptions {
 export class Certificate {
   public cert: Cert;
   #disableTimeVerification: boolean = false;
-  #agent: Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime' | 'syncTimeWithSubnet'> | undefined =
-    undefined;
+  #agent:
+    | Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime' | 'syncTimeWithSubnet'>
+    | undefined = undefined;
 
   /**
    * Create a new instance of a certificate, automatically verifying it.
@@ -253,8 +254,17 @@ export class Certificate {
     this.#disableTimeVerification = disableTimeVerification;
     this.cert = cbor.decode(certificate);
 
-    if (agent && 'getTimeDiffMsecs' in agent && 'hasSyncedTime' in agent && 'syncTime' in agent && 'syncTimeWithSubnet' in agent) {
-      this.#agent = agent as Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime' | 'syncTimeWithSubnet'>;
+    if (
+      agent &&
+      'getTimeDiffMsecs' in agent &&
+      'hasSyncedTime' in agent &&
+      'syncTime' in agent &&
+      'syncTimeWithSubnet' in agent
+    ) {
+      this.#agent = agent as Pick<
+        HttpAgent,
+        'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime' | 'syncTimeWithSubnet'
+      >;
     }
   }
 
@@ -1031,4 +1041,20 @@ function getCanisterRangeFromShards(
     );
   }
   return canisterRange.value;
+}
+
+/**
+ * Get the subnet ID from a certificate
+ * If the certificate has a delegation, it returns the subnet ID from the delegation.
+ * If the certificate has no delegation, it returns the root subnet ID.
+ * @param certificate the certificate to get the subnet ID from
+ * @param rootKey the root key to use to get the subnet ID
+ * @returns the subnet ID
+ */
+export function getSubnetIdFromCertificate(certificate: Cert, rootKey: Uint8Array): Principal {
+  if (certificate.delegation) {
+    return Principal.fromUint8Array(certificate.delegation.subnet_id);
+  }
+  // If certificate has no delegation, it comes from the root subnet
+  return Principal.selfAuthenticating(rootKey);
 }

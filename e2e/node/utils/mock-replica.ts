@@ -340,6 +340,7 @@ export interface V3ReadStateResponse {
 interface V3ReadStateOptions {
   nodeIdentity: Ed25519KeyIdentity;
   canisterRanges: Array<[Uint8Array, Uint8Array]>;
+  rootSubnetKeyPair?: KeyPair;
   keyPair?: KeyPair;
   date?: Date;
 }
@@ -356,6 +357,7 @@ interface V3ReadStateOptions {
 export async function prepareV3ReadStateResponse({
   nodeIdentity,
   canisterRanges,
+  rootSubnetKeyPair,
   keyPair,
   date,
 }: V3ReadStateOptions): Promise<V3ReadStateResponse> {
@@ -373,7 +375,13 @@ export async function prepareV3ReadStateResponse({
   });
   const signature = await signTree(tree, keyPair);
   // We pass the same key pair for signature, even though in reality the delegation would be signed by the root subnet
-  const delegation = await createDelegationCertificate(subnetId, keyPair, canisterRanges, date);
+  const delegation = await createDelegationCertificate({
+    delegatedKeyPair: keyPair,
+    keyPair: rootSubnetKeyPair ?? keyPair,
+    canisterRanges,
+    nodeIdentity,
+    date,
+  });
 
   const cert: Cert = {
     tree,
@@ -547,6 +555,7 @@ async function signTree(tree: HashTree, keyPair: KeyPair): Promise<Uint8Array> {
 
 type MockSyncTimeResponseOptions = {
   mockReplica: MockReplica;
+  rootSubnetKeyPair?: KeyPair;
   keyPair: KeyPair;
   canisterId: Principal | string;
   date?: Date;
@@ -563,12 +572,14 @@ type MockSyncTimeResponseOptions = {
  */
 export async function mockSyncTimeResponse({
   mockReplica,
+  rootSubnetKeyPair,
   keyPair,
   date,
   canisterId,
 }: MockSyncTimeResponseOptions) {
   canisterId = Principal.from(canisterId);
   const { responseBody: timeResponseBody } = await prepareV3ReadStateResponse({
+    rootSubnetKeyPair,
     keyPair,
     date,
     canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
@@ -625,17 +636,31 @@ export async function mockSyncSubnetTimeResponse({
   });
 }
 
-async function createDelegationCertificate(
-  subnetId: Uint8Array,
-  keyPair: KeyPair,
-  canisterRanges: Array<[Uint8Array, Uint8Array]>,
-  date?: Date,
-): Promise<NonNullable<Cert['delegation']>> {
+type CreateDelegationCertificateOptions = {
+  delegatedKeyPair: KeyPair;
+  keyPair: KeyPair;
+  canisterRanges: Array<[Uint8Array, Uint8Array]>;
+  nodeIdentity: Ed25519KeyIdentity;
+  date?: Date;
+};
+
+async function createDelegationCertificate({
+  delegatedKeyPair,
+  keyPair,
+  canisterRanges,
+  nodeIdentity,
+  date,
+}: CreateDelegationCertificateOptions): Promise<NonNullable<Cert['delegation']>> {
   date = date ?? new Date();
+  nodeIdentity = nodeIdentity ?? randomIdentity();
+  const delegatedSubnetId = Principal.selfAuthenticating(
+    delegatedKeyPair.publicKeyDer,
+  ).toUint8Array();
+
   const tree = createSubnetTree({
-    subnetId,
-    subnetPublicKey: keyPair.publicKeyDer,
-    nodeIdentity: randomIdentity(),
+    subnetId: delegatedSubnetId,
+    subnetPublicKey: delegatedKeyPair.publicKeyDer,
+    nodeIdentity,
     canisterRanges,
     date,
   });
@@ -647,7 +672,7 @@ async function createDelegationCertificate(
   };
 
   return {
-    subnet_id: subnetId,
+    subnet_id: delegatedSubnetId,
     certificate: Cbor.encode(cert),
   };
 }
@@ -656,6 +681,7 @@ type MockReadStateNodeKeysResponseOptions = {
   mockReplica: MockReplica;
   nodeIdentity: Ed25519KeyIdentity;
   canisterId: Principal | string;
+  rootSubnetKeyPair: KeyPair;
   subnetKeyPair: KeyPair;
   date?: Date;
 };
@@ -674,6 +700,7 @@ export async function mockReadStateNodeKeysResponse({
   mockReplica,
   nodeIdentity,
   canisterId,
+  rootSubnetKeyPair,
   subnetKeyPair,
   date,
 }: MockReadStateNodeKeysResponseOptions) {
@@ -683,22 +710,11 @@ export async function mockReadStateNodeKeysResponse({
   const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
     nodeIdentity,
     canisterRanges: [[canisterIdBytes, canisterIdBytes]],
+    rootSubnetKeyPair,
     keyPair: subnetKeyPair,
     date,
   });
   mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
     res.status(200).send(readStateResponseBody);
-  });
-
-  // Get node key from subnet
-  const subnetId = Principal.selfAuthenticating(subnetKeyPair.publicKeyDer);
-  const { responseBody: readSubnetStateResponseBody } = await prepareV3ReadStateSubnetResponse({
-    nodeIdentity,
-    canisterRanges: [[canisterIdBytes, canisterIdBytes]],
-    keyPair: subnetKeyPair,
-    date,
-  });
-  mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetId.toString(), (_req, res) => {
-    res.status(200).send(readSubnetStateResponseBody);
   });
 }

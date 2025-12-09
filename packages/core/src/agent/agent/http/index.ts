@@ -57,8 +57,15 @@ import {
 } from './types.ts';
 import { request as canisterStatusRequest } from '../../canisterStatus/index.ts';
 import { request as subnetStatusRequest } from '../../subnetStatus/index.ts';
-import { type SubnetNodeKeys } from '../../utils/readState.ts';
-import { Certificate, type HashTree, lookup_path, LookupPathStatus } from '../../certificate.ts';
+import { lookupNodeKeysFromCertificate, type SubnetNodeKeys } from '../../utils/readState.ts';
+import {
+  Cert,
+  Certificate,
+  getSubnetIdFromCertificate,
+  type HashTree,
+  lookup_path,
+  LookupPathStatus,
+} from '../../certificate.ts';
 import { ed25519 } from '@noble/curves/ed25519';
 import { ExpirableMap } from '../../utils/expirableMap.ts';
 import { Ed25519PublicKey } from '../../public_key.ts';
@@ -1417,26 +1424,36 @@ export class HttpAgent implements Agent {
     this.#identity = Promise.resolve(identity);
   }
 
-  public async fetchSubnetKeys(
-    canisterId: Principal | string,
-  ): Promise<SubnetNodeKeys | undefined> {
+  public async fetchSubnetKeys(canisterId: Principal | string): Promise<SubnetNodeKeys> {
     const effectiveCanisterId: Principal = Principal.from(canisterId);
     await this.#asyncGuard(effectiveCanisterId);
 
-    const subnetId = await this.getSubnetIdFromCanister(effectiveCanisterId);
+    const rootKey = this.rootKey!;
 
-    const response = await subnetStatusRequest({
-      subnetId,
-      paths: ['nodeKeys'],
+    const canisterReadState = await this.readState(effectiveCanisterId, {
+      paths: [[utf8ToBytes('subnet')]],
+    });
+    const canisterCertificate = await Certificate.create({
+      certificate: canisterReadState.certificate,
+      rootKey,
+      principal: { canisterId: effectiveCanisterId },
       agent: this,
     });
 
-    const nodeKeys = response.get('nodeKeys') as SubnetNodeKeys | undefined;
-    if (nodeKeys) {
-      this.#subnetKeys.set(effectiveCanisterId.toText(), nodeKeys);
-      return nodeKeys;
+    const subnetId = getSubnetIdFromCertificate(canisterCertificate.cert, rootKey);
+
+    let nodeKeys: SubnetNodeKeys | undefined;
+    if (canisterCertificate.cert.delegation) {
+      const delegationCertificate = cbor.decode<Cert>(
+        canisterCertificate.cert.delegation.certificate,
+      );
+      nodeKeys = lookupNodeKeysFromCertificate(delegationCertificate, subnetId);
+    } else {
+      nodeKeys = lookupNodeKeysFromCertificate(canisterCertificate.cert, subnetId);
     }
-    return undefined;
+
+    this.#subnetKeys.set(effectiveCanisterId.toText(), nodeKeys);
+    return nodeKeys;
   }
 
   /**
@@ -1457,13 +1474,9 @@ export class HttpAgent implements Agent {
       rootKey: this.rootKey!,
       principal: { canisterId: effectiveCanisterId },
       agent: this,
-      disableTimeVerification: true, // avoid extra calls to syncTime
     });
 
-    if (!canisterCertificate.cert.delegation) {
-      return Principal.selfAuthenticating(this.rootKey!);
-    }
-    return Principal.fromUint8Array(new Uint8Array(canisterCertificate.cert.delegation.subnet_id));
+    return getSubnetIdFromCertificate(canisterCertificate.cert, this.rootKey!);
   }
 
   protected _transform(request: HttpAgentRequest): Promise<HttpAgentRequest> {
