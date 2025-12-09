@@ -16,7 +16,12 @@ import { Principal } from '@icp-sdk/core/principal';
 import { IDL } from '@icp-sdk/core/candid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createActor } from '../canisters/counter.ts';
-import { MockReplica, mockSyncTimeResponse, prepareV4Response } from '../utils/mock-replica.ts';
+import {
+  MockReplica,
+  mockSyncSubnetTimeResponse,
+  mockSyncTimeResponse,
+  prepareV4Response,
+} from '../utils/mock-replica.ts';
 import { randomIdentity, randomKeyPair } from '../utils/identity.ts';
 import { concatBytes } from '@noble/hashes/utils';
 
@@ -461,6 +466,48 @@ describe('syncTime', () => {
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
       expect(agent.hasSyncedTime()).toBe(false);
     });
+  });
+});
+
+describe('syncTimeWithSubnet', () => {
+  const date = new Date('2025-05-01T12:34:56.789Z');
+
+  const keyPair = randomKeyPair();
+  const identity = randomIdentity();
+
+  let mockReplica: MockReplica;
+
+  beforeEach(async () => {
+    mockReplica = await MockReplica.create();
+
+    vi.useFakeTimers();
+    vi.setSystemTime(date);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should sync time with a subnet', async () => {
+    const agent = await HttpAgent.create({
+      host: mockReplica.address,
+      rootKey: keyPair.publicKeyDer,
+      identity,
+    });
+
+    await mockSyncSubnetTimeResponse({
+      mockReplica,
+      keyPair,
+      date,
+    });
+
+    expect(agent.hasSyncedTime()).toBe(false);
+
+    const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
+    await agent.syncTimeWithSubnet(subnetId);
+
+    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(3);
+    expect(agent.hasSyncedTime()).toBe(true);
   });
 });
 
