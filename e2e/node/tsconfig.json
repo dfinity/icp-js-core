@@ -10,8 +10,6 @@
   "include": ["utils/**/*.ts", "canisters/**/*.ts", "basic/**/*.ts"],
   "exclude": [".dfx", "lib", "node_modules"],
   "references": [
-    { "path": "../../packages/core" },
-    { "path": "../../packages/agent" },
-    { "path": "../../packages/assets" }
+    { "path": "../../packages/core" }
   ]
 }
