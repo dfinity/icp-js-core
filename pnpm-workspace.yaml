@@ -2,7 +2,6 @@ packages:
   - docs
   - e2e/node
   - packages/agent
-  - packages/assets
   - packages/candid
   - packages/core
   - packages/identity

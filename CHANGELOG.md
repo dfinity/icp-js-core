@@ -10,8 +10,7 @@
 - feat(agent)!: use `/api/v3` for query and read_state requests
 - feat(agent)!: supports both subnet id and canister id for certificate verification
   - The `canisterId` option has been replaced with the `principal` option in the `Certificate.create` options object
-- feat(assets)!: replaces `@dfinity/{agent,candid,principal}` deps with `@icp-sdk/core`
-- feat(assets)!: drops support for cjs for the `@dfinity/assets` package
+- feat(assets)!: `@dfinity/assets` has been deprecated. Its functionality is now part of [`@icp-sdk/canisters`](https://js.icp.build/canisters/latest/).
 - feat(auth-client)!: `@dfinity/auth-client` has been deprecated. Migrate to [`@icp-sdk/auth`](https://js.icp.build/auth/latest/upgrading/v4)
 - feat(agent): lookup canister ranges using the `/canister_ranges/<subnet_id>/<ranges>` certificate path
 - feat(agent): introduce the `lookupCanisterRanges`, `lookupCanisterRangesFallback`, and `decodeCanisterRanges` utility functions to lookup canister ranges from certificate trees

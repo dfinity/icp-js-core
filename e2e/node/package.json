@@ -7,10 +7,9 @@
     "e2e": "vitest",
     "poste2e": "dfx killall",
     "mitm": "MITM=true vitest ./basic/mitm.test.ts",
-    "setup": "dfx killall; dfx start --background --clean; dfx deploy; dfx canister call assets authorize '(principal \"n7obp-cx27z-e4ytc-ipt7n-urffz-txqa5-el2vn-7vpqc-jjoh3-wrob6-bqe\")'"
+    "setup": "dfx killall; dfx start --background --clean; dfx deploy"
   },
   "dependencies": {
-    "@dfinity/assets": "workspace:*",
     "@icp-sdk/core": "workspace:*",
     "@noble/curves": "^1.9.2",
     "@noble/hashes": "^1.8.0"

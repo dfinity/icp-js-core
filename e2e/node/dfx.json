@@ -1,10 +1,5 @@
 {
   "canisters": {
-    "assets": {
-      "type": "assets",
-      "source": ["canisters/assets"],
-      "build": ""
-    },
     "counter": {
       "type": "motoko",
       "main": "canisters/counter.mo"
