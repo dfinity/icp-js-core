@@ -13,12 +13,6 @@ The `@icp-sdk/core` is a single, unified package that contains all the modules y
   </TabItem>
   <TabItem label="pnpm" icon="pnpm">
     <Code lang="shell" code="pnpm add @icp-sdk/core" />
-
-    You might need to install the _exact version_ of the peer dependencies of `@icp-sdk/core` manually:
-    <Code
-      lang="shell"
-      code="pnpm add --save-exact @dfinity/agent@latest @dfinity/candid@latest @dfinity/identity@latest @dfinity/identity-secp256k1@latest @dfinity/principal@latest"
-    />
   </TabItem>
   <TabItem label="bun" icon="bun">
     <Code lang="shell" code="bun add @icp-sdk/core" />
@@ -27,8 +21,6 @@ The `@icp-sdk/core` is a single, unified package that contains all the modules y
     <Code lang="shell" code="yarn add @icp-sdk/core" />
   </TabItem>
 </Tabs>
-
-> In case you are getting errors with the `@dfinity/*` peer dependencies, make sure you clean the `node_modules` folder and reinstall the dependencies. Each version of `@icp-sdk/core` requires an exact version of the `@dfinity/*` peer dependencies.
 
 ## CDN
 

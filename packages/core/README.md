@@ -4,8 +4,6 @@ The `@icp-sdk/core` package is a JavaScript and TypeScript library designed to i
 
 Do you want to know more about developing on the Internet Computer? Visit the [Developer Docs](https://internetcomputer.org/docs/home).
 
-> Still using `@dfinity/agent`? Migrate to [`@icp-sdk/core`](https://js.icp.build/core/latest/upgrading/v4)!
-
 ---
 
 ## Installation
