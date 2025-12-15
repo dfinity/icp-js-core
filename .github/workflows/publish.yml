@@ -8,28 +8,8 @@ on:
       - closed
 
 jobs:
-  publish-dfinity-packages:
-    environment: Release
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@main
-
-      - run: pnpm build:packages
-
-      - run: pnpm publish:dfinity-packages
-        env:
-          NPM_CONFIG_PROVENANCE: 'true'
-
   publish-core-package:
     environment: Release
-    needs: publish-dfinity-packages
     runs-on: ubuntu-latest
     permissions:
       contents: write
