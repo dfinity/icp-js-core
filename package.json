@@ -54,7 +54,6 @@
     "bundle": "pnpm build:packages && pnpm -F './packages/core' bundle",
     "e2e": "pnpm -r e2e",
     "test": "pnpm -r -F './packages/core' test",
-    "publish:dfinity-packages": "pnpm -r -F './packages/principal' publish",
     "publish:core-package": "pnpm -F './packages/core' publish",
     "version": "pnpm dlx tsx bin/version.ts",
     "attw": "pnpm -r attw",
