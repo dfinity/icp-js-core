@@ -35,8 +35,10 @@
   "scripts": {
     "build": "tsc -b && tsc -p tsconfig.cjs.json && tsc-alias && tsc-alias -p tsconfig.cjs.json && cp src/package.json lib/esm/package.json",
     "build:watch": "tsc -b --watch",
+    "prebundle": "pnpm build",
     "bundle": "esbuild src/index.ts src/agent/index.ts src/candid/index.ts src/identity/index.ts src/identity/secp256k1/index.ts src/principal/index.ts --bundle --outdir=dist --platform=browser",
     "attw": "attw --pack . --profile node16",
+    "pretest": "pnpm build",
     "test": "jest"
   },
   "types": "./lib/esm/index.d.ts",

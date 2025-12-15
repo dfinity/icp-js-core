@@ -53,12 +53,12 @@ jobs:
       - name: Setup PNPM
         uses: dfinity/ci-tools/actions/setup-pnpm@main
 
-      - run: pnpm build:packages
+      - run: pnpm -F './packages/core' build
 
       - name: Publish core package
         env:
           NPM_CONFIG_PROVENANCE: 'true'
-        run: pnpm publish:core-package --access public
+        run: pnpm -F './packages/core' publish --access public
 
       - name: Mark as Latest Release in GitHub Releases
         env:

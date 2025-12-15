@@ -50,11 +50,9 @@
   },
   "scripts": {
     "build": "pnpm -r build",
-    "build:packages": "pnpm -F './packages/*' -F '!./packages/migrate' build",
-    "bundle": "pnpm build:packages && pnpm -F './packages/core' bundle",
+    "bundle": "pnpm -r bundle",
     "e2e": "pnpm -r e2e",
-    "test": "pnpm -r -F './packages/core' test",
-    "publish:core-package": "pnpm -F './packages/core' publish",
+    "test": "pnpm -r test",
     "version": "pnpm dlx tsx bin/version.ts",
     "attw": "pnpm -r attw",
     "lint": "eslint .",
