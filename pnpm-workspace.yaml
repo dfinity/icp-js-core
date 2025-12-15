@@ -3,7 +3,6 @@ packages:
   - e2e/node
   - packages/core
   - packages/migrate
-  - packages/principal
 onlyBuiltDependencies:
   - esbuild
   - sharp
