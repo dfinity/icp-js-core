@@ -154,12 +154,6 @@ importers:
         specifier: ^5.2.1
         version: 5.2.1
 
-  packages/candid:
-    dependencies:
-      '@dfinity/principal':
-        specifier: workspace:*
-        version: link:../principal
-
   packages/core:
     dependencies:
       '@dfinity/cbor':
