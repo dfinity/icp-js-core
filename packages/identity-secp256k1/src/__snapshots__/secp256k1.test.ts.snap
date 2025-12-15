@@ -1,7 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Secp256k1PublicKey Tests create from an existing public key 1`] = `Secp256k1PublicKey {}`;
-
-exports[`Secp256k1PublicKey Tests create from an existing public key 2`] = `Secp256k1PublicKey {}`;
-
-exports[`Secp256k1PublicKey Tests create from an existing public key 3`] = `Secp256k1PublicKey {}`;
