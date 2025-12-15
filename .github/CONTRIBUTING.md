@@ -10,14 +10,14 @@ Before you make your changes, check to see if an [issue exists](https://github.c
 2. Install Node.js version specified in `.node-version`
 3. Run `corepack enable` to enable `pnpm`
 4. Run `pnpm install` to install dependencies
-5. Run `pnpm build:packages` to build all packages
+5. Run `pnpm build` to build all packages
 
 ### Running Tests
 
 - **Unit tests**: `pnpm test`
 - **E2E tests**: First run setup in the e2e folder, then run tests:
   ```bash
-  pnpm build:packages
+  pnpm build
   cd e2e/node
   pnpm run setup
   pnpm e2e
