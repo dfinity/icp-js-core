@@ -171,10 +171,6 @@ importers:
       '@noble/hashes':
         specifier: ^1.8.0
         version: 1.8.0
-    devDependencies:
-      '@dfinity/identity':
-        specifier: workspace:*
-        version: link:../identity
 
   packages/candid:
     dependencies:
@@ -209,24 +205,6 @@ importers:
       tsc-alias:
         specifier: ^1.8.16
         version: 1.8.16
-
-  packages/identity:
-    dependencies:
-      '@dfinity/agent':
-        specifier: workspace:*
-        version: link:../agent
-      '@dfinity/candid':
-        specifier: workspace:*
-        version: link:../candid
-      '@dfinity/principal':
-        specifier: workspace:*
-        version: link:../principal
-      '@noble/curves':
-        specifier: ^1.9.2
-        version: 1.9.6
-      '@noble/hashes':
-        specifier: ^1.8.0
-        version: 1.8.0
 
   packages/migrate:
     dependencies:
