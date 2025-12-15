@@ -214,7 +214,7 @@ git tag "v0.20.0"
 git push --force-with-lease
 
 RELEASE_URL=$(gh release create v0.20.0 --generate-notes)
-gh pr create --base main --title 'chore: release $VERSION' --body 'GitHub Release: $RELEASE_URL\nNPM release: https://www.npmjs.com/package/@dfinity/agent/v/${version}'"
+gh pr create --base main --title 'chore: release $VERSION' --body 'GitHub Release: $RELEASE_URL\nNPM release: https://www.npmjs.com/package/@icp-sdk/core/v/${version}'"
 git checkout main
 ```
 
