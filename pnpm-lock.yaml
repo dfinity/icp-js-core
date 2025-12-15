@@ -154,24 +154,6 @@ importers:
         specifier: ^5.2.1
         version: 5.2.1
 
-  packages/agent:
-    dependencies:
-      '@dfinity/candid':
-        specifier: workspace:*
-        version: link:../candid
-      '@dfinity/cbor':
-        specifier: ^0.2.2
-        version: 0.2.2
-      '@dfinity/principal':
-        specifier: workspace:*
-        version: link:../principal
-      '@noble/curves':
-        specifier: ^1.9.2
-        version: 1.9.6
-      '@noble/hashes':
-        specifier: ^1.8.0
-        version: 1.8.0
-
   packages/candid:
     dependencies:
       '@dfinity/principal':
