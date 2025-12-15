@@ -4,7 +4,6 @@ packages:
   - packages/agent
   - packages/candid
   - packages/core
-  - packages/identity
   - packages/migrate
   - packages/principal
 onlyBuiltDependencies:

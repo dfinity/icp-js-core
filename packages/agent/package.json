@@ -65,8 +65,5 @@
   "dependencies": {
     "@dfinity/cbor": "^0.2.2",
     "@noble/curves": "^1.9.2"
-  },
-  "devDependencies": {
-    "@dfinity/identity": "workspace:*"
   }
 }
