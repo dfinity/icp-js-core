@@ -228,30 +228,6 @@ importers:
         specifier: ^1.8.0
         version: 1.8.0
 
-  packages/identity-secp256k1:
-    dependencies:
-      '@dfinity/agent':
-        specifier: workspace:*
-        version: link:../agent
-      '@dfinity/candid':
-        specifier: workspace:*
-        version: link:../candid
-      '@noble/curves':
-        specifier: ^1.9.2
-        version: 1.9.6
-      '@noble/hashes':
-        specifier: ^1.8.0
-        version: 1.8.0
-      '@scure/bip32':
-        specifier: ^1.7.0
-        version: 1.7.0
-      '@scure/bip39':
-        specifier: ^1.6.0
-        version: 1.6.0
-      asn1js:
-        specifier: ^3.0.5
-        version: 3.0.6
-
   packages/migrate:
     dependencies:
       chalk:

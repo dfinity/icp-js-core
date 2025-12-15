@@ -5,7 +5,6 @@ packages:
   - packages/candid
   - packages/core
   - packages/identity
-  - packages/identity-secp256k1
   - packages/migrate
   - packages/principal
 onlyBuiltDependencies:
