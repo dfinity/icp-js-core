@@ -26,6 +26,7 @@ import {
   AgentError,
   MalformedLookupFoundValueErrorCode,
   CertificateOutdatedErrorCode,
+  CertificateNotAuthorizedErrorCode,
 } from '../../errors.ts';
 import { AnonymousIdentity, type Identity } from '../../auth.ts';
 import * as cbor from '../../cbor.ts';
@@ -60,6 +61,7 @@ import { request as subnetStatusRequest } from '../../subnetStatus/index.ts';
 import { lookupNodeKeysFromCertificate, type SubnetNodeKeys } from '../../utils/readState.ts';
 import {
   Certificate,
+  check_canister_ranges,
   getSubnetIdFromCertificate,
   type HashTree,
   lookup_path,
@@ -1436,6 +1438,19 @@ export class HttpAgent implements Agent {
       principal: { canisterId: effectiveCanisterId },
       agent: this,
     });
+    if (!canisterCertificate.cert.delegation) {
+      const subnetId = Principal.selfAuthenticating(rootKey);
+      const canisterInRange = check_canister_ranges({
+        canisterId: effectiveCanisterId,
+        subnetId,
+        tree: canisterCertificate.cert.tree,
+      });
+      if (!canisterInRange) {
+        throw TrustError.fromCode(
+          new CertificateNotAuthorizedErrorCode(effectiveCanisterId, subnetId),
+        );
+      }
+    }
 
     const subnetId = getSubnetIdFromCertificate(canisterCertificate.cert, rootKey);
     const nodeKeys = lookupNodeKeysFromCertificate(canisterCertificate.cert, subnetId);
