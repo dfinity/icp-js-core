@@ -255,6 +255,7 @@ interface V4ResponseOptions {
   ingressExpiryInMinutes?: number;
   timeDiffMsecs?: number;
   reply?: string | Uint8Array;
+  rootSubnetKeyPair: KeyPair;
   keyPair?: KeyPair;
   date?: Date;
   nonce?: Nonce;
@@ -288,6 +289,7 @@ export async function prepareV4Response({
   ingressExpiryInMinutes,
   timeDiffMsecs,
   reply,
+  rootSubnetKeyPair,
   keyPair,
   date,
   nonce,
@@ -318,10 +320,17 @@ export async function prepareV4Response({
     date,
   });
   const signature = await signTree(tree, keyPair);
+  const delegation = await createDelegationCertificate({
+    delegatedKeyPair: keyPair,
+    keyPair: rootSubnetKeyPair,
+    canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+    date,
+  });
 
   const cert: Cert = {
     tree,
     signature,
+    delegation,
   };
   const responseBody: v4ResponseBody = {
     certificate: Cbor.encode(cert),
@@ -340,7 +349,7 @@ export interface V3ReadStateResponse {
 interface V3ReadStateOptions {
   nodeIdentity: Ed25519KeyIdentity;
   canisterRanges: Array<[Uint8Array, Uint8Array]>;
-  rootSubnetKeyPair?: KeyPair;
+  rootSubnetKeyPair: KeyPair;
   keyPair?: KeyPair;
   date?: Date;
 }
@@ -374,10 +383,9 @@ export async function prepareV3ReadStateResponse({
     date,
   });
   const signature = await signTree(tree, keyPair);
-  // We pass the same key pair for signature, even though in reality the delegation would be signed by the root subnet
   const delegation = await createDelegationCertificate({
     delegatedKeyPair: keyPair,
-    keyPair: rootSubnetKeyPair ?? keyPair,
+    keyPair: rootSubnetKeyPair,
     canisterRanges,
     date,
   });
@@ -408,6 +416,7 @@ export async function prepareV3ReadStateResponse({
 export async function prepareV3ReadStateSubnetResponse({
   nodeIdentity,
   canisterRanges,
+  rootSubnetKeyPair,
   keyPair,
   date,
 }: V3ReadStateOptions): Promise<V3ReadStateResponse> {
@@ -423,10 +432,17 @@ export async function prepareV3ReadStateSubnetResponse({
     date,
   });
   const signature = await signTree(tree, keyPair);
+  const delegation = await createDelegationCertificate({
+    delegatedKeyPair: keyPair,
+    keyPair: rootSubnetKeyPair,
+    canisterRanges,
+    date,
+  });
 
   const cert: Cert = {
     tree,
     signature,
+    delegation,
   };
   const responseBody: ReadStateResponse = {
     certificate: Cbor.encode(cert),
@@ -554,7 +570,7 @@ async function signTree(tree: HashTree, keyPair: KeyPair): Promise<Uint8Array> {
 
 type MockSyncTimeResponseOptions = {
   mockReplica: MockReplica;
-  rootSubnetKeyPair?: KeyPair;
+  rootSubnetKeyPair: KeyPair;
   keyPair: KeyPair;
   canisterId: Principal | string;
   date?: Date;
@@ -598,6 +614,7 @@ export async function mockSyncTimeResponse({
 
 type MockSyncSubnetTimeResponseOptions = {
   mockReplica: MockReplica;
+  rootSubnetKeyPair: KeyPair;
   keyPair: KeyPair;
   date?: Date;
 };
@@ -612,11 +629,13 @@ type MockSyncSubnetTimeResponseOptions = {
  */
 export async function mockSyncSubnetTimeResponse({
   mockReplica,
+  rootSubnetKeyPair,
   keyPair,
   date,
 }: MockSyncSubnetTimeResponseOptions) {
   const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
   const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
+    rootSubnetKeyPair,
     keyPair,
     date,
     canisterRanges: [], // not needed for subnet time

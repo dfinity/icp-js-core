@@ -70,6 +70,7 @@ describe('canister status', () => {
     const now = new Date('2025-07-25T12:34:56.789Z');
     const canisterId = Principal.fromText('uxrrr-q7777-77774-qaaaq-cai');
 
+    const rootSubnetKeyPair = randomKeyPair();
     const subnetKeyPair = randomKeyPair();
     const nodeIdentity = randomIdentity();
     const identity = randomIdentity();
@@ -88,13 +89,14 @@ describe('canister status', () => {
 
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: subnetKeyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
       });
 
       const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+        rootSubnetKeyPair,
         keyPair: subnetKeyPair,
         date: replicaDate,
       });
@@ -105,6 +107,7 @@ describe('canister status', () => {
       // syncs time
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair: subnetKeyPair,
         canisterId,
         date: now, // simulate a replica time that is different from the certificate time
@@ -133,13 +136,14 @@ describe('canister status', () => {
 
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: subnetKeyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
       });
 
       const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+        rootSubnetKeyPair,
         keyPair: subnetKeyPair,
         date: replicaDate,
       });
@@ -150,6 +154,7 @@ describe('canister status', () => {
       // sync time, we return the replica date to make the agent sync time properly
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair: subnetKeyPair,
         canisterId,
         date: new Date(now.getTime() - 4 * MINUTE_TO_MSECS),
@@ -171,13 +176,14 @@ describe('canister status', () => {
 
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: subnetKeyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
       });
 
       const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+        rootSubnetKeyPair,
         keyPair: subnetKeyPair,
         date: replicaDate,
       });
