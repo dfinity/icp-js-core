@@ -12,7 +12,7 @@ import { getCanisterId } from '../utils/canisterid.ts';
 import {
   MockReplica,
   mockSyncTimeResponse,
-  prepareV3ReadStateSubnetResponse,
+  prepareV3ReadStateResponse,
 } from '../utils/mock-replica.ts';
 import { randomIdentity, randomKeyPair } from '../utils/identity.ts';
 
@@ -93,7 +93,7 @@ describe('canister status', () => {
         identity,
       });
 
-      const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
+      const { responseBody: subnetResponseBody } = await prepareV3ReadStateResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
         rootSubnetKeyPair,
@@ -140,7 +140,7 @@ describe('canister status', () => {
         identity,
       });
 
-      const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
+      const { responseBody: subnetResponseBody } = await prepareV3ReadStateResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
         rootSubnetKeyPair,
@@ -180,7 +180,7 @@ describe('canister status', () => {
         identity,
       });
 
-      const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
+      const { responseBody: subnetResponseBody } = await prepareV3ReadStateResponse({
         nodeIdentity,
         canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
         rootSubnetKeyPair,

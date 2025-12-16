@@ -404,55 +404,6 @@ export async function prepareV3ReadStateResponse({
   };
 }
 
-/**
- * Prepares a version 3 read state subnet response.
- * @param {V3ReadStateOptions} options - The options for preparing the response.
- * @param {Ed25519KeyIdentity} options.nodeIdentity - The identity of the node.
- * @param {Array<[Uint8Array, Uint8Array]>} options.canisterRanges - The canister ranges for the subnet.
- * @param {KeyPair} options.keyPair - The key pair for signing.
- * @param {Date} options.date - The date for the response.
- * @returns {Promise<V3ReadStateResponse>} A promise that resolves to the prepared response.
- */
-export async function prepareV3ReadStateSubnetResponse({
-  nodeIdentity,
-  canisterRanges,
-  rootSubnetKeyPair,
-  keyPair,
-  date,
-}: V3ReadStateOptions): Promise<V3ReadStateResponse> {
-  keyPair = keyPair ?? randomKeyPair();
-  date = date ?? new Date();
-  const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer).toUint8Array();
-
-  const tree = createSubnetTree({
-    subnetId,
-    subnetPublicKey: keyPair.publicKeyDer,
-    nodeIdentity,
-    canisterRanges,
-    date,
-  });
-  const signature = await signTree(tree, keyPair);
-  const delegation = await createDelegationCertificate({
-    delegatedKeyPair: keyPair,
-    keyPair: rootSubnetKeyPair,
-    canisterRanges,
-    date,
-  });
-
-  const cert: Cert = {
-    tree,
-    signature,
-    delegation,
-  };
-  const responseBody: ReadStateResponse = {
-    certificate: Cbor.encode(cert),
-  };
-
-  return {
-    responseBody: Cbor.encode(responseBody),
-  };
-}
-
 interface V3QueryResponseOptions {
   canisterId: Principal | string;
   methodName: string;
@@ -634,7 +585,7 @@ export async function mockSyncSubnetTimeResponse({
   date,
 }: MockSyncSubnetTimeResponseOptions) {
   const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
-  const { responseBody: subnetResponseBody } = await prepareV3ReadStateSubnetResponse({
+  const { responseBody: subnetResponseBody } = await prepareV3ReadStateResponse({
     rootSubnetKeyPair,
     keyPair,
     date,
