@@ -41,6 +41,7 @@ describe('syncTime', () => {
   const greetArgs = IDL.encode([IDL.Text], [greetReq]);
   const greetReply = IDL.encode([IDL.Text], [greetRes]);
 
+  const rootSubnetKeyPair = randomKeyPair();
   const keyPair = randomKeyPair();
   const identity = randomIdentity();
   const anonIdentity = new AnonymousIdentity();
@@ -62,7 +63,7 @@ describe('syncTime', () => {
     it('should not sync time by default', async () => {
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
       });
       const actor = await createActor(canisterId, { agent });
@@ -73,6 +74,7 @@ describe('syncTime', () => {
         methodName: greetMethodName,
         arg: greetArgs,
         sender,
+        rootSubnetKeyPair,
         reply: greetReply,
         keyPair,
         date,
@@ -103,7 +105,7 @@ describe('syncTime', () => {
     it('should sync time when the local time does not match the subnet time', async () => {
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
       });
       const actor = await createActor(canisterId, { agent });
@@ -115,6 +117,7 @@ describe('syncTime', () => {
 
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair,
         canisterId,
       });
@@ -124,6 +127,7 @@ describe('syncTime', () => {
         methodName: greetMethodName,
         arg: greetArgs,
         sender,
+        rootSubnetKeyPair,
         reply: greetReply,
         keyPair,
         date,
@@ -182,7 +186,7 @@ describe('syncTime', () => {
     it('should not sync time twice when the local time does not match the subnet time', async () => {
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
       });
       const actor = await createActor(canisterId, { agent });
@@ -193,6 +197,7 @@ describe('syncTime', () => {
 
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair,
         canisterId,
       });
@@ -224,13 +229,14 @@ describe('syncTime', () => {
     it('should sync time when enabled', async () => {
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair,
         canisterId: ICP_LEDGER,
       });
 
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         shouldSyncTime: true,
       });
 
@@ -262,13 +268,14 @@ describe('syncTime', () => {
     it('should not sync time by default', async () => {
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair,
         canisterId: ICP_LEDGER,
       });
 
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity: anonIdentity,
       });
 
@@ -279,13 +286,14 @@ describe('syncTime', () => {
     it('should not sync time when explicitly disabled', async () => {
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair,
         canisterId: ICP_LEDGER,
       });
 
       const agent = await HttpAgent.create({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         shouldSyncTime: false,
         identity: anonIdentity,
       });
@@ -299,7 +307,7 @@ describe('syncTime', () => {
     it('should sync time when enabled', async () => {
       const agent = HttpAgent.createSync({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
         shouldSyncTime: true,
       });
@@ -307,6 +315,7 @@ describe('syncTime', () => {
 
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair,
         canisterId,
       });
@@ -317,6 +326,7 @@ describe('syncTime', () => {
         arg: greetArgs,
         sender: identity.getPrincipal(),
         reply: greetReply,
+        rootSubnetKeyPair,
         keyPair,
         date,
         nonce,
@@ -370,7 +380,7 @@ describe('syncTime', () => {
     it('should not sync time by default', async () => {
       const agent = HttpAgent.createSync({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
       });
       const actor = await createActor(canisterId, { agent });
@@ -378,6 +388,7 @@ describe('syncTime', () => {
 
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair,
         canisterId,
       });
@@ -388,6 +399,7 @@ describe('syncTime', () => {
         arg: greetArgs,
         sender,
         reply: greetReply,
+        rootSubnetKeyPair,
         keyPair,
         date,
         nonce,
@@ -419,7 +431,7 @@ describe('syncTime', () => {
     it('should not sync time when explicitly disabled', async () => {
       const agent = HttpAgent.createSync({
         host: mockReplica.address,
-        rootKey: keyPair.publicKeyDer,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
         identity,
         shouldSyncTime: false,
       });
@@ -428,6 +440,7 @@ describe('syncTime', () => {
 
       await mockSyncTimeResponse({
         mockReplica,
+        rootSubnetKeyPair,
         keyPair,
         canisterId,
       });
@@ -438,6 +451,7 @@ describe('syncTime', () => {
         arg: greetArgs,
         sender,
         reply: greetReply,
+        rootSubnetKeyPair,
         keyPair,
         date,
         nonce,
@@ -472,6 +486,7 @@ describe('syncTime', () => {
 describe('syncTimeWithSubnet', () => {
   const date = new Date('2025-05-01T12:34:56.789Z');
 
+  const rootSubnetKeyPair = randomKeyPair();
   const keyPair = randomKeyPair();
   const identity = randomIdentity();
 
@@ -491,11 +506,12 @@ describe('syncTimeWithSubnet', () => {
   it('should sync time with a subnet', async () => {
     const agent = await HttpAgent.create({
       host: mockReplica.address,
-      rootKey: keyPair.publicKeyDer,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
       identity,
     });
 
     await mockSyncSubnetTimeResponse({
+      rootSubnetKeyPair,
       mockReplica,
       keyPair,
       date,
