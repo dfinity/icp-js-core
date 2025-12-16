@@ -1024,7 +1024,7 @@ function getCanisterRangeShardPartitionPoint(
     }
   }
 
-  return left;
+  return Math.min(left, shardPaths.length - 1);
 }
 
 function getCanisterRangeFromShards(
