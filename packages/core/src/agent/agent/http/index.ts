@@ -1051,16 +1051,15 @@ export class HttpAgent implements Agent {
 
       const separatorWithHash = concatBytes(IC_RESPONSE_DOMAIN_SEPARATOR, hash);
 
-      // FIX: check for match without verifying N times
       const pubKey = subnetNodeKeys.get(nodeId);
       if (!pubKey) {
         throw ProtocolError.fromCode(new MalformedPublicKeyErrorCode());
       }
       const rawKey = Ed25519PublicKey.fromDer(pubKey).rawKey;
       const valid = ed25519.verify(sig.signature, separatorWithHash, rawKey);
-      if (valid) return queryResponse;
-
-      throw TrustError.fromCode(new QuerySignatureVerificationFailedErrorCode(nodeId));
+      if (!valid) {
+        throw TrustError.fromCode(new QuerySignatureVerificationFailedErrorCode(nodeId));
+      }
     }
     return queryResponse;
   };
