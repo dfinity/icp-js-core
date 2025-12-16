@@ -228,7 +228,7 @@ describe('syncTime', () => {
       expect(agent.hasSyncedTime()).toBe(true);
     });
 
-    it.only('should sync time when the local time does not match the subnet time (query)', async () => {
+    it('should sync time when the local time does not match the subnet time (query)', async () => {
       const agent = await HttpAgent.create({
         host: mockReplica.address,
         rootKey: rootSubnetKeyPair.publicKeyDer,
