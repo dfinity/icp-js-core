@@ -26,7 +26,7 @@ import {
 import { Principal } from '@icp-sdk/core/principal';
 import { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
 import { Mock, vi } from 'vitest';
-import { createReplyTree, createSubnetTree } from './tree.ts';
+import { createReplyTree, createRootSubnetTree, createSubnetTree } from './tree.ts';
 import { randomKeyPair, signBls, KeyPair, randomIdentity } from './identity.ts';
 import { concatBytes, toBytes } from '@noble/hashes/utils';
 
@@ -394,6 +394,47 @@ export async function prepareV3ReadStateResponse({
     tree,
     signature,
     delegation,
+  };
+  const responseBody: ReadStateResponse = {
+    certificate: Cbor.encode(cert),
+  };
+
+  return {
+    responseBody: Cbor.encode(responseBody),
+  };
+}
+
+/**
+ * Prepares a version 3 read state response for the root subnet.
+ * The difference is that the certificate does not have a delegation.
+ * @param {V3ReadStateOptions} options - The options for preparing the response.
+ * @param {Ed25519KeyIdentity} options.nodeIdentity - The identity of the node.
+ * @param {Array<[Uint8Array, Uint8Array]>} options.canisterRanges - The canister ranges for the root subnet.
+ * @param {KeyPair} options.rootSubnetKeyPair - The key pair for signing the root subnet.
+ * @param {Date} options.date - The date for the response.
+ * @returns {Promise<V3ReadStateResponse>} A promise that resolves to the prepared response.
+ */
+export async function prepareV3ReadStateRootSubnetResponse({
+  nodeIdentity,
+  canisterRanges,
+  rootSubnetKeyPair,
+  date,
+}: Omit<V3ReadStateOptions, 'keyPair'>): Promise<V3ReadStateResponse> {
+  date = date ?? new Date();
+  const subnetId = Principal.selfAuthenticating(rootSubnetKeyPair.publicKeyDer).toUint8Array();
+
+  const tree = createRootSubnetTree({
+    subnetId,
+    subnetPublicKey: rootSubnetKeyPair.publicKeyDer,
+    nodeIdentity,
+    canisterRanges,
+    date,
+  });
+  const signature = await signTree(tree, rootSubnetKeyPair);
+
+  const cert: Cert = {
+    tree,
+    signature,
   };
   const responseBody: ReadStateResponse = {
     certificate: Cbor.encode(cert),

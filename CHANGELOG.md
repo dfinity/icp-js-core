@@ -19,6 +19,7 @@
 - feat(agent): introduce the `getSubnetIdFromCertificate` method in the `Certificate` namespace to retrieve the subnet ID from a certificate
 - feat(agent): introduce the `SubnetStatus` utility namespace to request subnet information directly from the IC public API
 - feat(agent): export `IC_STATE_ROOT_DOMAIN_SEPARATOR` constant
+- fix(agent): check if canister is in ranges for certificates without delegation
 - fix(agent): verify all query signatures instead of only the first one
 - refactor(agent): only declare IC URLs once in the `HttpAgent` class
 - refactor(agent): split inner logic of `check_canister_ranges` into functions

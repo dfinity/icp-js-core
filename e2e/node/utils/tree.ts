@@ -124,6 +124,7 @@ interface SubnetTreeOptions {
 
 /**
  * Creates a subnet hash tree.
+ * @see https://internetcomputer.org/docs/references/ic-interface-spec#state-tree-canister-ranges
  * @param {SubnetTreeOptions} options - The options for the subnet tree.
  * @param {Uint8Array} options.subnetId - The ID of the subnet.
  * @param {Uint8Array} options.subnetPublicKey - The DER-encoded public key of the subnet.
@@ -139,29 +140,80 @@ export function createSubnetTree({
   canisterRanges,
   date,
 }: SubnetTreeOptions): HashTree {
-  let subnetSubtree: HashTree;
-
-  const canisterRangesSubtree = labeled('canister_ranges', leaf(Cbor.encode(canisterRanges)));
   const publicKeySubtree = labeled('public_key', leaf(subnetPublicKey));
 
+  let subnetSubtree: HashTree = publicKeySubtree;
   if (nodeIdentity) {
     // prettier-ignore
     subnetSubtree = fork(
-      fork(
-        canisterRangesSubtree,
-        labeled('node',
-          labeled(nodeIdentity.getPrincipal().toUint8Array(),
-            labeled('public_key', leaf(nodeIdentity.getPublicKey().toDer())),
-          ),
+      labeled('node',
+        labeled(nodeIdentity.getPrincipal().toUint8Array(),
+          labeled('public_key', leaf(nodeIdentity.getPublicKey().toDer())),
         ),
       ),
-      publicKeySubtree,
+      subnetSubtree,
     );
-  } else {
+  }
+
+  // prettier-ignore
+  let subnetTree: HashTree = labeled(
+    'subnet',
+      labeled(subnetId,
+        subnetSubtree,
+      ),
+  );
+  if (canisterRanges.length > 0) {
+    // On mainnet, canister ranges should always be present for delegated subnets.
+    // Sometimes it's easier in tests to just not include them, unless we are testing the canister ranges checks.
+    // prettier-ignore
+    subnetTree = fork(
+      labeled('canister_ranges',
+        labeled(subnetId,
+          labeled(canisterRanges[0][0], leaf(Cbor.encode(canisterRanges))),
+        ),
+      ),
+      subnetTree,
+    );
+  }
+
+  // prettier-ignore
+  return fork(
+    subnetTree,
+    createTimeTree(date),
+  );
+}
+
+/**
+ * Creates a root subnet hash tree.
+ * @see https://internetcomputer.org/docs/references/ic-interface-spec#state-tree-canister-ranges
+ * @param {SubnetTreeOptions} options - The options for the root subnet tree.
+ * @param {Uint8Array} options.subnetId - The ID of the root subnet.
+ * @param {Uint8Array} options.subnetPublicKey - The DER-encoded public key of the root subnet.
+ * @param {Ed25519KeyIdentity} options.nodeIdentity - The identity of the node. Omit this for delegation trees.
+ * @param {Array<[Uint8Array, Uint8Array]>} options.canisterRanges - The canister ranges for the root subnet.
+ * @param {Date} options.date - The timestamp for the tree.
+ * @returns {HashTree} A root subnet hash tree.
+ */
+export function createRootSubnetTree({
+  subnetId,
+  subnetPublicKey,
+  nodeIdentity,
+  canisterRanges,
+  date,
+}: SubnetTreeOptions): HashTree {
+  const publicKeySubtree = labeled('public_key', leaf(subnetPublicKey));
+  const canisterRangesSubtree = labeled('canister_ranges', leaf(Cbor.encode(canisterRanges)));
+
+  let subnetSubtree: HashTree = fork(publicKeySubtree, canisterRangesSubtree);
+  if (nodeIdentity) {
     // prettier-ignore
     subnetSubtree = fork(
-      canisterRangesSubtree,
-      publicKeySubtree,
+      labeled('node',
+        labeled(nodeIdentity.getPrincipal().toUint8Array(),
+          labeled('public_key', leaf(nodeIdentity.getPublicKey().toDer())),
+        ),
+      ),
+      subnetSubtree,
     );
   }
 
