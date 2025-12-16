@@ -1002,7 +1002,7 @@ function getCanisterRangeShardPaths(canisterRangeShards: HashTree): Array<NodeLa
  * - Elements at indices [partitionPoint, length) have values < canisterId
  * @param shardPaths Sorted array of shard paths to search through
  * @param canisterId The canister ID to compare against
- * @returns The index of the first shard that is less than the canister ID, or shardPaths.length if all shards are >= canisterId
+ * @returns The index of the first shard that is less than the canister ID, or last index if all shards are >= canisterId
  */
 function getCanisterRangeShardPartitionPoint(
   shardPaths: Array<NodeLabel>,
@@ -1010,7 +1010,7 @@ function getCanisterRangeShardPartitionPoint(
 ): number {
   const canisterIdBytes = canisterId.toUint8Array();
   let left = 0;
-  let right = shardPaths.length;
+  let right = shardPaths.length - 1;
 
   // Binary search for the first element where shard < canisterId
   while (left < right) {
@@ -1024,7 +1024,7 @@ function getCanisterRangeShardPartitionPoint(
     }
   }
 
-  return Math.min(left, shardPaths.length - 1);
+  return left;
 }
 
 function getCanisterRangeFromShards(
