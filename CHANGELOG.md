@@ -21,6 +21,7 @@
 - feat(agent): export `IC_STATE_ROOT_DOMAIN_SEPARATOR` constant
 - fix(agent): check if canister is in ranges for certificates without delegation
 - fix(agent): verify all query signatures instead of only the first one
+- fix(agent): sync time if ingress expiry is invalid in queries
 - refactor(agent): only declare IC URLs once in the `HttpAgent` class
 - refactor(agent): split inner logic of `check_canister_ranges` into functions
 - test(principal): remove unneeded dependency
