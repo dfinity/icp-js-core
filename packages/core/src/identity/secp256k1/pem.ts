@@ -34,7 +34,6 @@ export function pemToSecretKey(pem: string): Uint8Array {
     // Returns the 32-byte raw private key at the appropriate offset
     return rawKey.slice(7, 39);
   } catch (error) {
-    console.error(error);
-    throw new Error('Encountered error while parsing PEM key');
+    throw new Error(`Encountered error while parsing PEM key: ${error}`);
   }
 }
