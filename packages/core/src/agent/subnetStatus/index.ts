@@ -139,7 +139,6 @@ export async function request(options: SubnetStatusOptions): Promise<StatusMap> 
 
         const { path, data } = lookup(certificate, uniquePaths[index]);
         if (!data) {
-          console.warn(`Expected to find result for path ${path}, but instead found nothing.`);
           if (typeof path === 'string') {
             status.set(path, null);
           } else {
@@ -185,10 +184,6 @@ export async function request(options: SubnetStatusOptions): Promise<StatusMap> 
         } else {
           status.set(path, null);
         }
-        console.group();
-        console.warn(`Expected to find result for path ${path}, but instead found nothing.`);
-        console.warn(error);
-        console.groupEnd();
       }
     })();
   });

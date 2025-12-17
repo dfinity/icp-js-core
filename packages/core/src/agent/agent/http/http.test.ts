@@ -561,12 +561,6 @@ describe('makeNonce', () => {
   });
 });
 describe('retry failures', () => {
-  beforeEach(() => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    jest.spyOn(console, 'warn').mockImplementation();
-    consoleSpy.mockRestore();
-  });
-
   it('should throw errors immediately if retryTimes is set to 0', async () => {
     const mockFetch: jest.Mock = jest.fn(
       () =>
@@ -1325,32 +1319,3 @@ describe('error logs for bad signature', () => {
     expect(logs[0].error.cause.code.requestContext).toBeDefined();
   });
 });
-
-/**
- * Test utility to clone a fetch response for mocking purposes with the agent
- * @param request - RequestInfo
- * @param init - RequestInit
- * @returns Promise<Response>
- */
-export async function fetchCloner(
-  request: RequestInfo | URL,
-  init?: RequestInit,
-): Promise<Response> {
-  const response = await fetch(request, init);
-  const cloned = response.clone();
-  const responseBuffer = uint8FromBufLike(await cloned.arrayBuffer());
-
-  const mock = {
-    headers: [...response.headers.entries()],
-    ok: response.ok,
-    status: response.status,
-    statusText: response.statusText,
-    body: bytesToHex(responseBuffer),
-    now: Date.now(),
-  };
-
-  console.log(request);
-  console.log(JSON.stringify(mock));
-
-  return response;
-}
