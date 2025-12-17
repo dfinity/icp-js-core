@@ -46,6 +46,7 @@ describe('syncTime', () => {
 
   const rootSubnetKeyPair = randomKeyPair();
   const keyPair = randomKeyPair();
+  const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
   const nodeIdentity = randomIdentity();
   const identity = randomIdentity();
   const anonIdentity = new AnonymousIdentity();
@@ -322,14 +323,11 @@ describe('syncTime', () => {
 
       expect(response.certificate).toBeDefined();
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(5);
-      const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
       expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(0);
       expect(agent.hasSyncedTime()).toBe(true);
     });
 
     it('should sync time when the local time does not match the subnet time (read_state for subnet)', async () => {
-      const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
-
       const agent = await HttpAgent.create({
         host: mockReplica.address,
         rootKey: rootSubnetKeyPair.publicKeyDer,
@@ -639,6 +637,7 @@ describe('syncTimeWithSubnet', () => {
 
   const rootSubnetKeyPair = randomKeyPair();
   const keyPair = randomKeyPair();
+  const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
   const identity = randomIdentity();
 
   let mockReplica: MockReplica;
@@ -670,7 +669,6 @@ describe('syncTimeWithSubnet', () => {
 
     expect(agent.hasSyncedTime()).toBe(false);
 
-    const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
     await agent.syncTimeWithSubnet(subnetId);
 
     expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(3);
