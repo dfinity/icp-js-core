@@ -35,8 +35,6 @@ jobs:
       - run: pnpm build
 
       - uses: dfinity/setup-dfx@main
-        with: 
-          dfx-version: "0.30.1-beta.2"
 
       - name: running dfx
         run: pnpm run -F @e2e/node setup
