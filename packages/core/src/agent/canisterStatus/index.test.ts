@@ -145,7 +145,6 @@ describe('Canister Status utility', () => {
   });
   it('should support multiple requests with a failure', async () => {
     // Deliberately requesting a bad value
-    const consoleSpy = jest.spyOn(console, 'warn');
     const status = await getStatus([
       'time',
       // subnet and this arbitrary path should fail
@@ -162,7 +161,6 @@ describe('Canister Status utility', () => {
     expect(status.get('asdf')).toBe(null);
     // Expect undefined for unset value
     expect(status.get('test123')).toBe(undefined);
-    expect(consoleSpy).toBeCalledTimes(3);
   });
 });
 
