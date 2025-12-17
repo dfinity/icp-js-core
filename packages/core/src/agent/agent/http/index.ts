@@ -689,39 +689,16 @@ export class HttpAgent implements Agent {
     if (delay > 0) {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
-    let response: ApiQueryResponse;
+
+    let fetchResponse: Response;
     // Make the request and retry if it throws an error
     try {
       this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
-      const fetchResponse = await this.#fetch(url, {
+      fetchResponse = await this.#fetch(url, {
         ...this.#fetchOptions,
         ...transformedRequest.request,
         body,
       });
-      if (fetchResponse.status === HTTP_STATUS_OK) {
-        const queryResponse: QueryResponse = cbor.decode(
-          uint8FromBufLike(await fetchResponse.arrayBuffer()),
-        );
-        response = {
-          ...queryResponse,
-          httpDetails: {
-            ok: fetchResponse.ok,
-            status: fetchResponse.status,
-            statusText: fetchResponse.statusText,
-            headers: httpHeadersTransform(fetchResponse.headers),
-          },
-          requestId,
-        };
-      } else {
-        throw ProtocolError.fromCode(
-          new HttpErrorCode(
-            fetchResponse.status,
-            fetchResponse.statusText,
-            httpHeadersTransform(fetchResponse.headers),
-            await fetchResponse.text(),
-          ),
-        );
-      }
     } catch (error) {
       if (tries < this.#retryTimes) {
         this.log.warn(
@@ -731,13 +708,42 @@ export class HttpAgent implements Agent {
         );
         return await this.#requestAndRetryQuery({ ...args, tries: tries + 1 });
       }
-      if (error instanceof AgentError) {
-        // if it's an error that we have thrown, just throw it as is
-        throw error;
-      }
-      // if it's an error that we have not thrown, wrap it in a TransportError
       throw TransportError.fromCode(new HttpFetchErrorCode(error));
     }
+
+    const headers = httpHeadersTransform(fetchResponse.headers);
+
+    if (fetchResponse.status !== HTTP_STATUS_OK) {
+      const responseText = await fetchResponse.text();
+
+      if (isIngressExpiryInvalidResponse(responseText)) {
+        throw InputError.fromCode(
+          new IngressExpiryInvalidErrorCode(responseText, this.#maxIngressExpiryInMinutes),
+        );
+      }
+
+      if (tries < this.#retryTimes) {
+        return await this.#requestAndRetryQuery({ ...args, tries: tries + 1 });
+      }
+
+      throw ProtocolError.fromCode(
+        new HttpErrorCode(fetchResponse.status, fetchResponse.statusText, headers, responseText),
+      );
+    }
+
+    const queryResponse: QueryResponse = cbor.decode(
+      uint8FromBufLike(await fetchResponse.arrayBuffer()),
+    );
+    const response: ApiQueryResponse = {
+      ...queryResponse,
+      httpDetails: {
+        ok: fetchResponse.ok,
+        status: fetchResponse.status,
+        statusText: fetchResponse.statusText,
+        headers,
+      },
+      requestId,
+    };
 
     // Skip timestamp verification if the user has set verifyQuerySignatures to false
     if (!this.#verifyQuerySignatures) {
@@ -851,8 +857,7 @@ export class HttpAgent implements Agent {
       throw ProtocolError.fromCode(new HttpV4ApiNotSupportedErrorCode());
     }
 
-    // The error message comes from https://github.com/dfinity/ic/blob/23d5990bfc5277c32e54f0087b5a38fa412171e1/rs/validator/src/ingress_validation.rs#L233
-    if (responseText.startsWith('Invalid request expiry: ')) {
+    if (isIngressExpiryInvalidResponse(responseText)) {
       throw InputError.fromCode(
         new IngressExpiryInvalidErrorCode(responseText, this.#maxIngressExpiryInMinutes),
       );
@@ -978,6 +983,12 @@ export class HttpAgent implements Agent {
     } catch (error) {
       let queryError: AgentError;
       if (error instanceof AgentError) {
+        if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
+          // if there is an ingress expiry error and the time has not been synced yet,
+          // sync time with the network and try again
+          await this.syncTime(ecid);
+          return this.query(canisterId, fields, identity);
+        }
         // override the error code to include the request details
         error.code.requestContext = {
           requestId,
@@ -1527,4 +1538,14 @@ export function calculateIngressExpiry(
 ): Expiry {
   const ingressExpiryMs = maxIngressExpiryInMinutes * MINUTE_TO_MSECS;
   return Expiry.fromDeltaInMilliseconds(ingressExpiryMs, timeDiffMsecs);
+}
+
+/**
+ * Checks if the response text is an ingress expiry invalid response.
+ * @see https://github.com/dfinity/ic/blob/23d5990bfc5277c32e54f0087b5a38fa412171e1/rs/validator/src/ingress_validation.rs#L233
+ * @param responseText The response body as string.
+ * @returns `true` if the response text is an ingress expiry invalid response, `false` otherwise.
+ */
+function isIngressExpiryInvalidResponse(responseText: string): boolean {
+  return responseText.includes('Invalid request expiry: ');
 }
