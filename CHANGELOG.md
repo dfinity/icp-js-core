@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-See the [v5 upgrading guide](https://js.icp.build/core/v5/upgrading/v5/) for more information.
+See the [v5 upgrading guide](https://js.icp.build/core/latest/upgrading/v5/) for more information.
 
 - feat(core)!: removes `@dfinity/{agent,candid,identity,identity-secp256k1,principal}` peer dependencies and moves their source code to the `@icp-sdk/core` package
 - feat(agent)!: use `/api/v4` for call requests
