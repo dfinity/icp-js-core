@@ -19,12 +19,10 @@ describe.sequential('counter', () => {
   });
 
   it('should greet', async () => {
-    try {
-      expect(await counterActor.greet('counter')).toEqual('Hello, counter!');
-    } catch (error) {
-      console.error(error);
-    }
+    const result = await counterActor.greet('counter');
+    expect(result).toEqual('Hello, counter!');
   }, 40000);
+
   it('should submit distinct requests with nonce by default', async () => {
     const values = await Promise.all(
       new Array(4).fill(undefined).map(() => counterActor.inc_read()),

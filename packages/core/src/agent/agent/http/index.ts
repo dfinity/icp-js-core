@@ -988,7 +988,7 @@ export class HttpAgent implements Agent {
           // if there is an ingress expiry error and the time has not been synced yet,
           // sync time with the network and try again
           await this.syncTime(ecid);
-          return this.query(ecid, fields, identity);
+          return this.query(canisterId, fields, identity);
         }
         // override the error code to include the request details
         error.code.requestContext = {

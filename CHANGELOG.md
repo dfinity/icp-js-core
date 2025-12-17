@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+See the [v5 upgrading guide](https://js.icp.build/core/latest/upgrading/v5/) for more information.
+
 - feat(core)!: removes `@dfinity/{agent,candid,identity,identity-secp256k1,principal}` peer dependencies and moves their source code to the `@icp-sdk/core` package
 - feat(agent)!: use `/api/v4` for call requests
   - Renames `v3ResponseBody` to `v4ResponseBody`
@@ -23,6 +25,7 @@
 - fix(agent): verify all query signatures instead of only the first one
 - fix(agent): sync time if ingress expiry is invalid in queries
 - fix(agent): sync time before retrying if query signature is outdated
+- fix(agent,identity/secp256k1): remove `console.*` statements
 - refactor(agent): only declare IC URLs once in the `HttpAgent` class
 - refactor(agent): split inner logic of `check_canister_ranges` into functions
 - test(principal): remove unneeded dependency
