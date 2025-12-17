@@ -142,12 +142,13 @@ describe('queryExpiry', () => {
   it('should retry and fail if the timestamp is outside the max ingress expiry (with retry)', async () => {
     const timeDiffMsecs = 6 * MINUTE_TO_MSECS;
     const futureDate = new Date(now.getTime() + timeDiffMsecs);
+    const retryTimes = 3;
 
     const agent = await HttpAgent.create({
       host: mockReplica.address,
       rootKey: rootSubnetKeyPair.publicKeyDer,
       identity,
-      retryTimes: 3,
+      retryTimes,
     });
     const actor = await createActor(canisterId, { agent });
     const sender = identity.getPrincipal();
@@ -177,17 +178,34 @@ describe('queryExpiry', () => {
     // advance to go over the max ingress expiry (5 minutes)
     advanceTimeByMilliseconds(timeDiffMsecs);
 
-    // Get node key from subnet
-    const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
+    // First call executed in parallel with the query
+    await mockReadStateNodeKeysResponse({
+      mockReplica,
       nodeIdentity,
-      canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+      canisterId,
       rootSubnetKeyPair,
-      keyPair: subnetKeyPair,
+      subnetKeyPair,
       date: futureDate, // we don't want this call to fail in this case, so we return the proper date
     });
-    mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-      res.status(200).send(readStateResponseBody);
-    });
+
+    for (let i = 0; i < retryTimes; i++) {
+      await mockReadStateNodeKeysResponse({
+        mockReplica,
+        nodeIdentity,
+        canisterId,
+        rootSubnetKeyPair,
+        subnetKeyPair,
+        date: futureDate, // we don't want this call to fail in this case, so we return the proper date
+      });
+
+      await mockSyncTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair: subnetKeyPair,
+        date: futureDate,
+        canisterId,
+      });
+    }
 
     expect.assertions(5);
 
@@ -198,7 +216,7 @@ describe('queryExpiry', () => {
     }
 
     expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(4);
-    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(10);
   });
 
   it('should not retry if the timestamp is outside the max ingress expiry (verifyQuerySignatures=false)', async () => {
@@ -387,6 +405,176 @@ describe('queryExpiry', () => {
 
     const req = mockReplica.getV3QueryReq(canisterId.toString(), 0);
     expect(requestIdOf(req.content)).toEqual(requestId);
+  });
+
+  it('should sync time when the query response has an outdated certificate and retry succeeds', async () => {
+    const timeDiffMsecs = -(6 * MINUTE_TO_MSECS);
+    const replicaDate = new Date(now.getTime() + timeDiffMsecs);
+
+    const agent = await HttpAgent.create({
+      host: mockReplica.address,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
+      identity,
+      retryTimes: 1,
+    });
+    const actor = await createActor(canisterId, { agent });
+    const sender = identity.getPrincipal();
+
+    const { responseBody: outdatedResponse } = await prepareV3QueryResponse({
+      canisterId,
+      methodName: greetMethodName,
+      arg: greetArgs,
+      sender,
+      reply: greetReply,
+      nodeIdentity,
+      date: replicaDate,
+    });
+    mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(outdatedResponse);
+    });
+
+    await mockReadStateNodeKeysResponse({
+      mockReplica,
+      nodeIdentity,
+      canisterId,
+      rootSubnetKeyPair,
+      subnetKeyPair,
+      date: now, // we don't want to make the certificate checks sync the time for this call
+    });
+
+    await mockSyncTimeResponse({
+      mockReplica,
+      rootSubnetKeyPair,
+      keyPair: subnetKeyPair,
+      canisterId,
+      date: now,
+    });
+
+    const { responseBody: freshResponse, requestId } = await prepareV3QueryResponse({
+      canisterId,
+      methodName: greetMethodName,
+      arg: greetArgs,
+      sender,
+      reply: greetReply,
+      nodeIdentity,
+      date: now,
+    });
+    mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(freshResponse);
+    });
+
+    const actorResponse = await actor[greetMethodName](greetReq);
+
+    expect(actorResponse).toEqual(greetRes);
+    expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(2);
+    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
+    expect(agent.hasSyncedTime()).toBe(true);
+
+    const req = mockReplica.getV3QueryReq(canisterId.toString(), 1);
+    expect(requestIdOf(req.content)).toEqual(requestId);
+  });
+
+  it('should fail if the query response has an outdated certificate and retry fails', async () => {
+    const timeDiffMsecs = -(6 * MINUTE_TO_MSECS);
+    const replicaDate = new Date(now.getTime() + timeDiffMsecs);
+
+    const agent = await HttpAgent.create({
+      host: mockReplica.address,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
+      identity,
+      retryTimes: 1,
+    });
+    const actor = await createActor(canisterId, { agent });
+    const sender = identity.getPrincipal();
+
+    const { responseBody: outdatedResponse } = await prepareV3QueryResponse({
+      canisterId,
+      methodName: greetMethodName,
+      arg: greetArgs,
+      sender,
+      reply: greetReply,
+      nodeIdentity,
+      date: replicaDate,
+    });
+    mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(outdatedResponse);
+    });
+    mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(outdatedResponse);
+    });
+
+    await mockReadStateNodeKeysResponse({
+      mockReplica,
+      nodeIdentity,
+      canisterId,
+      rootSubnetKeyPair,
+      subnetKeyPair,
+      date: now, // we don't want to make the certificate sync the time for this call
+    });
+
+    await mockSyncTimeResponse({
+      mockReplica,
+      rootSubnetKeyPair,
+      keyPair: subnetKeyPair,
+      canisterId,
+      date: now,
+    });
+
+    expect.assertions(6);
+
+    try {
+      await actor[greetMethodName](greetReq);
+    } catch (e) {
+      expectCertificateOutdatedError(e);
+    }
+
+    expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(2);
+    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
+    expect(agent.hasSyncedTime()).toBe(true);
+  });
+
+  it('should not sync time if the query signature verification is disabled', async () => {
+    const timeDiffMsecs = -(6 * MINUTE_TO_MSECS);
+    const replicaDate = new Date(now.getTime() + timeDiffMsecs);
+
+    const agent = await HttpAgent.create({
+      host: mockReplica.address,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
+      identity,
+      verifyQuerySignatures: false,
+    });
+    const actor = await createActor(canisterId, { agent });
+    const sender = identity.getPrincipal();
+
+    const { responseBody } = await prepareV3QueryResponse({
+      canisterId,
+      methodName: greetMethodName,
+      arg: greetArgs,
+      sender,
+      reply: greetReply,
+      nodeIdentity,
+      date: replicaDate,
+    });
+    mockReplica.setV3QuerySpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(responseBody);
+    });
+
+    // Just mock the read state, but we don't expect this to be called
+    await mockReadStateNodeKeysResponse({
+      mockReplica,
+      nodeIdentity,
+      canisterId,
+      rootSubnetKeyPair,
+      subnetKeyPair,
+      date: now,
+    });
+
+    const actorResponse = await actor[greetMethodName](greetReq);
+
+    expect(actorResponse).toEqual(greetRes);
+    expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
+    expect(agent.hasSyncedTime()).toBe(false);
   });
 });
 

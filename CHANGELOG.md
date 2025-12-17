@@ -24,6 +24,7 @@ See the [v5 upgrading guide](https://js.icp.build/core/latest/upgrading/v5/) for
 - fix(agent): check if canister is in ranges for certificates without delegation
 - fix(agent): verify all query signatures instead of only the first one
 - fix(agent): sync time if ingress expiry is invalid in queries
+- fix(agent): sync time before retrying if query signature is outdated
 - fix(agent,identity/secp256k1): remove `console.*` statements
 - refactor(agent): only declare IC URLs once in the `HttpAgent` class
 - refactor(agent): split inner logic of `check_canister_ranges` into functions
