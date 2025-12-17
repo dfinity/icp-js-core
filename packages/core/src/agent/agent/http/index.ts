@@ -27,6 +27,7 @@ import {
   MalformedLookupFoundValueErrorCode,
   CertificateOutdatedErrorCode,
   CertificateNotAuthorizedErrorCode,
+  UNREACHABLE_ERROR,
 } from '../../errors.ts';
 import { AnonymousIdentity, type Identity } from '../../auth.ts';
 import * as cbor from '../../cbor.ts';
@@ -1142,7 +1143,7 @@ export class HttpAgent implements Agent {
 
     const url = new URL(`/api/v3/canister/${canister.toString()}/read_state`, this.host);
 
-    return await this.#readStateInner(url, transformedRequest, requestId);
+    return await this.#readStateInner(url, { canisterId: canister }, transformedRequest, requestId);
   }
 
   /**
@@ -1156,18 +1157,20 @@ export class HttpAgent implements Agent {
     options: ReadStateOptions,
   ): Promise<ReadStateResponse> {
     await this.#rootKeyGuard();
+    const subnet = Principal.from(subnetId);
 
-    const url = new URL(`/api/v3/subnet/${subnetId.toString()}/read_state`, this.host);
+    const url = new URL(`/api/v3/subnet/${subnet.toString()}/read_state`, this.host);
     const transformedRequest: ReadStateRequest = await this.createReadStateRequest(
       options,
       this.#identity ?? undefined,
     );
 
-    return await this.#readStateInner(url, transformedRequest);
+    return await this.#readStateInner(url, { subnetId: subnet }, transformedRequest);
   }
 
   async #readStateInner(
     url: URL,
+    principal: { canisterId: Principal } | { subnetId: Principal },
     transformedRequest: ReadStateRequest,
     requestId?: RequestId,
   ): Promise<ReadStateResponse> {
@@ -1190,6 +1193,18 @@ export class HttpAgent implements Agent {
     } catch (error) {
       let readStateError: AgentError;
       if (error instanceof AgentError) {
+        if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
+          // if there is an ingress expiry error and the time has not been synced yet,
+          // sync time with the network and try again
+          if ('canisterId' in principal) {
+            await this.syncTime(principal.canisterId);
+          } else if ('subnetId' in principal) {
+            await this.syncTimeWithSubnet(principal.subnetId);
+          } else {
+            throw UNREACHABLE_ERROR;
+          }
+          return await this.#readStateInner(url, principal, transformedRequest, requestId);
+        }
         // override the error code to include the request details
         error.code.requestContext = {
           requestId: requestId ?? requestIdOf(transformedRequest),
