@@ -56,9 +56,6 @@ afterEach(() => {
   global.Date.now = originalDateNowFn;
   global.window = originalWindow;
   global.fetch = originalFetch;
-  jest.spyOn(console, 'warn').mockImplementation(() => {
-    /** suppress warnings for pending timers */
-  });
   jest.runOnlyPendingTimers();
 });
 
