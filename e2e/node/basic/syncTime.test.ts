@@ -241,6 +241,17 @@ describe('syncTime', () => {
         res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
       });
 
+      const { responseBody: subnetKeysResponseBody } = await prepareV3ReadStateResponse({
+        nodeIdentity,
+        canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+        rootSubnetKeyPair,
+        keyPair,
+        date,
+      });
+      mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
+        res.status(200).send(subnetKeysResponseBody);
+      });
+
       await mockSyncTimeResponse({
         mockReplica,
         rootSubnetKeyPair,
@@ -261,21 +272,10 @@ describe('syncTime', () => {
         res.status(200).send(queryResponse);
       });
 
-      const { responseBody: readStateResponseBody } = await prepareV3ReadStateResponse({
-        nodeIdentity,
-        canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
-        rootSubnetKeyPair,
-        keyPair,
-        date,
-      });
-      mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
-        res.status(200).send(readStateResponseBody);
-      });
-
       const actorResponse = await actor[queryGreetMethodName](greetReq);
 
       expect(actorResponse).toEqual(greetRes);
-      expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+      expect(mockReplica.getV3QuerySpy(canisterId.toString())).toHaveBeenCalledTimes(2);
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(4);
       expect(agent.hasSyncedTime()).toBe(true);
     });
