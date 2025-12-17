@@ -1190,6 +1190,12 @@ export class HttpAgent implements Agent {
     } catch (error) {
       let readStateError: AgentError;
       if (error instanceof AgentError) {
+        if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
+          // if there is an ingress expiry error and the time has not been synced yet,
+          // sync time with the network and try again
+          await this.syncTime();
+          return await this.#readStateInner(url, transformedRequest, requestId);
+        }
         // override the error code to include the request details
         error.code.requestContext = {
           requestId: requestId ?? requestIdOf(transformedRequest),
