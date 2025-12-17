@@ -771,6 +771,7 @@ export class HttpAgent implements Agent {
           requestId,
           signatureTimestampMs,
         });
+        await this.syncTime(ecid);
         return await this.#requestAndRetryQuery({ ...args, tries: tries + 1 });
       }
       throw TrustError.fromCode(
