@@ -280,7 +280,7 @@ describe('syncTime', () => {
       expect(agent.hasSyncedTime()).toBe(true);
     });
 
-    it('should sync time when the local time does not match the subnet time (read_state)', async () => {
+    it('should sync time when the local time does not match the subnet time (read_state for canister)', async () => {
       const agent = await HttpAgent.create({
         host: mockReplica.address,
         rootKey: rootSubnetKeyPair.publicKeyDer,
@@ -295,7 +295,14 @@ describe('syncTime', () => {
         mockReplica,
         rootSubnetKeyPair,
         keyPair,
-        canisterId: ICP_LEDGER,
+        canisterId,
+      });
+
+      // Mock sync time for subnet to check that it is not called as expected
+      await mockSyncSubnetTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair,
       });
 
       const { responseBody: readStateResponse } = await prepareV3ReadStateResponse({
@@ -314,8 +321,57 @@ describe('syncTime', () => {
       });
 
       expect(response.certificate).toBeDefined();
-      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
-      expect(mockReplica.getV3ReadStateSpy(ICP_LEDGER)).toHaveBeenCalledTimes(3);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(5);
+      const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
+      expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(0);
+      expect(agent.hasSyncedTime()).toBe(true);
+    });
+
+    it('should sync time when the local time does not match the subnet time (read_state for subnet)', async () => {
+      const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
+
+      const agent = await HttpAgent.create({
+        host: mockReplica.address,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
+        identity,
+      });
+
+      mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetId.toString(), (_req, res) => {
+        res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
+      });
+
+      await mockSyncSubnetTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair,
+      });
+
+      // Mock sync time for canister to check that it is not called as expected
+      await mockSyncTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair,
+        canisterId,
+      });
+
+      const { responseBody: readStateResponse } = await prepareV3ReadStateResponse({
+        nodeIdentity,
+        canisterRanges: [], // not needed for subnet time
+        rootSubnetKeyPair,
+        keyPair,
+        date,
+      });
+      mockReplica.setV3ReadSubnetStateSpyImplOnce(subnetId.toString(), (_req, res) => {
+        res.status(200).send(readStateResponse);
+      });
+
+      const response = await agent.readSubnetState(subnetId, {
+        paths: [[new TextEncoder().encode('time')]],
+      });
+
+      expect(response.certificate).toBeDefined();
+      expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(5);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(0);
       expect(agent.hasSyncedTime()).toBe(true);
     });
   });
