@@ -13,7 +13,7 @@ import { Principal } from '#principal';
 import { RequestId, requestIdOf } from '../../request_id.ts';
 
 import { JSDOM } from 'jsdom';
-import { AnonymousIdentity, SignIdentity, Signature, uint8FromBufLike } from '../../index.ts';
+import { AnonymousIdentity, SignIdentity, Signature } from '../../index.ts';
 import { Ed25519KeyIdentity } from '#identity';
 import {
   AgentError,
