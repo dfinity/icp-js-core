@@ -1,6 +1,6 @@
 {
   "name": "@icp-sdk/core",
-  "version": "4.2.3",
+  "version": "5.0.0",
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
   "description": "JavaScript and TypeScript library to interact with the Internet Computer",
