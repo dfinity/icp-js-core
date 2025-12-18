@@ -1,6 +1,6 @@
 {
   "name": "icp-js-core",
-  "version": "4.2.3",
+  "version": "5.0.0",
   "private": true,
   "description": "Use an Agent to interact with the Internet Computer from your JavaScript program.",
   "type": "module",
