@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- fix(candid): improve error messages for candid decoding errors in Variant types
 - chore: strengthen ESLint rules with cherry-picked `@dfinity/eslint-config-oisy-wallet` rules
 - chore: migrate e2e tests from `dfx` to PocketIC (`@dfinity/pic`)
 - refactor(agent): use `globalThis.fetch` instead of custom environment detection
