@@ -11,6 +11,8 @@
 - chore: add unit test coverage thresholds
 - chore: upgrade tooling — `@tsconfig/node22`, native ESLint flat config, `prettier-plugin-motoko`
 - chore: remove unused dependencies (`fake-indexeddb`, `@peculiar/webcrypto`, `@eslint/eslintrc`)
+- feat(agent): add `callAndPollForResponse` function that calls a canister and polls for the response, returning raw certificate bytes and request details
+- feat(agent): add `rawCertificate` field to `pollForResponse` return type
 
 ## [5.0.0] - 2025-12-18
 

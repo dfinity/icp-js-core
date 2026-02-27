@@ -4,8 +4,8 @@ import {
   Certificate,
   lookupResultToBuffer,
 } from '../certificate.ts';
-import type { Agent, ReadStateResponse } from '../agent/api.ts';
-import type { Principal } from '#principal';
+import type { Agent, CallOptions, ReadStateResponse } from '../agent/api.ts';
+import { Principal } from '#principal';
 import {
   CertifiedRejectErrorCode,
   ExternalError,
@@ -20,7 +20,7 @@ import {
 
 export * as strategy from './strategy.ts';
 import { defaultStrategy } from './strategy.ts';
-import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
+import { ReadRequestType, type CallRequest, type ReadStateRequest } from '../agent/http/types.ts';
 import { RequestStatusResponseStatus } from '../agent/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 export { defaultStrategy } from './strategy.ts';
@@ -30,6 +30,18 @@ export type PollStrategy = (
   requestId: RequestId,
   status: RequestStatusResponseStatus,
 ) => Promise<void>;
+
+/**
+ * The result of polling for a response, including the certificate, reply bytes, and raw certificate bytes.
+ */
+export interface PollForResponseResult {
+  // The certificate for the request, which can be used to verify the reply.
+  certificate: Certificate;
+  // The reply bytes for the request.
+  reply: Uint8Array;
+  // The raw certificate bytes for the request.
+  rawCertificate: Uint8Array;
+}
 
 interface SignedReadStateRequestWithExpiry extends ReadStateRequest {
   body: {
@@ -122,16 +134,14 @@ function isSignedReadStateRequestWithExpiry(
  * @param canisterId The effective canister ID.
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
+ * @returns The certificate, reply bytes, and raw certificate bytes for the request.
  */
 export async function pollForResponse(
   agent: Agent,
   canisterId: Principal,
   requestId: RequestId,
   options: PollingOptions = {},
-): Promise<{
-  certificate: Certificate;
-  reply: Uint8Array;
-}> {
+): Promise<PollForResponseResult> {
   const path = [utf8ToBytes('request_status'), requestId];
 
   let state: ReadStateResponse;
@@ -175,6 +185,7 @@ export async function pollForResponse(
       return {
         reply: lookupResultToBuffer(cert.lookup_path([...path, 'reply']))!,
         certificate: cert,
+        rawCertificate: state.certificate,
       };
     }
 
@@ -247,4 +258,24 @@ export async function constructRequest(options: {
     throw InputError.fromCode(new InvalidReadStateRequestErrorCode(request));
   }
   return request;
+}
+
+/**
+ * Calls a canister method and polls for the response, returning the raw certificate bytes.
+ * @param agent The agent to use for the call and polling.
+ * @param canisterId The canister to call.
+ * @param fields The call options matching the agent's call interface.
+ * @param options Optional polling configuration.
+ * @returns The poll result (certificate, reply, raw certificate bytes) and the request details from the call.
+ */
+export async function callAndPollForResponse(
+  agent: Agent,
+  canisterId: Principal | string,
+  fields: CallOptions,
+  options: PollingOptions = {},
+): Promise<PollForResponseResult & { requestDetails?: CallRequest }> {
+  const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
+  const { requestId, requestDetails } = await agent.call(canisterId, fields);
+  const pollResult = await pollForResponse(agent, effectiveCanisterId, requestId, options);
+  return { ...pollResult, requestDetails };
 }

@@ -24,6 +24,10 @@ const textDecoder = new TextDecoder();
 // Map a requestId key to a queue of statuses to emit across polls
 const statusesByRequestKey = new Map<RequestId, string[]>();
 const replyByRequestKey = new Map<RequestId, Uint8Array>();
+const rejectByRequestKey = new Map<
+  RequestId,
+  { reject_code: number; reject_message: string; error_code?: string }
+>();
 
 const mockAgent = {
   rootKey: new Uint8Array([1]),
@@ -61,6 +65,30 @@ jest.mock('../certificate.ts', () => {
                 value: replyByRequestKey.get(requestIdBytes)!,
               };
             }
+            if (lastPathElementStr === 'reject_code') {
+              const reject = rejectByRequestKey.get(requestIdBytes);
+              return {
+                status: 'Found' as LookupPathStatus.Found,
+                value: new Uint8Array([reject?.reject_code ?? 0]),
+              };
+            }
+            if (lastPathElementStr === 'reject_message') {
+              const reject = rejectByRequestKey.get(requestIdBytes);
+              return {
+                status: 'Found' as LookupPathStatus.Found,
+                value: textEncoder.encode(reject?.reject_message ?? ''),
+              };
+            }
+            if (lastPathElementStr === 'error_code') {
+              const reject = rejectByRequestKey.get(requestIdBytes);
+              if (reject?.error_code) {
+                return {
+                  status: 'Found' as LookupPathStatus.Found,
+                  value: textEncoder.encode(reject.error_code),
+                };
+              }
+              return undefined as unknown as LookupPathResultFound;
+            }
             throw new Error(`Unexpected lastPathElementStr ${lastPathElementStr}`);
           },
         } as const;
@@ -74,6 +102,7 @@ describe('pollForResponse strategy lifecycle', () => {
     instantiatedStrategies.length = 0;
     statusesByRequestKey.clear();
     replyByRequestKey.clear();
+    rejectByRequestKey.clear();
     jest.resetModules();
   });
 
@@ -111,5 +140,281 @@ describe('pollForResponse strategy lifecycle', () => {
     expect(instantiatedStrategies[0].mock.calls.length).toBe(2);
     // Request B had one non-replied status (unknown), so strategy called once
     expect(instantiatedStrategies[1].mock.calls.length).toBe(1);
+  });
+});
+
+describe('pollForResponse', () => {
+  beforeEach(() => {
+    statusesByRequestKey.clear();
+    replyByRequestKey.clear();
+    rejectByRequestKey.clear();
+  });
+
+  it('returns rawCertificate matching the bytes from agent.readState', async () => {
+    const rawCertBytes = new Uint8Array([10, 20, 30]);
+    const agentWithCustomCert = {
+      rootKey: new Uint8Array([1]),
+      readState: async () => ({ certificate: rawCertBytes }),
+    } as unknown as Agent;
+
+    const { pollForResponse } = await import('./index.ts');
+
+    const canisterId = Principal.anonymous();
+    const requestId = new Uint8Array([1, 2, 3]) as RequestId;
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    const result = await pollForResponse(agentWithCustomCert, canisterId, requestId);
+
+    expect(result.rawCertificate).toEqual(rawCertBytes);
+  });
+
+  it('returns the expected reply bytes', async () => {
+    const { pollForResponse } = await import('./index.ts');
+
+    const canisterId = Principal.anonymous();
+    const requestId = new Uint8Array([1, 2, 3]) as RequestId;
+    const expectedReply = new Uint8Array([1, 2, 3, 4, 5]);
+    replyByRequestKey.set(requestId, expectedReply);
+
+    const result = await pollForResponse(mockAgent, canisterId, requestId);
+
+    expect(result.reply).toEqual(expectedReply);
+  });
+
+  it('returns a certificate with a lookup_path method', async () => {
+    const { pollForResponse } = await import('./index.ts');
+
+    const canisterId = Principal.anonymous();
+    const requestId = new Uint8Array([1, 2, 3]) as RequestId;
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    const result = await pollForResponse(mockAgent, canisterId, requestId);
+
+    expect(result.certificate).toBeDefined();
+    expect(typeof result.certificate.lookup_path).toBe('function');
+  });
+
+  it('throws RejectError when the request is rejected', async () => {
+    const { pollForResponse } = await import('./index.ts');
+    const { RejectError } = await import('../errors.ts');
+
+    const canisterId = Principal.anonymous();
+    const requestId = new Uint8Array([5, 6, 7]) as RequestId;
+    statusesByRequestKey.set(requestId, ['rejected']);
+    rejectByRequestKey.set(requestId, {
+      reject_code: 4,
+      reject_message: 'canister trapped',
+      error_code: 'IC0503',
+    });
+
+    await expect(pollForResponse(mockAgent, canisterId, requestId)).rejects.toThrow(RejectError);
+  });
+
+  it('includes reject_code, reject_message and error_code in the RejectError', async () => {
+    const { pollForResponse } = await import('./index.ts');
+
+    const canisterId = Principal.anonymous();
+    const requestId = new Uint8Array([5, 6, 7]) as RequestId;
+    statusesByRequestKey.set(requestId, ['rejected']);
+    rejectByRequestKey.set(requestId, {
+      reject_code: 4,
+      reject_message: 'canister trapped',
+      error_code: 'IC0503',
+    });
+
+    try {
+      await pollForResponse(mockAgent, canisterId, requestId);
+      fail('Expected pollForResponse to throw');
+    } catch (error) {
+      expect(error).toHaveProperty('code');
+      const code = (error as { code: { rejectCode: number; rejectMessage: string; rejectErrorCode: string } }).code;
+      expect(code.rejectCode).toBe(4);
+      expect(code.rejectMessage).toBe('canister trapped');
+      expect(code.rejectErrorCode).toBe('IC0503');
+    }
+  });
+
+  it('throws UnknownError when status is done without a reply', async () => {
+    const { pollForResponse } = await import('./index.ts');
+    const { UnknownError } = await import('../errors.ts');
+
+    const canisterId = Principal.anonymous();
+    const requestId = new Uint8Array([8, 9, 10]) as RequestId;
+    statusesByRequestKey.set(requestId, ['done']);
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    await expect(pollForResponse(mockAgent, canisterId, requestId)).rejects.toThrow(UnknownError);
+  });
+});
+
+describe('callAndPollForResponse', () => {
+  const canisterId = Principal.anonymous();
+  const requestId = new Uint8Array([10, 20, 30]) as RequestId;
+
+  beforeEach(() => {
+    statusesByRequestKey.clear();
+    replyByRequestKey.clear();
+    rejectByRequestKey.clear();
+  });
+
+  const mockRequestDetails = {
+    request_type: 'call' as const,
+    canister_id: canisterId,
+    method_name: 'test_method',
+    arg: new Uint8Array([1]),
+    sender: new Uint8Array([4]),
+    ingress_expiry: { toHash: () => new Uint8Array() },
+  };
+
+  function makeMockAgent(): Agent {
+    return {
+      rootKey: new Uint8Array([1]),
+      readState: async () => ({ certificate: new Uint8Array([0]) }),
+      call: jest.fn(async () => ({
+        requestId,
+        requestDetails: mockRequestDetails,
+        response: {
+          ok: true,
+          status: 202,
+          statusText: 'Accepted',
+          body: null,
+          headers: [],
+        },
+      })),
+    } as unknown as Agent;
+  }
+
+  const callFields = {
+    methodName: 'test_method',
+    arg: new Uint8Array([1]),
+    effectiveCanisterId: canisterId,
+  };
+
+  it('returns rawCertificate matching the bytes from agent.readState', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const agent = makeMockAgent();
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    const result = await callAndPollForResponse(agent, canisterId, callFields);
+
+    // rawCertificate should be the exact bytes returned by the readState mock
+    expect(result.rawCertificate).toEqual(new Uint8Array([0]));
+  });
+
+  it('returns the expected reply bytes', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const agent = makeMockAgent();
+    const expectedReply = new Uint8Array([42]);
+    replyByRequestKey.set(requestId, expectedReply);
+
+    const result = await callAndPollForResponse(agent, canisterId, callFields);
+
+    expect(result.reply).toEqual(expectedReply);
+  });
+
+  it('returns certificate from pollForResponse', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const agent = makeMockAgent();
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    const result = await callAndPollForResponse(agent, canisterId, callFields);
+
+    expect(result.certificate).toBeDefined();
+    expect(typeof result.certificate.lookup_path).toBe('function');
+  });
+
+  it('returns requestDetails from agent.call', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const agent = makeMockAgent();
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    const result = await callAndPollForResponse(agent, canisterId, callFields);
+
+    expect(result.requestDetails).toEqual(mockRequestDetails);
+  });
+
+  it('calls agent.call with the canisterId and fields', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const agent = makeMockAgent();
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    await callAndPollForResponse(agent, canisterId, callFields);
+
+    expect(agent.call).toHaveBeenCalledWith(canisterId, callFields);
+  });
+
+  it('throws RejectError when pollForResponse encounters a rejection', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+    const { RejectError } = await import('../errors.ts');
+
+    const agent = makeMockAgent();
+    statusesByRequestKey.set(requestId, ['rejected']);
+    rejectByRequestKey.set(requestId, {
+      reject_code: 4,
+      reject_message: 'canister rejected',
+      error_code: 'IC0406',
+    });
+
+    await expect(
+      callAndPollForResponse(agent, canisterId, callFields),
+    ).rejects.toThrow(RejectError);
+  });
+
+  it('propagates reject details from pollForResponse', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const agent = makeMockAgent();
+    statusesByRequestKey.set(requestId, ['rejected']);
+    rejectByRequestKey.set(requestId, {
+      reject_code: 4,
+      reject_message: 'canister rejected',
+      error_code: 'IC0406',
+    });
+
+    try {
+      await callAndPollForResponse(agent, canisterId, callFields);
+      fail('Expected callAndPollForResponse to throw');
+    } catch (error) {
+      expect(error).toHaveProperty('code');
+      const code = (error as { code: { rejectCode: number; rejectMessage: string; rejectErrorCode: string } }).code;
+      expect(code.rejectCode).toBe(4);
+      expect(code.rejectMessage).toBe('canister rejected');
+      expect(code.rejectErrorCode).toBe('IC0406');
+    }
+  });
+
+  it('uses effectiveCanisterId when provided', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const ecid = Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai');
+    const agent = makeMockAgent();
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    const fieldsWithEcid = {
+      methodName: 'test_method',
+      arg: new Uint8Array([1]),
+      effectiveCanisterId: ecid,
+    };
+
+    await callAndPollForResponse(agent, canisterId, fieldsWithEcid);
+
+    expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithEcid);
+  });
+
+  it('accepts canisterId as a string', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const agent = makeMockAgent();
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    const result = await callAndPollForResponse(agent, canisterId.toText(), callFields);
+
+    expect(result.reply).toEqual(new Uint8Array([42]));
+    expect(agent.call).toHaveBeenCalledWith(canisterId.toText(), callFields);
   });
 });
