@@ -227,7 +227,9 @@ describe('pollForResponse', () => {
       fail('Expected pollForResponse to throw');
     } catch (error) {
       expect(error).toHaveProperty('code');
-      const code = (error as { code: { rejectCode: number; rejectMessage: string; rejectErrorCode: string } }).code;
+      const code = (
+        error as { code: { rejectCode: number; rejectMessage: string; rejectErrorCode: string } }
+      ).code;
       expect(code.rejectCode).toBe(4);
       expect(code.rejectMessage).toBe('canister trapped');
       expect(code.rejectErrorCode).toBe('IC0503');
@@ -290,19 +292,7 @@ describe('callAndPollForResponse', () => {
     effectiveCanisterId: canisterId,
   };
 
-  it('returns rawCertificate matching the bytes from agent.readState', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const agent = makeMockAgent();
-    replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-    const result = await callAndPollForResponse(agent, canisterId, callFields);
-
-    // rawCertificate should be the exact bytes returned by the readState mock
-    expect(result.rawCertificate).toEqual(new Uint8Array([0]));
-  });
-
-  it('returns the expected reply bytes', async () => {
+  it('returns the expected reply from pollForResponse', async () => {
     const { callAndPollForResponse } = await import('./index.ts');
 
     const agent = makeMockAgent();
@@ -314,7 +304,18 @@ describe('callAndPollForResponse', () => {
     expect(result.reply).toEqual(expectedReply);
   });
 
-  it('returns certificate from pollForResponse', async () => {
+  it('returns the expected rawCertificate from pollForResponse', async () => {
+    const { callAndPollForResponse } = await import('./index.ts');
+
+    const agent = makeMockAgent();
+    replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+    const result = await callAndPollForResponse(agent, canisterId, callFields);
+
+    expect(result.rawCertificate).toEqual(new Uint8Array([0]));
+  });
+
+  it('returns the expected certificate from pollForResponse', async () => {
     const { callAndPollForResponse } = await import('./index.ts');
 
     const agent = makeMockAgent();
@@ -326,7 +327,7 @@ describe('callAndPollForResponse', () => {
     expect(typeof result.certificate.lookup_path).toBe('function');
   });
 
-  it('returns requestDetails from agent.call', async () => {
+  it('returns the expected requestDetails from pollForResponse', async () => {
     const { callAndPollForResponse } = await import('./index.ts');
 
     const agent = makeMockAgent();
@@ -360,9 +361,9 @@ describe('callAndPollForResponse', () => {
       error_code: 'IC0406',
     });
 
-    await expect(
-      callAndPollForResponse(agent, canisterId, callFields),
-    ).rejects.toThrow(RejectError);
+    await expect(callAndPollForResponse(agent, canisterId, callFields)).rejects.toThrow(
+      RejectError,
+    );
   });
 
   it('propagates reject details from pollForResponse', async () => {
@@ -381,7 +382,9 @@ describe('callAndPollForResponse', () => {
       fail('Expected callAndPollForResponse to throw');
     } catch (error) {
       expect(error).toHaveProperty('code');
-      const code = (error as { code: { rejectCode: number; rejectMessage: string; rejectErrorCode: string } }).code;
+      const code = (
+        error as { code: { rejectCode: number; rejectMessage: string; rejectErrorCode: string } }
+      ).code;
       expect(code.rejectCode).toBe(4);
       expect(code.rejectMessage).toBe('canister rejected');
       expect(code.rejectErrorCode).toBe('IC0406');
@@ -416,5 +419,134 @@ describe('callAndPollForResponse', () => {
 
     expect(result.reply).toEqual(new Uint8Array([42]));
     expect(agent.call).toHaveBeenCalledWith(canisterId.toText(), callFields);
+  });
+
+  describe('v4 sync response handling', () => {
+    function makeMockAgentWithV4Response(overrides: { certificate?: Uint8Array } = {}): Agent {
+      return {
+        rootKey: new Uint8Array([1]),
+        readState: jest.fn(async () => ({ certificate: new Uint8Array([0]) })),
+        call: jest.fn(async () => ({
+          requestId,
+          requestDetails: mockRequestDetails,
+          response: {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            body: { certificate: overrides.certificate ?? new Uint8Array([0]) },
+            headers: [],
+          },
+        })),
+      } as unknown as Agent;
+    }
+
+    it('uses v4 sync response without polling when reply is available', async () => {
+      const { callAndPollForResponse } = await import('./index.ts');
+
+      const agent = makeMockAgentWithV4Response();
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      const result = await callAndPollForResponse(agent, canisterId, callFields);
+
+      expect(result.reply).toEqual(new Uint8Array([42]));
+      expect(result.certificate).toBeDefined();
+      expect(result.rawCertificate).toEqual(new Uint8Array([0]));
+      expect(result.requestDetails).toEqual(mockRequestDetails);
+      // readState should NOT have been called — no polling needed
+      expect(agent.readState).not.toHaveBeenCalled();
+    });
+
+    it('returns the v4 certificate bytes as rawCertificate', async () => {
+      const { callAndPollForResponse } = await import('./index.ts');
+
+      const certBytes = new Uint8Array([10, 20, 30]);
+      const agent = makeMockAgentWithV4Response({ certificate: certBytes });
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      const result = await callAndPollForResponse(agent, canisterId, callFields);
+
+      expect(result.rawCertificate).toEqual(certBytes);
+    });
+
+    it('throws CertifiedRejectErrorCode for v4 rejected response', async () => {
+      const { callAndPollForResponse } = await import('./index.ts');
+      const { RejectError } = await import('../errors.ts');
+
+      const agent = makeMockAgentWithV4Response();
+      statusesByRequestKey.set(requestId, ['rejected']);
+      rejectByRequestKey.set(requestId, {
+        reject_code: 4,
+        reject_message: 'canister trapped',
+        error_code: 'IC0503',
+      });
+
+      await expect(callAndPollForResponse(agent, canisterId, callFields)).rejects.toThrow(
+        RejectError,
+      );
+      expect(agent.readState).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('v2 rejection handling', () => {
+    it('throws UncertifiedRejectUpdateErrorCode for v2 rejection', async () => {
+      const { callAndPollForResponse } = await import('./index.ts');
+      const { RejectError } = await import('../errors.ts');
+
+      const agent = {
+        rootKey: new Uint8Array([1]),
+        readState: jest.fn(async () => ({ certificate: new Uint8Array([0]) })),
+        call: jest.fn(async () => ({
+          requestId,
+          requestDetails: mockRequestDetails,
+          response: {
+            ok: false,
+            status: 200,
+            statusText: 'OK',
+            body: {
+              reject_code: 5,
+              reject_message: 'canister error',
+              error_code: 'IC0503',
+            },
+            headers: [],
+          },
+        })),
+      } as unknown as Agent;
+
+      await expect(callAndPollForResponse(agent, canisterId, callFields)).rejects.toThrow(
+        RejectError,
+      );
+      expect(agent.readState).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('202 fallback to polling', () => {
+    it('polls via readState when response is 202 Accepted', async () => {
+      const { callAndPollForResponse } = await import('./index.ts');
+
+      const readStateMock = jest.fn(async () => ({ certificate: new Uint8Array([0]) }));
+      const agent = {
+        rootKey: new Uint8Array([1]),
+        readState: readStateMock,
+        call: jest.fn(async () => ({
+          requestId,
+          requestDetails: mockRequestDetails,
+          response: {
+            ok: true,
+            status: 202,
+            statusText: 'Accepted',
+            body: null,
+            headers: [],
+          },
+        })),
+      } as unknown as Agent;
+
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      const result = await callAndPollForResponse(agent, canisterId, callFields);
+
+      expect(result.reply).toEqual(new Uint8Array([42]));
+      // readState SHOULD have been called — polling was needed
+      expect(readStateMock).toHaveBeenCalled();
+    });
   });
 });
