@@ -4,7 +4,6 @@ import {
   HashTreeDecodeErrorCode,
   CreateHttpAgentErrorCode,
   ExternalError,
-  HttpDefaultFetchErrorCode,
   IdentityInvalidErrorCode,
   IngressExpiryInvalidErrorCode,
   InputError,
@@ -194,47 +193,6 @@ export interface HttpAgentOptions {
   shouldSyncTime?: boolean;
 }
 
-function getDefaultFetch(): typeof fetch {
-  let defaultFetch;
-
-  if (typeof window !== 'undefined') {
-    // Browser context
-    if (window.fetch) {
-      defaultFetch = window.fetch.bind(window);
-    } else {
-      throw ExternalError.fromCode(
-        new HttpDefaultFetchErrorCode(
-          'Fetch implementation was not available. You appear to be in a browser context, but window.fetch was not present.',
-        ),
-      );
-    }
-  } else if (typeof global !== 'undefined') {
-    // Node context
-    if (global.fetch) {
-      defaultFetch = global.fetch.bind(global);
-    } else {
-      throw ExternalError.fromCode(
-        new HttpDefaultFetchErrorCode(
-          'Fetch implementation was not available. You appear to be in a Node.js context, but global.fetch was not available.',
-        ),
-      );
-    }
-  } else if (typeof self !== 'undefined') {
-    if (self.fetch) {
-      defaultFetch = self.fetch.bind(self);
-    }
-  }
-
-  if (defaultFetch) {
-    return defaultFetch;
-  }
-  throw ExternalError.fromCode(
-    new HttpDefaultFetchErrorCode(
-      'Fetch implementation was not available. Please provide fetch to the HttpAgent constructor, or ensure it is available in the window or global context.',
-    ),
-  );
-}
-
 function determineHost(configuredHost: string | undefined): string {
   let host: URL;
   if (configuredHost !== undefined) {
@@ -335,7 +293,7 @@ export class HttpAgent implements Agent {
    */
   constructor(options: HttpAgentOptions = {}) {
     this.config = options;
-    this.#fetch = options.fetch || getDefaultFetch() || fetch.bind(global);
+    this.#fetch = options.fetch ?? globalThis.fetch;
     this.#fetchOptions = options.fetchOptions;
     this.#callOptions = options.callOptions;
     this.#shouldFetchRootKey = options.shouldFetchRootKey ?? false;
