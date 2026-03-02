@@ -1,7 +1,7 @@
-export type ExpirableMapOptions<K, V> = {
+export interface ExpirableMapOptions<K, V> {
   source?: Iterable<[K, V]>;
   expirationTime?: number;
-};
+}
 
 /**
  * A map that expires entries after a given time.

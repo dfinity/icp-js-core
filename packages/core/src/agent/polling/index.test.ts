@@ -1,7 +1,7 @@
 import { Principal } from '#principal';
-import { type Agent } from '../agent/api.ts';
-import { type RequestId } from '../request_id.ts';
-import { type LookupPathResultFound, type LookupPathStatus } from '../certificate.ts';
+import type { Agent } from '../agent/api.ts';
+import type { RequestId } from '../request_id.ts';
+import type { LookupPathResultFound, LookupPathStatus } from '../certificate.ts';
 
 // Mock the strategy module to observe instantiation and usage
 const instantiatedStrategies: jest.Mock[] = [];

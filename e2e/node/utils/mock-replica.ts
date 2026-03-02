@@ -1,13 +1,9 @@
-import express, { Express, Request, Response } from 'express';
-import {
+import type { Express, Request, Response } from 'express';
+import express from 'express';
+import type {
   CallRequest,
-  Cbor,
-  requestIdOf,
-  SubmitRequestType,
   v4ResponseBody,
-  calculateIngressExpiry,
   Cert,
-  reconstruct,
   Nonce,
   RequestId,
   ReadStateResponse,
@@ -16,18 +12,27 @@ import {
   UnSigned,
   ReadStateRequest,
   QueryRequest,
-  hashOfMap,
   QueryResponseReplied,
+} from '@icp-sdk/core/agent';
+import {
+  Cbor,
+  requestIdOf,
+  SubmitRequestType,
+  calculateIngressExpiry,
+  reconstruct,
+  hashOfMap,
   IC_RESPONSE_DOMAIN_SEPARATOR,
   IC_STATE_ROOT_DOMAIN_SEPARATOR,
   QueryResponseStatus,
   ReadRequestType,
 } from '@icp-sdk/core/agent';
 import { Principal } from '@icp-sdk/core/principal';
-import { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
-import { Mock, vi } from 'vitest';
+import type { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { createReplyTree, createRootSubnetTree, createSubnetTree } from './tree.ts';
-import { randomKeyPair, signBls, KeyPair, randomIdentity } from './identity.ts';
+import type { KeyPair } from './identity.ts';
+import { randomKeyPair, signBls, randomIdentity } from './identity.ts';
 import { concatBytes, toBytes } from '@noble/hashes/utils';
 
 const NANOSECONDS_TO_MSECS = 1_000_000;
@@ -560,13 +565,13 @@ async function signTree(tree: HashTree, keyPair: KeyPair): Promise<Uint8Array> {
   return signBls(msg, keyPair.privateKey);
 }
 
-type MockSyncTimeResponseOptions = {
+interface MockSyncTimeResponseOptions {
   mockReplica: MockReplica;
   rootSubnetKeyPair: KeyPair;
   keyPair: KeyPair;
   canisterId: Principal | string;
   date?: Date;
-};
+}
 
 /**
  * A shortcut to prepare the mock replica to respond to the sync time request.
@@ -604,12 +609,12 @@ export async function mockSyncTimeResponse({
   });
 }
 
-type MockSyncSubnetTimeResponseOptions = {
+interface MockSyncSubnetTimeResponseOptions {
   mockReplica: MockReplica;
   rootSubnetKeyPair: KeyPair;
   keyPair: KeyPair;
   date?: Date;
-};
+}
 
 /**
  * A shortcut to prepare the mock replica to respond to the sync subnet time request.
@@ -646,12 +651,12 @@ export async function mockSyncSubnetTimeResponse({
   });
 }
 
-type CreateDelegationCertificateOptions = {
+interface CreateDelegationCertificateOptions {
   delegatedKeyPair: KeyPair;
   keyPair: KeyPair;
   canisterRanges: Array<[Uint8Array, Uint8Array]>;
   date?: Date;
-};
+}
 
 async function createDelegationCertificate({
   delegatedKeyPair,
@@ -683,14 +688,14 @@ async function createDelegationCertificate({
   };
 }
 
-type MockReadStateNodeKeysResponseOptions = {
+interface MockReadStateNodeKeysResponseOptions {
   mockReplica: MockReplica;
   nodeIdentity: Ed25519KeyIdentity;
   canisterId: Principal | string;
   rootSubnetKeyPair: KeyPair;
   subnetKeyPair: KeyPair;
   date?: Date;
-};
+}
 
 /**
  * A shortcut to prepare the mock replica to respond to the read state node keys request.

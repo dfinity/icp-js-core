@@ -1,4 +1,4 @@
-import { type DerEncodedPublicKey, type PublicKey } from './auth.ts';
+import type { DerEncodedPublicKey, PublicKey } from './auth.ts';
 import { ED25519_OID, unwrapDER, wrapDER } from './der.ts';
 import { DerDecodeErrorCode, InputError } from './errors.ts';
 

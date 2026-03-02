@@ -19,11 +19,15 @@ const replacement: string = `## [Unreleased]
 ## [${newVersion}] - ${formattedDate}`;
 
 readFile(path, 'utf8', (err, data) => {
-  if (err) throw err;
+  if (err) {
+    throw err;
+  }
 
   const updatedData: string = data.replace(pattern, replacement);
 
   writeFile(path, updatedData, 'utf8', err => {
-    if (err) throw err;
+    if (err) {
+      throw err;
+    }
   });
 });

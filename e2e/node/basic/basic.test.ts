@@ -1,4 +1,5 @@
-import { Certificate, LookupPathResultFound, LookupPathStatus } from '@icp-sdk/core/agent';
+import type { LookupPathResultFound } from '@icp-sdk/core/agent';
+import { Certificate, LookupPathStatus } from '@icp-sdk/core/agent';
 import { IDL, PipeArrayBuffer } from '@icp-sdk/core/candid';
 import { Principal } from '@icp-sdk/core/principal';
 import agent from '../utils/agent.ts';
@@ -29,7 +30,9 @@ test('read_state', async () => {
   const response = await resolvedAgent.readState(ecid, {
     paths: [validTimePath],
   });
-  if (resolvedAgent.rootKey == null) throw new Error(`The agent doesn't have a root key yet`);
+  if (resolvedAgent.rootKey == null) {
+    throw new Error(`The agent doesn't have a root key yet`);
+  }
   const cert = await Certificate.create({
     certificate: response.certificate,
     rootKey: resolvedAgent.rootKey,
@@ -63,11 +66,13 @@ test('read_state with passed request', async () => {
   const canisterId = await getDefaultEffectiveCanisterId();
   const request = await resolvedAgent.createReadStateRequest({ paths: [path] });
   const response = await resolvedAgent.readState(canisterId, { paths: [path] }, undefined, request);
-  if (resolvedAgent.rootKey == null) throw new Error(`The agent doesn't have a root key yet`);
+  if (resolvedAgent.rootKey == null) {
+    throw new Error(`The agent doesn't have a root key yet`);
+  }
   const cert = await Certificate.create({
     certificate: response.certificate,
     rootKey: resolvedAgent.rootKey,
-    principal: { canisterId: canisterId },
+    principal: { canisterId },
   });
   expect(cert.lookup_path([utf8ToBytes('Time')])).toEqual({
     status: LookupPathStatus.Unknown,

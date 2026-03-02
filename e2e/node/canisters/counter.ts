@@ -1,9 +1,10 @@
-import { Actor, ActorSubclass, HttpAgentOptions, Agent, ActorConfig } from '@icp-sdk/core/agent';
+import type { ActorSubclass, HttpAgentOptions, Agent, ActorConfig } from '@icp-sdk/core/agent';
+import { Actor } from '@icp-sdk/core/agent';
 import { makeAgent } from '../utils/agent.ts';
-import { type _SERVICE } from './declarations/counter/counter.did.ts';
+import type { _SERVICE } from './declarations/counter/counter.did.ts';
 import { getCanisterId } from '../utils/canisterid.ts';
-import { IDL } from '@icp-sdk/core/candid';
-import { Principal } from '@icp-sdk/core/principal';
+import type { IDL } from '@icp-sdk/core/candid';
+import type { Principal } from '@icp-sdk/core/principal';
 
 export const idl: IDL.InterfaceFactory = ({ IDL }) => {
   return IDL.Service({

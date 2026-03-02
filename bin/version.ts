@@ -9,7 +9,9 @@ import yaml from 'yaml';
 
 import { fileURLToPath } from 'url';
 
-type PartialPnpmWorkspaceConfig = { packages: string[] };
+interface PartialPnpmWorkspaceConfig {
+  packages: string[];
+}
 
 const fileName = fileURLToPath(import.meta.url);
 const dirName = path.dirname(fileName);
@@ -24,15 +26,9 @@ const workspaceConfig: PartialPnpmWorkspaceConfig = yaml.parse(
 );
 
 const newVersion = process.argv[process.argv.length - 1];
-console.log('New version will be: ' + newVersion);
+console.log(`New version will be: ${newVersion}`);
 
-const excluded = [
-  'docs',
-  'docs/plugins',
-  'e2e/node',
-  'packages/core',
-  'packages/migrate',
-];
+const excluded = ['docs', 'docs/plugins', 'e2e/node', 'packages/core', 'packages/migrate'];
 // Read workspaces from root package.json
 const workspaces = workspaceConfig.packages.filter(workspace => {
   return !excluded.includes(workspace);

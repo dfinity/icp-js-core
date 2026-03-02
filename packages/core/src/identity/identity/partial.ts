@@ -1,4 +1,4 @@
-import { type Identity, type PublicKey } from '#agent';
+import type { Identity, PublicKey } from '#agent';
 import { Principal } from '#principal';
 
 /**

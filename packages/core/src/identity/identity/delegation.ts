@@ -1,3 +1,4 @@
+import type { ToCborValue } from '#agent';
 import {
   type DerEncodedPublicKey,
   type HttpAgentRequest,
@@ -7,7 +8,6 @@ import {
   SignIdentity,
   IC_REQUEST_DOMAIN_SEPARATOR,
   IC_REQUEST_AUTH_DELEGATION_DOMAIN_SEPARATOR,
-  ToCborValue,
 } from '#agent';
 import { Principal } from '#principal';
 import { PartialIdentity } from './partial.ts';
@@ -212,7 +212,7 @@ export class DelegationChain {
       return {
         delegation: new Delegation(
           _parseBlob(pubkey),
-          BigInt('0x' + expiration), // expiration in JSON is an hexa string (See toJSON() below).
+          BigInt(`0x${expiration}`), // expiration in JSON is an hexa string (See toJSON() below).
           targets &&
             targets.map((t: unknown) => {
               if (typeof t !== 'string') {

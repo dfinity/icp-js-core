@@ -4,11 +4,11 @@ import { uint8FromBufLike } from '#candid';
 /**
  * Options used in a {@link ECDSAKeyIdentity}
  */
-export type CryptoKeyOptions = {
+export interface CryptoKeyOptions {
   extractable?: boolean;
   keyUsages?: KeyUsage[];
   subtleCrypto?: SubtleCrypto;
-};
+}
 
 export class CryptoError extends Error {
   constructor(public readonly message: string) {
@@ -32,13 +32,13 @@ function _getEffectiveCrypto(subtleCrypto: CryptoKeyOptions['subtleCrypto']): Su
   }
   if (subtleCrypto) {
     return subtleCrypto;
-  } else if (typeof crypto !== 'undefined' && crypto['subtle']) {
-    return crypto.subtle;
-  } else {
-    throw new CryptoError(
-      'Global crypto was not available and none was provided. Please inlcude a SubtleCrypto implementation. See https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto',
-    );
   }
+  if (typeof crypto !== 'undefined' && crypto['subtle']) {
+    return crypto.subtle;
+  }
+  throw new CryptoError(
+    'Global crypto was not available and none was provided. Please inlcude a SubtleCrypto implementation. See https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto',
+  );
 }
 
 /**

@@ -78,7 +78,7 @@ export function hashTreeToString(tree: HashTree): string {
   const indent = (s: string) =>
     s
       .split('\n')
-      .map(x => '  ' + x)
+      .map(x => `  ${x}`)
       .join('\n');
   function labelToString(label: Uint8Array): string {
     const decoder = new TextDecoder(undefined, { fatal: true });
@@ -98,20 +98,18 @@ export function hashTreeToString(tree: HashTree): string {
         const left = hashTreeToString(tree[1]);
         const right = hashTreeToString(tree[2]);
         return `sub(\n left:\n${indent(left)}\n---\n right:\n${indent(right)}\n)`;
-      } else {
-        throw UnknownError.fromCode(new HashTreeDecodeErrorCode('Invalid tree structure for fork'));
       }
+      throw UnknownError.fromCode(new HashTreeDecodeErrorCode('Invalid tree structure for fork'));
     }
     case NodeType.Labeled: {
       if (tree[1] instanceof Uint8Array && tree[2] instanceof Uint8Array) {
         const label = labelToString(tree[1]);
         const sub = hashTreeToString(tree[2]);
         return `label(\n label:\n${indent(label)}\n sub:\n${indent(sub)}\n)`;
-      } else {
-        throw UnknownError.fromCode(
-          new HashTreeDecodeErrorCode('Invalid tree structure for labeled'),
-        );
       }
+      throw UnknownError.fromCode(
+        new HashTreeDecodeErrorCode('Invalid tree structure for labeled'),
+      );
     }
     case NodeType.Leaf: {
       if (!tree[1]) {
@@ -875,11 +873,11 @@ function list_paths(path: Array<NodeLabel>, tree: HashTree): Array<Array<NodeLab
   }
 }
 
-export type CheckCanisterRangesParams = {
+export interface CheckCanisterRangesParams {
   canisterId: Principal;
   subnetId: Principal;
   tree: HashTree;
-};
+}
 
 /**
  * Canister ranges in the form of an array of [start, end] principal tuples,

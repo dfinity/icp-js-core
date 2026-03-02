@@ -1,4 +1,4 @@
-import { type JsonObject } from '#candid';
+import type { JsonObject } from '#candid';
 import { Principal } from '#principal';
 import {
   HashTreeDecodeErrorCode,
@@ -239,7 +239,7 @@ function determineHost(configuredHost: string | undefined): string {
   let host: URL;
   if (configuredHost !== undefined) {
     if (!configuredHost.match(/^[a-z]+:/) && typeof window !== 'undefined') {
-      host = new URL(window.location.protocol + '//' + configuredHost);
+      host = new URL(`${window.location.protocol}//${configuredHost}`);
     } else {
       host = new URL(configuredHost);
     }
@@ -261,7 +261,7 @@ function determineHost(configuredHost: string | undefined): string {
     if (location && knownHost) {
       // If the user is on a boundary-node provided host, we can use the same host for the agent
       host = new URL(
-        `${location.protocol}//${knownHost}${location.port ? ':' + location.port : ''}`,
+        `${location.protocol}//${knownHost}${location.port ? `:${location.port}` : ''}`,
       );
     } else {
       host = new URL('https://icp-api.io');
@@ -375,7 +375,7 @@ export class HttpAgent implements Agent {
 
     if (options.credentials) {
       const { name, password } = options.credentials;
-      this.#credentials = `${name}${password ? ':' + password : ''}`;
+      this.#credentials = `${name}${password ? `:${password}` : ''}`;
     }
     this.#identity = Promise.resolve(options.identity || new AnonymousIdentity());
 
@@ -410,6 +410,7 @@ export class HttpAgent implements Agent {
         } else if (log.level === 'warn') {
           console.warn(log.message);
         } else {
+          // eslint-disable-next-line no-console -- logToConsole opt-in
           console.log(log.message);
         }
       });
@@ -537,7 +538,7 @@ export class HttpAgent implements Agent {
         method: 'POST',
         headers: {
           'Content-Type': 'application/cbor',
-          ...(this.#credentials ? { Authorization: 'Basic ' + btoa(this.#credentials) } : {}),
+          ...(this.#credentials ? { Authorization: `Basic ${btoa(this.#credentials)}` } : {}),
         },
       },
       endpoint: Endpoint.Call,
@@ -634,21 +635,21 @@ export class HttpAgent implements Agent {
             },
             identity,
           );
-        } else if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
+        }
+        if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
           // if there is an ingress expiry error and the time has not been synced yet,
           // sync time with the network and try again
           await this.syncTime(canister);
           return this.call(canister, options, identity);
-        } else {
-          // override the error code to include the request details
-          error.code.requestContext = {
-            requestId,
-            senderPubKey: transformedRequest.body.sender_pubkey,
-            senderSignature: transformedRequest.body.sender_sig,
-            ingressExpiry: transformedRequest.body.content.ingress_expiry,
-          };
-          callError = error;
         }
+        // override the error code to include the request details
+        error.code.requestContext = {
+          requestId,
+          senderPubKey: transformedRequest.body.sender_pubkey,
+          senderSignature: transformedRequest.body.sender_sig,
+          ingressExpiry: transformedRequest.body.content.ingress_expiry,
+        };
+        callError = error;
       } else {
         callError = UnknownError.fromCode(new UnexpectedErrorCode(error));
       }
@@ -917,7 +918,7 @@ export class HttpAgent implements Agent {
         method: 'POST',
         headers: {
           'Content-Type': 'application/cbor',
-          ...(this.#credentials ? { Authorization: 'Basic ' + btoa(this.#credentials) } : {}),
+          ...(this.#credentials ? { Authorization: `Basic ${btoa(this.#credentials)}` } : {}),
         },
       },
       endpoint: Endpoint.Query,
@@ -1032,18 +1033,18 @@ export class HttpAgent implements Agent {
       if (status === QueryResponseStatus.Replied) {
         const { reply } = queryResponse;
         hash = hashOfMap({
-          status: status,
-          reply: reply,
+          status,
+          reply,
           timestamp: BigInt(timestamp),
           request_id: requestId,
         });
       } else if (status === QueryResponseStatus.Rejected) {
         const { reject_code, reject_message, error_code } = queryResponse;
         hash = hashOfMap({
-          status: status,
-          reject_code: reject_code,
-          reject_message: reject_message,
-          error_code: error_code,
+          status,
+          reject_code,
+          reject_message,
+          error_code,
           timestamp: BigInt(timestamp),
           request_id: requestId,
         });
@@ -1083,7 +1084,7 @@ export class HttpAgent implements Agent {
         method: 'POST',
         headers: {
           'Content-Type': 'application/cbor',
-          ...(this.#credentials ? { Authorization: 'Basic ' + btoa(this.#credentials) } : {}),
+          ...(this.#credentials ? { Authorization: `Basic ${btoa(this.#credentials)}` } : {}),
         },
       },
       endpoint: Endpoint.ReadState,
@@ -1251,9 +1252,9 @@ export class HttpAgent implements Agent {
       this.log.print('Time from response:', date);
       this.log.print('Time from response in milliseconds:', date.getTime());
       return date.getTime();
-    } else {
-      this.log.warn('No certificate found in response');
     }
+    this.log.warn('No certificate found in response');
+
     return 0;
   }
 
@@ -1384,7 +1385,7 @@ export class HttpAgent implements Agent {
   public async status(): Promise<JsonObject> {
     const headers: Record<string, string> = this.#credentials
       ? {
-          Authorization: 'Basic ' + btoa(this.#credentials),
+          Authorization: `Basic ${btoa(this.#credentials)}`,
         }
       : {};
 
@@ -1424,7 +1425,8 @@ export class HttpAgent implements Agent {
   async #rootKeyGuard(): Promise<void> {
     if (this.rootKey) {
       return;
-    } else if (
+    }
+    if (
       this.rootKey === null &&
       this.host.toString() !== 'https://icp-api.io' &&
       this.#shouldFetchRootKey

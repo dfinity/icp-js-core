@@ -2,7 +2,7 @@ import { Principal } from '#principal';
 import * as cbor from '../cbor.ts';
 import { decodeLeb128 } from '../utils/leb.ts';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils';
-import { type DerEncodedPublicKey } from '../auth.ts';
+import type { DerEncodedPublicKey } from '../auth.ts';
 import {
   type Cert,
   flatten_forks,
@@ -32,7 +32,7 @@ export type SubnetNodeKeys = Map<string, DerEncodedPublicKey>;
 /**
  * Represents the useful information about a subnet
  */
-export type BaseSubnetStatus = {
+export interface BaseSubnetStatus {
   /**
    * The subnet ID
    */
@@ -45,7 +45,7 @@ export type BaseSubnetStatus = {
    * Not supported
    */
   metrics?: never;
-};
+}
 
 /**
  * Base types of an entry on the status map.

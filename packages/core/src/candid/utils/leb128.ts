@@ -120,9 +120,8 @@ export function slebEncode(value: bigint | number): Uint8Array {
     if (isNeg) {
       // We swap the bits here again, and remove 1 to do two's complement.
       return Number(BigInt(0x80) - bytes - BigInt(1));
-    } else {
-      return Number(bytes);
     }
+    return Number(bytes);
   }
   return pipe.buffer;
 }

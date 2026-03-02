@@ -1,8 +1,8 @@
 import { IDL } from '#candid';
 import { Principal } from '#principal';
-import { type Agent } from './agent/api.ts';
-import { RequestId } from './request_id.ts';
-import { type LookupPathStatus, type LookupPathResultFound } from './certificate.ts';
+import type { Agent } from './agent/api.ts';
+import type { RequestId } from './request_id.ts';
+import type { LookupPathStatus, LookupPathResultFound } from './certificate.ts';
 
 // Track strategy creations and invocations
 const instantiatedStrategies: jest.Mock[] = [];

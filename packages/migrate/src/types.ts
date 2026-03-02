@@ -9,11 +9,11 @@ export enum PackageManager {
   PNPM = 'pnpm',
 }
 
-export type GenericPackageJson = {
+export interface GenericPackageJson {
   dependencies: Record<string, string>;
   devDependencies: Record<string, string>;
   peerDependencies: Record<string, string>;
-};
+}
 
 export interface DependencyInfo {
   name: string;

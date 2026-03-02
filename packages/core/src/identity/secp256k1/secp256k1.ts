@@ -42,20 +42,26 @@ export class Secp256k1PublicKey implements PublicKey {
     if (typeof maybeKey === 'string') {
       const key = hexToBytes(maybeKey);
       return this.fromRaw(key);
-    } else if (isObject(maybeKey)) {
+    }
+    if (isObject(maybeKey)) {
       const key = maybeKey as KeyLike;
       if (isObject(key) && Object.hasOwnProperty.call(key, '__derEncodedPublicKey__')) {
         return this.fromDer(key as DerEncodedPublicKey);
-      } else if (ArrayBuffer.isView(key)) {
+      }
+      if (ArrayBuffer.isView(key)) {
         const view = key as ArrayBufferView;
         return this.fromRaw(uint8FromBufLike(view.buffer));
-      } else if (key instanceof ArrayBuffer) {
+      }
+      if (key instanceof ArrayBuffer) {
         return this.fromRaw(uint8FromBufLike(key));
-      } else if ('rawKey' in key && key['rawKey'] !== undefined) {
+      }
+      if ('rawKey' in key && key['rawKey'] !== undefined) {
         return this.fromRaw(key.rawKey);
-      } else if ('derKey' in key) {
+      }
+      if ('derKey' in key) {
         return this.fromDer(key.derKey as DerEncodedPublicKey);
-      } else if ('toDer' in key) {
+      }
+      if ('toDer' in key) {
         return this.fromDer(key.toDer());
       }
     }

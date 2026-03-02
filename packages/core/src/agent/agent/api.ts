@@ -1,7 +1,7 @@
-import { Principal } from '#principal';
-import { type RequestId } from '../request_id.ts';
-import { type JsonObject } from '#candid';
-import { type Identity } from '../auth.ts';
+import type { Principal } from '#principal';
+import type { RequestId } from '../request_id.ts';
+import type { JsonObject } from '#candid';
+import type { Identity } from '../auth.ts';
 import type { CallRequest, HttpHeaderField, QueryRequest } from './http/types.ts';
 
 /**
@@ -53,14 +53,14 @@ export interface QueryResponseBase {
   requestDetails?: QueryRequest;
 }
 
-export type NodeSignature = {
+export interface NodeSignature {
   // the batch time
   timestamp: bigint;
   // the signature
   signature: Uint8Array;
   // the ID of the node that created the signature
   identity: Uint8Array;
-};
+}
 
 export interface QueryResponseReplied extends QueryResponseBase {
   status: QueryResponseStatus.Replied;

@@ -1,7 +1,7 @@
-import { Principal } from '#principal';
-import { RequestStatusResponseStatus } from '../agent/index.ts';
-import { type PollStrategy } from './index.ts';
-import { type RequestId } from '../request_id.ts';
+import type { Principal } from '#principal';
+import type { RequestStatusResponseStatus } from '../agent/index.ts';
+import type { PollStrategy } from './index.ts';
+import type { RequestId } from '../request_id.ts';
 import { ProtocolError, TimeoutWaitingForResponseErrorCode } from '../errors.ts';
 
 export type Predicate<T> = (

@@ -9,15 +9,15 @@ import {
   InputError,
   CertificateTimeErrorCode,
 } from '../errors.ts';
-import { HttpAgent } from '../agent/http/index.ts';
+import type { HttpAgent } from '../agent/http/index.ts';
 import { type Cert, Certificate, lookupResultToBuffer } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
 import { decodeTime } from '../utils/leb.ts';
 import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils';
+import type { CustomPath } from '../utils/readState.ts';
 import {
   type BaseSubnetStatus,
   type BaseStatus,
-  CustomPath,
   decodeValue,
   decodeControllers,
   encodeMetadataPath,
@@ -39,7 +39,7 @@ export type Path = 'time' | 'controllers' | 'subnet' | 'module_hash' | 'candid' 
 
 export type StatusMap = Map<Path | string, Status>;
 
-export type CanisterStatusOptions = {
+export interface CanisterStatusOptions {
   /**
    * The effective canister ID to use in the underlying {@link HttpAgent.readState} call.
    */
@@ -58,7 +58,7 @@ export type CanisterStatusOptions = {
    * @default false
    */
   disableCertificateTimeVerification?: boolean;
-};
+}
 
 /**
  * Requests information from a canister's `read_state` endpoint.
@@ -115,12 +115,11 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
               path,
               data,
             };
-          } else {
-            return {
-              path,
-              data: lookupResultToBuffer(cert.lookup_path(encodedPath)),
-            };
           }
+          return {
+            path,
+            data: lookupResultToBuffer(cert.lookup_path(encodedPath)),
+          };
         };
 
         // must pass in the rootKey if we have no delegation
@@ -247,10 +246,9 @@ export const encodePath = (path: Path, canisterId: Principal): Uint8Array[] => {
         // For simplified metadata queries
         if (typeof path['path'] === 'string' || path['path'] instanceof Uint8Array) {
           return encodeMetadataPath(path.path, canisterUint8Array);
-        } else {
-          // For non-metadata, return the provided custom path
-          return path['path'];
         }
+        // For non-metadata, return the provided custom path
+        return path['path'];
       }
     }
   }

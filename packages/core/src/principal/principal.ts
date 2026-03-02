@@ -9,9 +9,9 @@ const ANONYMOUS_SUFFIX = 4;
 
 const MANAGEMENT_CANISTER_PRINCIPAL_TEXT_STR = 'aaaaa-aa';
 
-export type JsonnablePrincipal = {
+export interface JsonnablePrincipal {
   [JSON_KEY_PRINCIPAL]: string;
-};
+}
 
 export class Principal {
   public static anonymous(): Principal {
@@ -34,9 +34,11 @@ export class Principal {
   public static from(other: unknown): Principal {
     if (typeof other === 'string') {
       return Principal.fromText(other);
-    } else if (Object.getPrototypeOf(other) === Uint8Array.prototype) {
+    }
+    if (Object.getPrototypeOf(other) === Uint8Array.prototype) {
       return new Principal(other as Uint8Array);
-    } else if (Principal.isPrincipal(other)) {
+    }
+    if (Principal.isPrincipal(other)) {
       return new Principal(other._arr);
     }
 
@@ -140,12 +142,20 @@ export class Principal {
    */
   public compareTo(other: Principal): 'lt' | 'eq' | 'gt' {
     for (let i = 0; i < Math.min(this._arr.length, other._arr.length); i++) {
-      if (this._arr[i] < other._arr[i]) return 'lt';
-      else if (this._arr[i] > other._arr[i]) return 'gt';
+      if (this._arr[i] < other._arr[i]) {
+        return 'lt';
+      }
+      if (this._arr[i] > other._arr[i]) {
+        return 'gt';
+      }
     }
     // Here, at least one principal is a prefix of the other principal (they could be the same)
-    if (this._arr.length < other._arr.length) return 'lt';
-    if (this._arr.length > other._arr.length) return 'gt';
+    if (this._arr.length < other._arr.length) {
+      return 'lt';
+    }
+    if (this._arr.length > other._arr.length) {
+      return 'gt';
+    }
     return 'eq';
   }
 

@@ -1,5 +1,6 @@
 import { createActor } from '../canisters/declarations/counter/index.js';
-import { test, expect, TestAPI } from 'vitest';
+import type { TestAPI } from 'vitest';
+import { test, expect } from 'vitest';
 import { makeAgent } from '../utils/agent.ts';
 import {
   CertificateVerificationErrorCode,

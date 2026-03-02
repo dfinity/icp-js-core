@@ -28,20 +28,26 @@ export class Ed25519PublicKey implements PublicKey {
     if (typeof maybeKey === 'string') {
       const key = hexToBytes(maybeKey);
       return this.fromRaw(key);
-    } else if (isObject(maybeKey)) {
+    }
+    if (isObject(maybeKey)) {
       const key = maybeKey as KeyLike;
       if (isObject(key) && Object.hasOwnProperty.call(key, '__derEncodedPublicKey__')) {
         return this.fromDer(key as DerEncodedPublicKey);
-      } else if (ArrayBuffer.isView(key)) {
+      }
+      if (ArrayBuffer.isView(key)) {
         const view = key as ArrayBufferView;
         return this.fromRaw(uint8FromBufLike(view.buffer));
-      } else if (key instanceof ArrayBuffer) {
+      }
+      if (key instanceof ArrayBuffer) {
         return this.fromRaw(uint8FromBufLike(key));
-      } else if ('rawKey' in key && key.rawKey instanceof Uint8Array) {
+      }
+      if ('rawKey' in key && key.rawKey instanceof Uint8Array) {
         return this.fromRaw(key.rawKey);
-      } else if ('derKey' in key) {
+      }
+      if ('derKey' in key) {
         return this.fromDer(key.derKey as DerEncodedPublicKey);
-      } else if ('toDer' in key) {
+      }
+      if ('toDer' in key) {
         return this.fromDer(key.toDer());
       }
     }
@@ -116,7 +122,9 @@ export class Ed25519KeyIdentity extends SignIdentity {
     if (seed && seed.length !== 32) {
       throw new Error('Ed25519 Seed needs to be 32 bytes long.');
     }
-    if (!seed) seed = ed25519.utils.randomPrivateKey();
+    if (!seed) {
+      seed = ed25519.utils.randomPrivateKey();
+    }
     // Check if the seed is all zeros
     if (uint8Equals(seed, new Uint8Array(new Array(32).fill(0)))) {
       console.warn(
@@ -145,9 +153,8 @@ export class Ed25519KeyIdentity extends SignIdentity {
     if (Array.isArray(parsed)) {
       if (typeof parsed[0] === 'string' && typeof parsed[1] === 'string') {
         return this.fromParsedJson([parsed[0], parsed[1]]);
-      } else {
-        throw new Error('Deserialization error: JSON must have at least 2 items.');
       }
+      throw new Error('Deserialization error: JSON must have at least 2 items.');
     }
     throw new Error(`Deserialization error: Invalid JSON type for string: ${JSON.stringify(json)}`);
   }

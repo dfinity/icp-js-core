@@ -9,57 +9,78 @@ import { uint8Equals } from './utils/buffer.ts';
 export const encodeLenBytes = (len: number): number => {
   if (len <= 0x7f) {
     return 1;
-  } else if (len <= 0xff) {
-    return 2;
-  } else if (len <= 0xffff) {
-    return 3;
-  } else if (len <= 0xffffff) {
-    return 4;
-  } else {
-    throw InputError.fromCode(new DerEncodeErrorCode('Length too long (> 4 bytes)'));
   }
+  if (len <= 0xff) {
+    return 2;
+  }
+  if (len <= 0xffff) {
+    return 3;
+  }
+  if (len <= 0xffffff) {
+    return 4;
+  }
+  throw InputError.fromCode(new DerEncodeErrorCode('Length too long (> 4 bytes)'));
 };
 
 export const encodeLen = (buf: Uint8Array, offset: number, len: number): number => {
   if (len <= 0x7f) {
     buf[offset] = len;
     return 1;
-  } else if (len <= 0xff) {
+  }
+  if (len <= 0xff) {
     buf[offset] = 0x81;
     buf[offset + 1] = len;
     return 2;
-  } else if (len <= 0xffff) {
+  }
+  if (len <= 0xffff) {
     buf[offset] = 0x82;
     buf[offset + 1] = len >> 8;
     buf[offset + 2] = len;
     return 3;
-  } else if (len <= 0xffffff) {
+  }
+  if (len <= 0xffffff) {
     buf[offset] = 0x83;
     buf[offset + 1] = len >> 16;
     buf[offset + 2] = len >> 8;
     buf[offset + 3] = len;
     return 4;
-  } else {
-    throw InputError.fromCode(new DerEncodeErrorCode('Length too long (> 4 bytes)'));
   }
+  throw InputError.fromCode(new DerEncodeErrorCode('Length too long (> 4 bytes)'));
 };
 
 export const decodeLenBytes = (buf: Uint8Array, offset: number): number => {
-  if (buf[offset] < 0x80) return 1;
-  if (buf[offset] === 0x80) throw InputError.fromCode(new DerDecodeErrorCode('Invalid length 0'));
-  if (buf[offset] === 0x81) return 2;
-  if (buf[offset] === 0x82) return 3;
-  if (buf[offset] === 0x83) return 4;
+  if (buf[offset] < 0x80) {
+    return 1;
+  }
+  if (buf[offset] === 0x80) {
+    throw InputError.fromCode(new DerDecodeErrorCode('Invalid length 0'));
+  }
+  if (buf[offset] === 0x81) {
+    return 2;
+  }
+  if (buf[offset] === 0x82) {
+    return 3;
+  }
+  if (buf[offset] === 0x83) {
+    return 4;
+  }
   throw InputError.fromCode(new DerDecodeErrorCode('Length too long (> 4 bytes)'));
 };
 
 export const decodeLen = (buf: Uint8Array, offset: number): number => {
   const lenBytes = decodeLenBytes(buf, offset);
-  if (lenBytes === 1) return buf[offset];
-  else if (lenBytes === 2) return buf[offset + 1];
-  else if (lenBytes === 3) return (buf[offset + 1] << 8) + buf[offset + 2];
-  else if (lenBytes === 4)
+  if (lenBytes === 1) {
+    return buf[offset];
+  }
+  if (lenBytes === 2) {
+    return buf[offset + 1];
+  }
+  if (lenBytes === 3) {
+    return (buf[offset + 1] << 8) + buf[offset + 2];
+  }
+  if (lenBytes === 4) {
     return (buf[offset + 1] << 16) + (buf[offset + 2] << 8) + buf[offset + 3];
+  }
   throw InputError.fromCode(new DerDecodeErrorCode('Length too long (> 4 bytes)'));
 };
 

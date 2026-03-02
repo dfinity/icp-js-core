@@ -1,6 +1,7 @@
 import { hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import { Principal } from '#principal';
-import { request, Path, lookupSubnetInfo, encodePath, IC_ROOT_SUBNET_ID } from './index.ts';
+import type { Path } from './index.ts';
+import { request, lookupSubnetInfo, encodePath, IC_ROOT_SUBNET_ID } from './index.ts';
 import { HttpAgent } from '../agent/index.ts';
 import * as Cert from '../certificate.ts';
 import { goldenCertificates } from '../agent/http/__certificates__/goldenCertificates.ts';

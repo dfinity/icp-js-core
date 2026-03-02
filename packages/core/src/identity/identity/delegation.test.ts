@@ -18,12 +18,11 @@ expect.extend({
         message: () => `expected ${received} not to be a valid hex string`,
         pass: true,
       };
-    } else {
-      return {
-        message: () => `expected ${received} to be a valid hex string`,
-        pass: false,
-      };
     }
+    return {
+      message: () => `expected ${received} to be a valid hex string`,
+      pass: false,
+    };
   },
 });
 

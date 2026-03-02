@@ -71,9 +71,8 @@ export class CosePublicKey implements PublicKey {
 function _createChallengeBuffer(challenge: string | Uint8Array = '<ic0.app>'): Uint8Array {
   if (typeof challenge === 'string') {
     return Uint8Array.from(challenge, c => c.charCodeAt(0));
-  } else {
-    return challenge;
   }
+  return challenge;
 }
 
 /**

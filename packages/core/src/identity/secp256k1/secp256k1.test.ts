@@ -1,4 +1,4 @@
-import { DerEncodedPublicKey, PublicKey } from '#agent';
+import type { DerEncodedPublicKey, PublicKey } from '#agent';
 import { randomBytes } from 'crypto';
 import { sha256 } from '@noble/hashes/sha2';
 import { secp256k1 } from '@noble/curves/secp256k1';

@@ -1,11 +1,11 @@
-import { type RequestId } from '../request_id.ts';
+import type { RequestId } from '../request_id.ts';
 import {
   type CreateCertificateOptions,
   Certificate,
   lookupResultToBuffer,
 } from '../certificate.ts';
-import { type Agent, type ReadStateResponse } from '../agent/api.ts';
-import { Principal } from '#principal';
+import type { Agent, ReadStateResponse } from '../agent/api.ts';
+import type { Principal } from '#principal';
 import {
   CertifiedRejectErrorCode,
   ExternalError,

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Actor, SignIdentity } from '@icp-sdk/core/agent';
-import { Principal } from '@icp-sdk/core/principal';
+import type { SignIdentity } from '@icp-sdk/core/agent';
+import { Actor } from '@icp-sdk/core/agent';
+import type { Principal } from '@icp-sdk/core/principal';
 import {
   DelegationChain,
   DelegationIdentity,
@@ -11,7 +12,7 @@ import { Secp256k1KeyIdentity } from '@icp-sdk/core/identity/secp256k1';
 import agent, { makeAgent } from '../utils/agent.ts';
 import whoamiCanister from '../canisters/whoami.ts';
 import { test, expect } from 'vitest';
-import { IDL } from '@icp-sdk/core/candid';
+import type { IDL } from '@icp-sdk/core/candid';
 
 function createIdentity(seed: number): SignIdentity {
   const seed1 = new Array(32).fill(0);

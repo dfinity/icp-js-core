@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-this-alias */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import * as IDL from './idl.ts';
+import type * as IDL from './idl.ts';
 
 export interface ParseConfig {
   random?: boolean;
@@ -71,7 +70,7 @@ export class InputBox {
       } catch (err) {
         input.classList.add('reject');
         this.status.style.display = 'block';
-        this.status.innerHTML = 'InputError: ' + (err as Error).message;
+        this.status.innerHTML = `InputError: ${(err as Error).message}`;
         this.value = undefined;
         return undefined;
       }
@@ -149,9 +148,9 @@ export class RecordForm extends InputForm {
       const input = this.ui.render(type);
       // eslint-disable-next-line
       if (this.ui.labelMap && this.ui.labelMap.hasOwnProperty(key)) {
-        input.label = this.ui.labelMap[key] + ' ';
+        input.label = `${this.ui.labelMap[key]} `;
       } else {
-        input.label = key + ' ';
+        input.label = `${key} `;
       }
       return input;
     });
@@ -239,13 +238,12 @@ export class OptionForm extends InputForm {
   public parse<T>(config: ParseConfig): [T] | [] | undefined {
     if (this.form.length === 0) {
       return [];
-    } else {
-      const value = this.form[0].parse(config);
-      if (value === undefined) {
-        return undefined;
-      }
-      return [value];
     }
+    const value = this.form[0].parse(config);
+    if (value === undefined) {
+      return undefined;
+    }
+    return [value];
   }
 }
 

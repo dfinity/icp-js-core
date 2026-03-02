@@ -1,4 +1,5 @@
-import { HttpAgent, HttpAgentOptions } from '@icp-sdk/core/agent';
+import type { HttpAgentOptions } from '@icp-sdk/core/agent';
+import { HttpAgent } from '@icp-sdk/core/agent';
 import { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
 
 export const identity = Ed25519KeyIdentity.generate();

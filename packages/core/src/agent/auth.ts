@@ -1,5 +1,5 @@
 import { Principal } from '#principal';
-import { type HttpAgentRequest } from './agent/http/types.ts';
+import type { HttpAgentRequest } from './agent/http/types.ts';
 import { requestIdOf } from './request_id.ts';
 import { bytesToHex, concatBytes } from '@noble/hashes/utils';
 import { IC_REQUEST_DOMAIN_SEPARATOR } from './constants.ts';

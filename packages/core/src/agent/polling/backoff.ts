@@ -5,23 +5,23 @@ const MAX_INTERVAL_MSEC = 60_000;
 const MAX_ELAPSED_TIME_MSEC = 900_000;
 const MAX_ITERATIONS = 10;
 
-export type BackoffStrategy = {
+export interface BackoffStrategy {
   next: () => number | null;
   currentInterval?: number;
   count?: number;
   ellapsedTimeInMsec?: number;
-};
+}
 
-export type BackoffStrategyArgs = {
+export interface BackoffStrategyArgs {
   maxIterations?: number;
   maxElapsedTime?: number;
-};
+}
 
 export type BackoffStrategyFactory = (args?: BackoffStrategyArgs) => BackoffStrategy;
 
 // export type BackoffStrategyGenerator = Generator<number, void, unknown>;
 
-export type ExponentialBackoffOptions = {
+export interface ExponentialBackoffOptions {
   initialInterval?: number;
   randomizationFactor?: number;
   multiplier?: number;
@@ -29,7 +29,7 @@ export type ExponentialBackoffOptions = {
   maxElapsedTime?: number;
   maxIterations?: number;
   date?: DateConstructor;
-};
+}
 
 /**
  * Exponential backoff strategy.
@@ -105,10 +105,9 @@ export class ExponentialBackoff {
   public next() {
     if (this.ellapsedTimeInMsec >= this.#maxElapsedTime || this.#count >= this.#maxIterations) {
       return null;
-    } else {
-      this.incrementCurrentInterval();
-      return this.randomValueFromInterval;
     }
+    this.incrementCurrentInterval();
+    return this.randomValueFromInterval;
   }
 }
 /**
