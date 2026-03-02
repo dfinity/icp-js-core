@@ -575,7 +575,7 @@ export class HttpAgent implements Agent {
     // Apply transform for identity.
     transformedRequest = (await id.transformRequest(transformedRequest)) as HttpAgentSubmitRequest;
 
-    const body = cbor.encode(transformedRequest.body);
+    const body = cbor.encode(transformedRequest.body) as Uint8Array<ArrayBuffer>;
     const backoff = this.#backoffStrategy();
     const requestId = requestIdOf(submit);
     try {
@@ -660,7 +660,7 @@ export class HttpAgent implements Agent {
   async #requestAndRetryQuery(args: {
     ecid: Principal;
     transformedRequest: HttpAgentRequest;
-    body: Uint8Array;
+    body: Uint8Array<ArrayBuffer>;
     requestId: RequestId;
     backoff: BackoffStrategy;
     tries: number;
@@ -820,7 +820,7 @@ export class HttpAgent implements Agent {
     }
 
     let response: Response;
-    let responseBodyBytes = new Uint8Array();
+    let responseBodyBytes: Uint8Array = new Uint8Array();
     try {
       response = await requestFn();
       // According to the spec, only 200 responses have a non-empty body
@@ -927,7 +927,7 @@ export class HttpAgent implements Agent {
     // Apply transform for identity.
     transformedRequest = (await id.transformRequest(transformedRequest)) as HttpAgentRequest;
 
-    const body = cbor.encode(transformedRequest.body);
+    const body = cbor.encode(transformedRequest.body) as Uint8Array<ArrayBuffer>;
 
     const args = {
       canister: canister.toText(),

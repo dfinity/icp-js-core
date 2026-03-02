@@ -86,25 +86,26 @@ function _createChallengeBuffer(challenge: string | Uint8Array = '<ic0.app>'): U
 async function _createCredential(
   credentialCreationOptions?: CredentialCreationOptions,
 ): Promise<PublicKeyCredentialWithAttachment | null> {
-  const creds = (await navigator.credentials.create(
-    credentialCreationOptions ?? {
-      publicKey: {
-        authenticatorSelection: {
-          userVerification: 'preferred',
-        },
-        attestation: 'direct',
-        challenge: _createChallengeBuffer(),
-        pubKeyCredParams: [{ type: 'public-key', alg: PubKeyCoseAlgo.ECDSA_WITH_SHA256 }],
-        rp: {
-          name: 'Internet Identity Service',
-        },
-        user: {
-          id: randomBytes(16),
-          name: 'Internet Identity',
-          displayName: 'Internet Identity',
-        },
+  const defaultCredentialCreationOptions: CredentialCreationOptions = {
+    publicKey: {
+      authenticatorSelection: {
+        userVerification: 'preferred',
+      },
+      attestation: 'direct',
+      challenge: _createChallengeBuffer() as Uint8Array<ArrayBuffer>,
+      pubKeyCredParams: [{ type: 'public-key', alg: PubKeyCoseAlgo.ECDSA_WITH_SHA256 }],
+      rp: {
+        name: 'Internet Identity Service',
+      },
+      user: {
+        id: randomBytes(16) as Uint8Array<ArrayBuffer>,
+        name: 'Internet Identity',
+        displayName: 'Internet Identity',
       },
     },
+  };
+  const creds = (await navigator.credentials.create(
+    credentialCreationOptions ?? defaultCredentialCreationOptions,
   )) as PublicKeyCredentialWithAttachment | null;
 
   if (creds === null) {
@@ -212,10 +213,10 @@ export class WebAuthnIdentity extends SignIdentity {
         allowCredentials: [
           {
             type: 'public-key',
-            id: this.rawId,
+            id: this.rawId as Uint8Array<ArrayBuffer>,
           },
         ],
-        challenge: blob,
+        challenge: blob as Uint8Array<ArrayBuffer>,
         userVerification: 'preferred',
       },
     })) as PublicKeyCredentialWithAttachment;

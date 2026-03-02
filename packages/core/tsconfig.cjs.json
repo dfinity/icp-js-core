@@ -1,6 +1,7 @@
 {
   "extends": ["./tsconfig.json", "../../tsconfig.cjs.json"],
   "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
     "baseUrl": "./src",
     "rootDir": "./src",
     "outDir": "./lib/cjs"

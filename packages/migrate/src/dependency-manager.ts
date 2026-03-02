@@ -25,7 +25,7 @@ export class DependencyManager {
       });
       console.log('✅ Dependencies removed successfully');
     } catch (error) {
-      throw new Error(`Failed to remove dependencies: ${error}`);
+      throw new Error(`Failed to remove dependencies: ${error}`, { cause: error });
     }
   }
 
@@ -58,7 +58,7 @@ export class DependencyManager {
       });
       console.log('✅ Core package added successfully');
     } catch (error) {
-      throw new Error(`Failed to add core package: ${error}`);
+      throw new Error(`Failed to add core package: ${error}`, { cause: error });
     }
   }
 

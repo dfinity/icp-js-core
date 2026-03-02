@@ -17,8 +17,8 @@ export class ExpirableMap<K, V> implements Map<K, V> {
 
   /**
    * Create a new ExpirableMap.
-   * @param {ExpirableMapOptions<any, any>} options - options for the map.
-   * @param {Iterable<[any, any]>} options.source - an optional source of entries to initialize the map with.
+   * @param {ExpirableMapOptions<K, V>} options - options for the map.
+   * @param {Iterable<[K, V]>} options.source - an optional source of entries to initialize the map with.
    * @param {number} options.expirationTime - the time in milliseconds after which entries will expire.
    */
   constructor(options: ExpirableMapOptions<K, V> = {}) {

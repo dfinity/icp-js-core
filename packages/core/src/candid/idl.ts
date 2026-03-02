@@ -776,17 +776,12 @@ export class FixedIntClass extends PrimitiveType<bigint | number> {
   public covariant(x: any): x is bigint {
     const min = iexp2(this._bits - 1) * BigInt(-1);
     const max = iexp2(this._bits - 1) - BigInt(1);
-    let ok = false;
     if (typeof x === 'bigint') {
-      ok = x >= min && x <= max;
+      if (x >= min && x <= max) return true;
     } else if (Number.isInteger(x)) {
       const v = BigInt(x);
-      ok = v >= min && v <= max;
-    } else {
-      ok = false;
+      if (v >= min && v <= max) return true;
     }
-
-    if (ok) return true;
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -840,16 +835,12 @@ export class FixedNatClass extends PrimitiveType<bigint | number> {
 
   public covariant(x: any): x is bigint {
     const max = iexp2(this._bits);
-    let ok = false;
     if (typeof x === 'bigint' && x >= BigInt(0)) {
-      ok = x < max;
+      if (x < max) return true;
     } else if (Number.isInteger(x) && x >= 0) {
       const v = BigInt(x);
-      ok = v < max;
-    } else {
-      ok = false;
+      if (v < max) return true;
     }
-    if (ok) return true;
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -932,7 +923,10 @@ export class VecClass<T> extends ConstructType<T[]> {
           try {
             return this._type.covariant(v);
           } catch (e: any) {
-            throw new Error(`Invalid ${this.display()} argument: \n\nindex ${idx} -> ${e.message}`);
+            throw new Error(
+              `Invalid ${this.display()} argument: \n\nindex ${idx} -> ${e.message}`,
+              { cause: e },
+            );
           }
         }))
     )
@@ -1116,6 +1110,7 @@ export class OptClass<T> extends ConstructType<[T] | []> {
     } catch (e: any) {
       throw new Error(
         `Invalid ${this.display()} argument: ${toReadableString(x)} \n\n-> ${e.message}`,
+        { cause: e },
       );
     }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
@@ -1273,7 +1268,9 @@ export class RecordClass extends ConstructType<Record<string, any>> {
         try {
           return t.covariant(x[k]);
         } catch (e: any) {
-          throw new Error(`Invalid ${this.display()} argument: \n\nfield ${k} -> ${e.message}`);
+          throw new Error(`Invalid ${this.display()} argument: \n\nfield ${k} -> ${e.message}`, {
+            cause: e,
+          });
         }
       })
     )
@@ -1414,7 +1411,9 @@ export class TupleClass<T extends any[]> extends RecordClass {
         try {
           return t.covariant(x[i]);
         } catch (e: any) {
-          throw new Error(`Invalid ${this.display()} argument: \n\nindex ${i} -> ${e.message}`);
+          throw new Error(`Invalid ${this.display()} argument: \n\nindex ${i} -> ${e.message}`, {
+            cause: e,
+          });
         }
       })
     )
@@ -1492,7 +1491,9 @@ export class VariantClass extends ConstructType<Record<string, any>> {
           // eslint-disable-next-line
           return !x.hasOwnProperty(k) || v.covariant(x[k]);
         } catch (e: any) {
-          throw new Error(`Invalid ${this.display()} argument: \n\nvariant ${k} -> ${e.message}`);
+          throw new Error(`Invalid ${this.display()} argument: \n\nvariant ${k} -> ${e.message}`, {
+            cause: e,
+          });
         }
       })
     )

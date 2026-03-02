@@ -144,7 +144,11 @@ export class ECDSAKeyIdentity extends SignIdentity {
       hash: { name: 'SHA-256' },
     };
     const signature = uint8FromBufLike(
-      await this._subtleCrypto.sign(params, this._keyPair.privateKey, challenge),
+      await this._subtleCrypto.sign(
+        params,
+        this._keyPair.privateKey,
+        challenge as Uint8Array<ArrayBuffer>,
+      ),
     );
 
     Object.assign(signature, {

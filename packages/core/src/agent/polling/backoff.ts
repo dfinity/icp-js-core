@@ -115,7 +115,7 @@ export class ExponentialBackoff {
  * Utility function to create an exponential backoff iterator.
  * @param options - for the exponential backoff
  * @returns an iterator that yields the next delay in the exponential backoff
- * @yields the next delay in the exponential backoff
+ * @yields {number} the next delay in the exponential backoff
  */
 export function* exponentialBackoff(
   options: ExponentialBackoffOptions = ExponentialBackoff.default,
