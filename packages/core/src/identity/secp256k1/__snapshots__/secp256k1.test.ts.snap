@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`Secp256k1PublicKey Tests create from an existing public key 1`] = `Secp256k1PublicKey {}`;
 

@@ -11,7 +11,7 @@ import { utf8ToBytes } from '@noble/hashes/utils';
  */
 export async function getDefaultEffectiveCanisterId() {
   const res = await fetch('http://localhost:4943/_/topology');
-  const data = await res.json();
+  const data = (await res.json()) as Record<string, Record<string, string>>;
   const id = data['default_effective_canister_id']['canister_id'];
   // decode from base64
   const decoded = Buffer.from(id, 'base64').toString('hex');

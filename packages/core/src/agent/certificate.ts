@@ -184,7 +184,7 @@ export interface CreateCertificateOptions {
    */
   principal: CertificatePrincipal;
   /**
-   * BLS Verification strategy. Default strategy uses bls12_381 from @noble/curves
+   * BLS Verification strategy. Default strategy uses bls12_381 from `@noble/curves`
    */
   blsVerify?: VerifyFunc;
 
@@ -221,7 +221,7 @@ export class Certificate {
   /**
    * Create a new instance of a certificate, automatically verifying it.
    * @param {CreateCertificateOptions} options {@link CreateCertificateOptions}
-   * @throws if the verification of the certificate fails
+   * @throws {Error} if the verification of the certificate fails
    */
   public static async create(options: CreateCertificateOptions): Promise<Certificate> {
     const cert = Certificate.createUnverified(options);

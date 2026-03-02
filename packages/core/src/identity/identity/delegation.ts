@@ -15,7 +15,7 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 
 /**
  * Safe wrapper around bytesToHex that handles ArrayBuffer/Uint8Array type conversion.
- * Required because @noble/hashes v1.8+ strictly expects Uint8Array inputs.
+ * Required because `@noble/hashes` v1.8+ strictly expects Uint8Array inputs.
  * @param data The binary data to convert to hexadecimal string (ArrayBuffer, Uint8Array, or ArrayLike<number>)
  */
 function safeBytesToHex(data: ArrayBuffer | Uint8Array | ArrayLike<number>): string {
@@ -37,7 +37,7 @@ function _parseBlob(value: unknown): Uint8Array {
  * A single delegation object that is signed by a private key. This is constructed by
  * `DelegationChain.create()`.
  *
- * {@see DelegationChain}
+ * {@link DelegationChain}
  */
 export class Delegation implements ToCborValue {
   constructor(
@@ -87,7 +87,7 @@ interface JsonnableDelegation {
  * A signed delegation, which lends its identity to the public key in the delegation
  * object. This is constructed by `DelegationChain.create()`.
  *
- * {@see DelegationChain}
+ * {@link DelegationChain}
  */
 export interface SignedDelegation {
   delegation: Delegation;

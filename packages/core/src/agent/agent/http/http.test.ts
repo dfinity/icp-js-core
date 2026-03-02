@@ -717,11 +717,9 @@ describe('default host', () => {
   it('should use the existing host if the agent is used on a known hostname', () => {
     const knownHosts = ['ic0.app', 'icp0.io', '127.0.0.1', 'localhost'];
     for (const host of knownHosts) {
-      delete (window as any).location;
-      (window as any).location = {
-        hostname: host,
-        protocol: 'https:',
-      } as any;
+      (global as any).window = {
+        location: { hostname: host, protocol: 'https:' },
+      };
       const agent = HttpAgent.createSync({ fetch: jest.fn(), host });
       expect((agent as any).host.hostname).toBe(host);
     }
@@ -729,12 +727,13 @@ describe('default host', () => {
   it('should correctly handle subdomains on known hosts', () => {
     const knownHosts = ['ic0.app', 'icp0.io', '127.0.0.1', 'localhost'];
     for (const host of knownHosts) {
-      delete (window as any).location;
-      (window as any).location = {
-        host: `foo.${host}`,
-        hostname: `rrkah-fqaaa-aaaaa-aaaaq-cai.${host}`,
-        protocol: 'https:',
-      } as any;
+      (global as any).window = {
+        location: {
+          host: `foo.${host}`,
+          hostname: `rrkah-fqaaa-aaaaa-aaaaq-cai.${host}`,
+          protocol: 'https:',
+        },
+      };
       const agent = new HttpAgent({ fetch: jest.fn() });
       expect(agent.host.hostname).toBe(host);
     }
@@ -747,12 +746,9 @@ describe('default host', () => {
       'sturdy-space-rotary-phone-674vv99gxf4x9j-4943.app.github.dev',
     ];
     for (const host of remoteHosts) {
-      delete (window as any).location;
-      (window as any).location = {
-        host: host,
-        hostname: host,
-        protocol: 'https:',
-      } as any;
+      (global as any).window = {
+        location: { host: host, hostname: host, protocol: 'https:' },
+      };
       const agent = HttpAgent.createSync({ fetch: jest.fn() });
       expect(agent.host.toString()).toBe(`https://${host}/`);
     }
@@ -760,14 +756,15 @@ describe('default host', () => {
   it('should handle port numbers for 127.0.0.1 and localhost', async () => {
     const knownHosts = ['127.0.0.1', 'localhost'];
     for (const host of knownHosts) {
-      delete (window as any).location;
       // hostname is different from host when port is specified
-      (window as any).location = {
-        host: `${host}:4943`,
-        hostname: `${host}`,
-        protocol: 'http:',
-        port: '4943',
-      } as any;
+      (global as any).window = {
+        location: {
+          host: `${host}:4943`,
+          hostname: `${host}`,
+          protocol: 'http:',
+          port: '4943',
+        },
+      };
       const agent = HttpAgent.createSync({ fetch: jest.fn() });
       expect(agent.host.toString()).toBe(`http://${host}:4943/`);
     }
