@@ -5,7 +5,7 @@
 - chore: strengthen ESLint rules with cherry-picked `@dfinity/eslint-config-oisy-wallet` rules
 - chore: migrate e2e tests from `dfx` to PocketIC (`@dfinity/pic`)
 - refactor(agent): use `globalThis.fetch` instead of custom environment detection
-- feat(agent): add `replicateQueries` option to ActorConfig
+- feat(agent): add `upgradeQueries` option to `ActorConfig`
 
 ## [5.0.0] - 2025-12-18
 

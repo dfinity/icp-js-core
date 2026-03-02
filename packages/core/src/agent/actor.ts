@@ -93,11 +93,11 @@ export interface ActorConfig extends Pick<CallConfig, 'agent' | 'effectiveCanist
   pollingOptions?: PollingOptions;
 
   /**
-   * When enabled, query and composite_query methods are sent as replicated
-   * update calls (going through consensus) instead of non-replicated queries.
+   * When enabled, query and composite_query methods are sent as update
+   * calls (going through consensus) instead of non-replicated queries.
    * @default false
    */
-  replicateQueries?: boolean;
+  upgradeQueries?: boolean;
 }
 
 // TODO: move this to proper typing when Candid support TypeScript.
@@ -384,8 +384,8 @@ function _createActorMethod(
   let caller: (options: CallConfig, ...args: unknown[]) => Promise<unknown>;
   const isQueryAnnotated =
     func.annotations.includes('query') || func.annotations.includes('composite_query');
-  const replicateQueries = actor[metadataSymbol].config.replicateQueries;
-  if (isQueryAnnotated && !replicateQueries) {
+  const upgradeQueries = actor[metadataSymbol].config.upgradeQueries;
+  if (isQueryAnnotated && !upgradeQueries) {
     caller = async (options, ...args) => {
       // First, if there's a config transformation, call it.
       options = {
