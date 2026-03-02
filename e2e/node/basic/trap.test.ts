@@ -1,14 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import {
-  ActorMethod,
-  Actor,
-  HttpAgent,
-  AgentError,
-  CertifiedRejectErrorCode,
-} from '@icp-sdk/core/agent';
+import type { ActorMethod } from '@icp-sdk/core/agent';
+import { Actor, HttpAgent, AgentError, CertifiedRejectErrorCode } from '@icp-sdk/core/agent';
 import util from 'util';
 import exec from 'child_process';
-import { IDL } from '@icp-sdk/core/candid';
+import type { IDL } from '@icp-sdk/core/candid';
 const execAsync = util.promisify(exec.exec);
 
 let stdout;

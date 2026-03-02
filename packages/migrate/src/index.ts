@@ -14,10 +14,10 @@ const CLI_TOOL_NAME = '@icp-sdk/core-migrate';
 // injected by esbuild during build time
 declare const CLI_TOOL_VERSION: string;
 
-type CliOptions = {
+interface CliOptions {
   filesPatterns: string;
   packageManager?: PackageManager;
-};
+}
 
 const program = new Command();
 

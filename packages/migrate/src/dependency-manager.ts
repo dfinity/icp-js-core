@@ -12,7 +12,9 @@ export class DependencyManager {
   constructor(private projectInfo: ProjectInfo) {}
 
   removeDependencies(dependencies: string[]): void {
-    if (dependencies.length === 0) return;
+    if (dependencies.length === 0) {
+      return;
+    }
 
     const command = this.buildRemoveCommand(dependencies);
     console.log(`Removing dependencies: ${dependencies.join(', ')}`);

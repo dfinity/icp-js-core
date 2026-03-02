@@ -1,6 +1,6 @@
 import { Principal } from '#principal';
 import * as CanisterStatus from './canisterStatus/index.ts';
-import { IDL } from '#candid';
+import type { IDL } from '#candid';
 import { HttpAgent } from './agent/http/index.ts';
 import { Actor, type ActorSubclass } from './actor.ts';
 

@@ -16,9 +16,9 @@ export const randomNumber = (): number => {
     return array[0];
   }
 
-  type nodeCrypto = {
+  interface nodeCrypto {
     randomInt: (min: number, max: number) => number;
-  };
+  }
 
   // determine whether node crypto is available
   if (typeof crypto !== 'undefined' && (crypto as unknown as nodeCrypto).randomInt) {

@@ -1,4 +1,5 @@
-import { request, Path, fetchNodeKeys } from './index.ts';
+import type { Path } from './index.ts';
+import { request, fetchNodeKeys } from './index.ts';
 import { Principal } from '#principal';
 import { HttpAgent } from '../agent/index.ts';
 import * as Cert from '../certificate.ts';

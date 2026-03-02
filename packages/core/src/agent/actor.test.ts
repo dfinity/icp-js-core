@@ -1,13 +1,15 @@
 import { IDL } from '#candid';
 import { Principal } from '#principal';
-import { HttpAgent, Nonce, SubmitResponse } from './agent/index.ts';
+import type { Nonce, SubmitResponse } from './agent/index.ts';
+import { HttpAgent } from './agent/index.ts';
 import { Expiry } from './agent/http/transforms.ts';
-import { CallRequest, SubmitRequestType, UnSigned } from './agent/http/types.ts';
+import type { CallRequest, UnSigned } from './agent/http/types.ts';
+import { SubmitRequestType } from './agent/http/types.ts';
 import * as cbor from './cbor.ts';
 import { requestIdOf } from './request_id.ts';
 import * as pollingImport from './polling/index.ts';
 import * as certificateImport from './certificate.ts';
-import { ActorConfig } from './actor.ts';
+import type { ActorConfig } from './actor.ts';
 import {
   CertifiedRejectErrorCode,
   RejectError,
@@ -531,7 +533,6 @@ describe('makeActor', () => {
     const decodedReturnValue = 'Hello, World!';
     const expectedReplyArg = IDL.encode([IDL.Text], [decodedReturnValue]);
     const certificateCreateMock = jest.fn(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       async (_createOptions: certificateImport.CreateCertificateOptions) => {
         return {
           // Minimal interface used by the actor
@@ -612,7 +613,6 @@ describe('makeActor', () => {
     const decodedReturnValue = 'Hello, World!';
     const expectedReplyArg = IDL.encode([IDL.Text], [decodedReturnValue]);
     const certificateCreateMock = jest.fn(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       async (_createOptions: certificateImport.CreateCertificateOptions) => {
         return {
           // Minimal interface used by the actor
@@ -689,7 +689,6 @@ describe('makeActor', () => {
     const decodedReturnValue = 'Hello, World!';
     const expectedReplyArg = IDL.encode([IDL.Text], [decodedReturnValue]);
     const certificateCreateMock = jest.fn(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       async (_createOptions: certificateImport.CreateCertificateOptions) => {
         return {
           // Minimal interface used by the actor

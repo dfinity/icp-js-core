@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import * as IDL from './idl.ts';
 import { Principal } from '#principal';
 import * as UI from './candid-core.ts';
@@ -121,16 +121,14 @@ class Parse extends IDL.Visitor<string, any> {
   public visitFixedInt(t: IDL.FixedIntClass, v: string): number | bigint {
     if (t._bits <= 32) {
       return parseInt(v, 10);
-    } else {
-      return BigInt(v);
     }
+    return BigInt(v);
   }
   public visitFixedNat(t: IDL.FixedNatClass, v: string): number | bigint {
     if (t._bits <= 32) {
       return parseInt(v, 10);
-    } else {
-      return BigInt(v);
     }
+    return BigInt(v);
   }
   public visitNumber(_t: IDL.PrimitiveType, v: string): bigint {
     return BigInt(v);
@@ -170,34 +168,30 @@ class Random extends IDL.Visitor<string, any> {
     const x = this.generateNumber(true);
     if (t._bits <= 32) {
       return x;
-    } else {
-      return BigInt(v);
     }
+    return BigInt(v);
   }
   public visitFixedNat(t: IDL.FixedNatClass, v: string): number | bigint {
     const x = this.generateNumber(false);
     if (t._bits <= 32) {
       return x;
-    } else {
-      return BigInt(v);
     }
+    return BigInt(v);
   }
   private generateNumber(signed: boolean): number {
     const num = Math.floor(Math.random() * 100);
     if (signed && Math.random() < 0.5) {
       return -num;
-    } else {
-      return num;
     }
+    return num;
   }
 }
 
 function parsePrimitive(t: IDL.Type, config: UI.ParseConfig, d: string) {
   if (config.random && d === '') {
     return t.accept(new Random(), d);
-  } else {
-    return t.accept(new Parse(), d);
   }
+  return t.accept(new Parse(), d);
 }
 
 /**
@@ -238,9 +232,7 @@ class RenderValue extends IDL.Visitor<ValueConfig, void> {
     renderValue(ty, d.input, d.value);
   }
   public visitOpt<T>(_t: IDL.OptClass<T>, ty: IDL.Type<T>, d: ValueConfig): void {
-    if (d.value.length === 0) {
-      return;
-    } else {
+    if (d.value.length !== 0) {
       const form = d.input.ui.form!;
       const open = form.ui.open as HTMLInputElement;
       open.checked = true;

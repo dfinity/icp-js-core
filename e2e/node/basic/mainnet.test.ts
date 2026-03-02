@@ -1,8 +1,8 @@
+import type { Identity } from '@icp-sdk/core/agent';
 import {
   Actor,
   AnonymousIdentity,
   HttpAgent,
-  Identity,
   CanisterStatus,
   polling,
   requestIdOf,
@@ -67,7 +67,7 @@ describe('controllers', () => {
     const status = await CanisterStatus.request({
       // Whoami canister
       canisterId: Principal.from('ivcos-eqaaa-aaaab-qablq-cai'),
-      agent: agent,
+      agent,
       paths: ['controllers'],
     });
     expect((status.get('controllers') as Principal[]).map(p => p.toText())).toMatchInlineSnapshot(`
@@ -85,7 +85,7 @@ describe('controllers', () => {
     const status = await CanisterStatus.request({
       // NNS Governance Canister
       canisterId: Principal.from('rrkah-fqaaa-aaaaa-aaaaq-cai'),
-      agent: agent,
+      agent,
       paths: ['controllers'],
     });
     // Should be root canister
@@ -100,7 +100,7 @@ describe('controllers', () => {
     const status = await CanisterStatus.request({
       // nomeata's capture-the-ic-token canister
       canisterId: Principal.from('fj6bh-taaaa-aaaab-qaacq-cai'),
-      agent: agent,
+      agent,
       paths: ['controllers'],
     });
     expect((status.get('controllers') as Principal[]).map(p => p.toText())).toMatchInlineSnapshot(`

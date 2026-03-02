@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- chore: strengthen ESLint rules with cherry-picked `@dfinity/eslint-config-oisy-wallet` rules
+
 ## [5.0.0] - 2025-12-18
 
 See the [v5 upgrading guide](https://js.icp.build/core/latest/upgrading/v5/) for more information.

@@ -1,14 +1,10 @@
-import { Principal } from '#principal';
-import {
-  type HttpDetailsResponse,
-  type NodeSignature,
-  type ReplicaRejectCode,
-} from './agent/api.ts';
-import { type RequestId } from './request_id.ts';
-import { type RequestStatusResponseStatus } from './agent/http/index.ts';
-import { type Expiry } from './agent/http/transforms.ts';
-import { type HttpHeaderField } from './agent/http/types.ts';
-import { LookupPathStatus, LookupSubtreeStatus } from './certificate.ts';
+import type { Principal } from '#principal';
+import type { HttpDetailsResponse, NodeSignature, ReplicaRejectCode } from './agent/api.ts';
+import type { RequestId } from './request_id.ts';
+import type { RequestStatusResponseStatus } from './agent/http/index.ts';
+import type { Expiry } from './agent/http/transforms.ts';
+import type { HttpHeaderField } from './agent/http/types.ts';
+import type { LookupPathStatus, LookupSubtreeStatus } from './certificate.ts';
 import { bytesToHex } from '@noble/hashes/utils';
 
 export enum ErrorKindEnum {
@@ -22,18 +18,18 @@ export enum ErrorKindEnum {
   Unknown = 'Unknown',
 }
 
-export type RequestContext = {
+export interface RequestContext {
   requestId?: RequestId;
   senderPubKey: Uint8Array;
   senderSignature: Uint8Array;
   ingressExpiry: Expiry;
-};
+}
 
-export type CallContext = {
+export interface CallContext {
   canisterId: Principal;
   methodName: string;
   httpDetails: HttpDetailsResponse;
-};
+}
 
 abstract class ErrorCode {
   public requestContext?: RequestContext;

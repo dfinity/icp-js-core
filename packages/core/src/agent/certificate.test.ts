@@ -557,9 +557,13 @@ const SAMPLE_CERT_BYTES: Uint8Array = hexToBytes(
 
 const parseTimeFromCert = (cert: Uint8Array): Date => {
   const certObj = cbor.decode<Cert.Cert>(cert);
-  if (!certObj.tree) throw new Error('Invalid certificate');
+  if (!certObj.tree) {
+    throw new Error('Invalid certificate');
+  }
   const lookup = Cert.lookupResultToBuffer(Cert.lookup_path(['time'], certObj.tree));
-  if (!lookup) throw new Error('Invalid certificate');
+  if (!lookup) {
+    throw new Error('Invalid certificate');
+  }
 
   return decodeTime(lookup);
 };

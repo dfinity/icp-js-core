@@ -7,7 +7,8 @@ import {
   V3_UPGRADING_GUIDE_URL,
   V4_UPGRADING_GUIDE_URL,
 } from './constants.ts';
-import { type MigrationResult, PackageManager } from './types.ts';
+import type { PackageManager } from './types.ts';
+import type { MigrationResult } from './types.ts';
 import chalk from 'chalk';
 import {
   getDependenciesToRemove,

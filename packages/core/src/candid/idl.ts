@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Principal as PrincipalId } from '#principal';
-import { type JsonValue } from './types.ts';
+import type { JsonValue } from './types.ts';
 import { concat, PipeArrayBuffer as Pipe, uint8ToDataView } from './utils/buffer.ts';
 import { idlLabelToId } from './utils/hash.ts';
 import {
@@ -75,10 +75,10 @@ class TypeTable {
     const idx = this._idx.get(obj.name);
     const knotIdx = this._idx.get(knot);
     if (idx === undefined) {
-      throw new Error('Missing type index for ' + obj);
+      throw new Error(`Missing type index for ${obj}`);
     }
     if (knotIdx === undefined) {
-      throw new Error('Missing type index for ' + knot);
+      throw new Error(`Missing type index for ${knot}`);
     }
     // Point the recursive placeholder (obj) to the concrete type bytes
     this._typs[idx] = this._typs[knotIdx];
@@ -122,7 +122,7 @@ class TypeTable {
 
   public indexOf(typeName: string): Uint8Array {
     if (!this._idx.has(typeName)) {
-      throw new Error('Missing type index for ' + typeName);
+      throw new Error(`Missing type index for ${typeName}`);
     }
     return slebEncode(this._idx.get(typeName) || 0);
   }
@@ -286,7 +286,6 @@ export abstract class PrimitiveType<T = any> extends Type<T> {
 
   public _buildTypeTableImpl(_typeTable: TypeTable): void {
     // No type table encoding for Primitive types.
-    return;
   }
 }
 
@@ -444,7 +443,9 @@ export class BoolClass extends PrimitiveType<boolean> {
   }
 
   public covariant(x: any): x is boolean {
-    if (typeof x === 'boolean') return true;
+    if (typeof x === 'boolean') {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -490,7 +491,9 @@ export class NullClass extends PrimitiveType<null> {
   }
 
   public covariant(x: any): x is null {
-    if (x === null) return true;
+    if (x === null) {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -569,7 +572,9 @@ export class TextClass extends PrimitiveType<string> {
   }
 
   public covariant(x: any): x is string {
-    if (typeof x === 'string') return true;
+    if (typeof x === 'string') {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -596,7 +601,7 @@ export class TextClass extends PrimitiveType<string> {
   }
 
   public valueToString(x: string) {
-    return '"' + x + '"';
+    return `"${x}"`;
   }
 }
 
@@ -619,7 +624,9 @@ export class IntClass extends PrimitiveType<bigint> {
   public covariant(x: any): x is bigint {
     // We allow encoding of JavaScript plain numbers.
     // But we will always decode to bigint.
-    if (typeof x === 'bigint' || Number.isInteger(x)) return true;
+    if (typeof x === 'bigint' || Number.isInteger(x)) {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -664,7 +671,9 @@ export class NatClass extends PrimitiveType<bigint> {
   public covariant(x: any): x is bigint {
     // We allow encoding of JavaScript plain numbers.
     // But we will always decode to bigint.
-    if ((typeof x === 'bigint' && x >= BigInt(0)) || (Number.isInteger(x) && x >= 0)) return true;
+    if ((typeof x === 'bigint' && x >= BigInt(0)) || (Number.isInteger(x) && x >= 0)) {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -713,7 +722,9 @@ export class FloatClass extends PrimitiveType<number> {
   }
 
   public covariant(x: any): x is number {
-    if (typeof x === 'number' || x instanceof Number) return true;
+    if (typeof x === 'number' || x instanceof Number) {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -739,13 +750,12 @@ export class FloatClass extends PrimitiveType<number> {
     const view = uint8ToDataView(bytes);
     if (this._bits === 32) {
       return view.getFloat32(0, true);
-    } else {
-      return view.getFloat64(0, true);
     }
+    return view.getFloat64(0, true);
   }
 
   get name() {
-    return 'float' + this._bits;
+    return `float${this._bits}`;
   }
 
   public valueToString(x: number) {
@@ -777,10 +787,14 @@ export class FixedIntClass extends PrimitiveType<bigint | number> {
     const min = iexp2(this._bits - 1) * BigInt(-1);
     const max = iexp2(this._bits - 1) - BigInt(1);
     if (typeof x === 'bigint') {
-      if (x >= min && x <= max) return true;
+      if (x >= min && x <= max) {
+        return true;
+      }
     } else if (Number.isInteger(x)) {
       const v = BigInt(x);
-      if (v >= min && v <= max) return true;
+      if (v >= min && v <= max) {
+        return true;
+      }
     }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
@@ -799,9 +813,8 @@ export class FixedIntClass extends PrimitiveType<bigint | number> {
     const num = readIntLE(b, this._bits / 8);
     if (this._bits <= 32) {
       return Number(num);
-    } else {
-      return num;
     }
+    return num;
   }
 
   get name() {
@@ -836,10 +849,14 @@ export class FixedNatClass extends PrimitiveType<bigint | number> {
   public covariant(x: any): x is bigint {
     const max = iexp2(this._bits);
     if (typeof x === 'bigint' && x >= BigInt(0)) {
-      if (x < max) return true;
+      if (x < max) {
+        return true;
+      }
     } else if (Number.isInteger(x) && x >= 0) {
       const v = BigInt(x);
-      if (v < max) return true;
+      if (v < max) {
+        return true;
+      }
     }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
@@ -858,9 +875,8 @@ export class FixedNatClass extends PrimitiveType<bigint | number> {
     const num = readUIntLE(b, this._bits / 8);
     if (this._bits <= 32) {
       return Number(num);
-    } else {
-      return num;
     }
+    return num;
   }
 
   get name() {
@@ -929,8 +945,9 @@ export class VecClass<T> extends ConstructType<T[]> {
             );
           }
         }))
-    )
+    ) {
       return true;
+    }
 
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
@@ -953,7 +970,8 @@ export class VecClass<T> extends ConstructType<T[]> {
           }
         }
         return concat(len, new Uint8Array(buffer.buffer));
-      } else if (x instanceof Int32Array || x instanceof Uint32Array) {
+      }
+      if (x instanceof Int32Array || x instanceof Uint32Array) {
         const buffer = new DataView(new ArrayBuffer(x.length * 4));
         for (let i = 0; i < x.length; i++) {
           if (x instanceof Int32Array) {
@@ -963,7 +981,8 @@ export class VecClass<T> extends ConstructType<T[]> {
           }
         }
         return concat(len, new Uint8Array(buffer.buffer));
-      } else if (x instanceof BigInt64Array || x instanceof BigUint64Array) {
+      }
+      if (x instanceof BigInt64Array || x instanceof BigUint64Array) {
         const buffer = new DataView(new ArrayBuffer(x.length * 8));
         for (let i = 0; i < x.length; i++) {
           if (x instanceof BigInt64Array) {
@@ -973,10 +992,9 @@ export class VecClass<T> extends ConstructType<T[]> {
           }
         }
         return concat(len, new Uint8Array(buffer.buffer));
-      } else {
-        // For Uint8Array, Int8Array, etc. that don't have endianness concerns
-        return concat(len, new Uint8Array(x.buffer, x.byteOffset, x.byteLength));
       }
+      // For Uint8Array, Int8Array, etc. that don't have endianness concerns
+      return concat(len, new Uint8Array(x.buffer, x.byteOffset, x.byteLength));
     }
     const buf = new Pipe(new Uint8Array(len.byteLength + x.length), 0);
     buf.write(len);
@@ -1078,7 +1096,7 @@ export class VecClass<T> extends ConstructType<T[]> {
 
   public valueToString(x: T[]) {
     const elements = x.map(e => this._type.valueToString(e));
-    return 'vec {' + elements.join('; ') + '}';
+    return `vec {${elements.join('; ')}}`;
   }
 }
 
@@ -1105,8 +1123,9 @@ export class OptClass<T> extends ConstructType<[T] | []> {
 
   public covariant(x: any): x is [T] | [] {
     try {
-      if (Array.isArray(x) && (x.length === 0 || (x.length === 1 && this._type.covariant(x[0]))))
+      if (Array.isArray(x) && (x.length === 0 || (x.length === 1 && this._type.covariant(x[0])))) {
         return true;
+      }
     } catch (e: any) {
       throw new Error(
         `Invalid ${this.display()} argument: ${toReadableString(x)} \n\n-> ${e.message}`,
@@ -1119,9 +1138,8 @@ export class OptClass<T> extends ConstructType<[T] | []> {
   public encodeValue(x: [T] | []): Uint8Array {
     if (x.length === 0) {
       return new Uint8Array([0]);
-    } else {
-      return concat(new Uint8Array([1]), this._type.encodeValue(x[0]));
     }
+    return concat(new Uint8Array([1]), this._type.encodeValue(x[0]));
   }
 
   public _buildTypeTableImpl(typeTable: TypeTable) {
@@ -1147,7 +1165,9 @@ export class OptClass<T> extends ConstructType<[T] | []> {
       const ty = t.getType();
       if (typeof ty === 'undefined') {
         throw new Error('type mismatch with uninitialized type');
-      } else wireType = ty;
+      } else {
+        wireType = ty;
+      }
     }
 
     if (wireType instanceof OptClass) {
@@ -1212,9 +1232,8 @@ export class OptClass<T> extends ConstructType<[T] | []> {
   public valueToString(x: [T] | []) {
     if (x.length === 0) {
       return 'null';
-    } else {
-      return `opt ${this._type.valueToString(x[0])}`;
     }
+    return `opt ${this._type.valueToString(x[0])}`;
   }
 }
 
@@ -1273,8 +1292,9 @@ export class RecordClass extends ConstructType<Record<string, any>> {
           });
         }
       })
-    )
+    ) {
       return true;
+    }
 
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
@@ -1329,7 +1349,7 @@ export class RecordClass extends ConstructType<Record<string, any>> {
           x[expectKey] = [];
           expectedRecordIdx++;
         } else {
-          throw new Error('Cannot find required field ' + expectKey);
+          throw new Error(`Cannot find required field ${expectKey}`);
         }
       } else {
         // The field on the wire does not exist in the output type, so we can skip it
@@ -1344,7 +1364,7 @@ export class RecordClass extends ConstructType<Record<string, any>> {
         // TODO this assumes null value in opt is represented as []
         x[expectKey] = [];
       } else {
-        throw new Error('Cannot find required field ' + expectKey);
+        throw new Error(`Cannot find required field ${expectKey}`);
       }
     }
     return x;
@@ -1359,18 +1379,18 @@ export class RecordClass extends ConstructType<Record<string, any>> {
   }
 
   get name() {
-    const fields = this._fields.map(([key, value]) => key + ':' + value.name);
+    const fields = this._fields.map(([key, value]) => `${key}:${value.name}`);
     return `record {${fields.join('; ')}}`;
   }
 
   public display() {
-    const fields = this._fields.map(([key, value]) => key + ':' + value.display());
+    const fields = this._fields.map(([key, value]) => `${key}:${value.display()}`);
     return `record {${fields.join('; ')}}`;
   }
 
   public valueToString(x: Record<string, any>) {
     const values = this._fields.map(([key]) => x[key]);
-    const fields = zipWith(this._fields, values, ([k, c], d) => k + '=' + c.valueToString(d));
+    const fields = zipWith(this._fields, values, ([k, c], d) => `${k}=${c.valueToString(d)}`);
     return `record {${fields.join('; ')}}`;
   }
 }
@@ -1392,7 +1412,7 @@ export class TupleClass<T extends any[]> extends RecordClass {
 
   constructor(_components: Type[]) {
     const x: Record<string, any> = {};
-    _components.forEach((e, i) => (x['_' + i + '_'] = e));
+    _components.forEach((e, i) => (x[`_${i}_`] = e));
     super(x);
     this._components = _components;
   }
@@ -1416,8 +1436,9 @@ export class TupleClass<T extends any[]> extends RecordClass {
           });
         }
       })
-    )
+    ) {
       return true;
+    }
 
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
@@ -1496,8 +1517,9 @@ export class VariantClass extends ConstructType<Record<string, any>> {
           });
         }
       })
-    )
+    ) {
       return true;
+    }
 
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
@@ -1513,7 +1535,7 @@ export class VariantClass extends ConstructType<Record<string, any>> {
         return concat(idx, buf);
       }
     }
-    throw Error('Variant has no data: ' + x);
+    throw Error(`Variant has no data: ${x}`);
   }
 
   public _buildTypeTableImpl(typeTable: TypeTable) {
@@ -1535,7 +1557,7 @@ export class VariantClass extends ConstructType<Record<string, any>> {
     }
     const idx = Number(lebDecode(b));
     if (idx >= variant._fields.length) {
-      throw Error('Invalid variant index: ' + idx);
+      throw Error(`Invalid variant index: ${idx}`);
     }
     const [wireHash, wireType] = variant._fields[idx];
     for (const [key, expectType] of this._fields) {
@@ -1544,11 +1566,11 @@ export class VariantClass extends ConstructType<Record<string, any>> {
         return { [key]: value };
       }
     }
-    throw new Error('Cannot find field hash ' + wireHash);
+    throw new Error(`Cannot find field hash ${wireHash}`);
   }
 
   get name() {
-    const fields = this._fields.map(([key, type]) => key + ':' + type.name);
+    const fields = this._fields.map(([key, type]) => `${key}:${type.name}`);
     return `variant {${fields.join('; ')}}`;
   }
 
@@ -1566,12 +1588,11 @@ export class VariantClass extends ConstructType<Record<string, any>> {
         const value = type.valueToString(x[name]);
         if (value === 'null') {
           return `variant {${name}}`;
-        } else {
-          return `variant {${name}=${value}}`;
         }
+        return `variant {${name}=${value}}`;
       }
     }
-    throw new Error('Variant has no data: ' + x);
+    throw new Error(`Variant has no data: ${x}`);
   }
 
   get alternativesAsObject(): Record<number, Type> {
@@ -1616,7 +1637,9 @@ export class RecClass<T = any> extends ConstructType<T> {
   }
 
   public covariant(x: any): x is T {
-    if (this._type ? this._type.covariant(x) : false) return true;
+    if (this._type ? this._type.covariant(x) : false) {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -1689,7 +1712,9 @@ export class PrincipalClass extends PrimitiveType<PrincipalId> {
   }
 
   public covariant(x: any): x is PrincipalId {
-    if (x && x._isPrincipal) return true;
+    if (x && x._isPrincipal) {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -1747,7 +1772,7 @@ export class FuncClass<
     if (types.length !== v.length) {
       throw new Error('arity mismatch');
     }
-    return '(' + types.map((t, i) => t.valueToString(v[i])).join(', ') + ')';
+    return `(${types.map((t, i) => t.valueToString(v[i])).join(', ')})`;
   }
 
   constructor(
@@ -1762,8 +1787,15 @@ export class FuncClass<
     return v.visitFunc(this, d);
   }
   public covariant(x: any): x is [PrincipalId, string] {
-    if (Array.isArray(x) && x.length === 2 && x[0] && x[0]._isPrincipal && typeof x[1] === 'string')
+    if (
+      Array.isArray(x) &&
+      x.length === 2 &&
+      x[0] &&
+      x[0]._isPrincipal &&
+      typeof x[1] === 'string'
+    ) {
       return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -1816,7 +1848,7 @@ export class FuncClass<
   get name() {
     const args = this.argTypes.map(arg => arg.name).join(', ');
     const rets = this.retTypes.map(arg => arg.name).join(', ');
-    const annon = ' ' + this.annotations.join(' ');
+    const annon = ` ${this.annotations.join(' ')}`;
     return `(${args}) -> (${rets})${annon}`;
   }
 
@@ -1827,20 +1859,21 @@ export class FuncClass<
   public display(): string {
     const args = this.argTypes.map(arg => arg.display()).join(', ');
     const rets = this.retTypes.map(arg => arg.display()).join(', ');
-    const annon = ' ' + this.annotations.join(' ');
+    const annon = ` ${this.annotations.join(' ')}`;
     return `(${args}) → (${rets})${annon}`;
   }
 
   private encodeAnnotation(ann: string): Uint8Array {
     if (ann === 'query') {
       return new Uint8Array([1]);
-    } else if (ann === 'oneway') {
-      return new Uint8Array([2]);
-    } else if (ann === 'composite_query') {
-      return new Uint8Array([3]);
-    } else {
-      throw new Error('Illegal function annotation');
     }
+    if (ann === 'oneway') {
+      return new Uint8Array([2]);
+    }
+    if (ann === 'composite_query') {
+      return new Uint8Array([3]);
+    }
+    throw new Error('Illegal function annotation');
   }
 }
 
@@ -1878,7 +1911,9 @@ export class ServiceClass<
     return v.visitService(this, d);
   }
   public covariant(x: any): x is PrincipalId {
-    if (x && x._isPrincipal) return true;
+    if (x && x._isPrincipal) {
+      return true;
+    }
     throw new Error(`Invalid ${this.display()} argument: ${toReadableString(x)}`);
   }
 
@@ -1911,7 +1946,7 @@ export class ServiceClass<
     return decodePrincipalId(b);
   }
   get name() {
-    const fields = this._fields.map(([key, value]) => key + ':' + value.name);
+    const fields = this._fields.map(([key, value]) => `${key}:${value.name}`);
     return `service {${fields.join('; ')}}`;
   }
 
@@ -1939,7 +1974,7 @@ function toReadableString(x: unknown): string {
   );
 
   return str && str.length > toReadableString_max
-    ? str.substring(0, toReadableString_max - 3) + '...'
+    ? `${str.substring(0, toReadableString_max - 3)}...`
     : str;
 }
 
@@ -1965,7 +2000,7 @@ export function encode(argTypes: Array<Type<any>>, args: any[]): Uint8Array {
       try {
         t.covariant(x);
       } catch (e: any) {
-        const err = new Error(e.message + '\n\n');
+        const err = new Error(`${e.message}\n\n`);
         throw err;
       }
 
@@ -1991,7 +2026,7 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
   const magicBuffer = safeRead(b, magicNumber.length);
   const magic = new TextDecoder().decode(magicBuffer);
   if (magic !== magicNumber) {
-    throw new Error('Wrong magic number: ' + JSON.stringify(magic));
+    throw new Error(`Wrong magic number: ${JSON.stringify(magic)}`);
   }
 
   function readTypeTable(pipe: Pipe): [Array<[IDLTypeIds, any]>, number[]] {
@@ -2075,7 +2110,7 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
           break;
         }
         default:
-          throw new Error('Illegal op_code: ' + ty);
+          throw new Error(`Illegal op_code: ${ty}`);
       }
     }
 
@@ -2135,7 +2170,7 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
         case -24:
           return Principal;
         default:
-          throw new Error('Illegal op_code: ' + t);
+          throw new Error(`Illegal op_code: ${t}`);
       }
     }
     if (t >= rawTable.length) {
@@ -2163,9 +2198,8 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
         const tuple = record.tryAsTuple();
         if (Array.isArray(tuple)) {
           return Tuple(...tuple);
-        } else {
-          return record;
         }
+        return record;
       }
       case IDLTypeIds.Variant: {
         const fields: Record<string, Type> = {};
@@ -2201,7 +2235,7 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
         return Service(rec);
       }
       default:
-        throw new Error('Illegal op_code: ' + entry[0]);
+        throw new Error(`Illegal op_code: ${entry[0]}`);
     }
   }
 
@@ -2456,7 +2490,9 @@ function eqFunctionAnnotations(t1: FuncClass, t2: FuncClass): boolean {
     return false;
   }
   for (const a of t1Annotations) {
-    if (!t2Annotations.has(a)) return false;
+    if (!t2Annotations.has(a)) {
+      return false;
+    }
   }
   return true;
 }
@@ -2482,46 +2518,73 @@ export function subtype(t1: Type, t2: Type): boolean {
 }
 
 function subtype_(relations: Relations, t1: Type, t2: Type): boolean {
-  if (t1.name === t2.name) return true;
+  if (t1.name === t2.name) {
+    return true;
+  }
   const known = relations.known(t1, t2);
-  if (known !== undefined) return known;
+  if (known !== undefined) {
+    return known;
+  }
   relations.add(t1, t2);
 
-  if (t2 instanceof ReservedClass) return true;
-  if (t1 instanceof EmptyClass) return true;
-  if (t1 instanceof NatClass && t2 instanceof IntClass) return true;
-  if (t1 instanceof VecClass && t2 instanceof VecClass)
+  if (t2 instanceof ReservedClass) {
+    return true;
+  }
+  if (t1 instanceof EmptyClass) {
+    return true;
+  }
+  if (t1 instanceof NatClass && t2 instanceof IntClass) {
+    return true;
+  }
+  if (t1 instanceof VecClass && t2 instanceof VecClass) {
     return subtype_(relations, t1._type, t2._type);
-  if (t2 instanceof OptClass) return true;
+  }
+  if (t2 instanceof OptClass) {
+    return true;
+  }
   if (t1 instanceof RecordClass && t2 instanceof RecordClass) {
     const t1Object = t1.fieldsAsObject;
     for (const [label, ty2] of t2._fields) {
       const ty1 = t1Object[idlLabelToId(label)];
       if (!ty1) {
-        if (!canBeOmmitted(ty2)) return false;
+        if (!canBeOmmitted(ty2)) {
+          return false;
+        }
       } else {
-        if (!subtype_(relations, ty1, ty2)) return false;
+        if (!subtype_(relations, ty1, ty2)) {
+          return false;
+        }
       }
     }
     return true;
   }
 
   if (t1 instanceof FuncClass && t2 instanceof FuncClass) {
-    if (!eqFunctionAnnotations(t1, t2)) return false;
+    if (!eqFunctionAnnotations(t1, t2)) {
+      return false;
+    }
     for (let i = 0; i < t1.argTypes.length; i++) {
       const argTy1 = t1.argTypes[i];
       if (i < t2.argTypes.length) {
-        if (!subtype_(relations, t2.argTypes[i], argTy1)) return false;
+        if (!subtype_(relations, t2.argTypes[i], argTy1)) {
+          return false;
+        }
       } else {
-        if (!canBeOmmitted(argTy1)) return false;
+        if (!canBeOmmitted(argTy1)) {
+          return false;
+        }
       }
     }
     for (let i = 0; i < t2.retTypes.length; i++) {
       const retTy2 = t2.retTypes[i];
       if (i < t1.retTypes.length) {
-        if (!subtype_(relations, t1.retTypes[i], retTy2)) return false;
+        if (!subtype_(relations, t1.retTypes[i], retTy2)) {
+          return false;
+        }
       } else {
-        if (!canBeOmmitted(retTy2)) return false;
+        if (!canBeOmmitted(retTy2)) {
+          return false;
+        }
       }
     }
     return true;
@@ -2531,8 +2594,12 @@ function subtype_(relations: Relations, t1: Type, t2: Type): boolean {
     const t2Object = t2.alternativesAsObject;
     for (const [label, ty1] of t1._fields) {
       const ty2 = t2Object[idlLabelToId(label)];
-      if (!ty2) return false;
-      if (!subtype_(relations, ty1, ty2)) return false;
+      if (!ty2) {
+        return false;
+      }
+      if (!subtype_(relations, ty1, ty2)) {
+        return false;
+      }
     }
     return true;
   }
@@ -2541,8 +2608,12 @@ function subtype_(relations: Relations, t1: Type, t2: Type): boolean {
     const t1Object = t1.fieldsAsObject();
     for (const [name, ty2] of t2._fields) {
       const ty1 = t1Object[name];
-      if (!ty1) return false;
-      if (!subtype_(relations, ty1, ty2)) return false;
+      if (!ty1) {
+        return false;
+      }
+      if (!subtype_(relations, ty1, ty2)) {
+        return false;
+      }
     }
     return true;
   }

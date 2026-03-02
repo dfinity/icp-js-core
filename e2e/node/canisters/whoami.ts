@@ -1,6 +1,6 @@
 import { Actor } from '@icp-sdk/core/agent';
-import { IDL } from '@icp-sdk/core/candid';
-import { Principal } from '@icp-sdk/core/principal';
+import type { IDL } from '@icp-sdk/core/candid';
+import type { Principal } from '@icp-sdk/core/principal';
 import agent from '../utils/agent.ts';
 import { getCanisterId } from '../utils/canisterid.ts';
 

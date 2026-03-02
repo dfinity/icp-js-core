@@ -70,13 +70,13 @@ export interface CanisterEnv {
  * Options for the {@link getCanisterEnv} function
  * @experimental
  */
-export type GetCanisterEnvOptions = {
+export interface GetCanisterEnvOptions {
   /**
    * The name of the cookie to get the environment variables from.
    * @default 'ic_env'
    */
   cookieName?: string;
-};
+}
 
 /**
  * Get the environment variables served by the asset canister via the cookie.

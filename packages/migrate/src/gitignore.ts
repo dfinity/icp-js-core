@@ -17,16 +17,17 @@ export function readGitignorePatterns(rootDir: string): string[] {
         if (pattern.startsWith('*')) {
           // Wildcard pattern
           return pattern;
-        } else if (pattern.startsWith('/')) {
+        }
+        if (pattern.startsWith('/')) {
           // Absolute path from root
           return `**/${pattern.slice(1)}/**`;
-        } else if (pattern.endsWith('/')) {
+        }
+        if (pattern.endsWith('/')) {
           // Directory
           return `**/${pattern}**`;
-        } else {
-          // Simple filename/pattern
-          return `**/${pattern}`;
         }
+        // Simple filename/pattern
+        return `**/${pattern}`;
       });
 
     return lines;

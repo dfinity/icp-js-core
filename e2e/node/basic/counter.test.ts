@@ -1,4 +1,5 @@
-import { Actor, HttpAgent, ActorMethod } from '@icp-sdk/core/agent';
+import type { ActorMethod } from '@icp-sdk/core/agent';
+import { Actor, HttpAgent } from '@icp-sdk/core/agent';
 import { counterActor, counter2Actor, counterCanisterId, idl } from '../canisters/counter.ts';
 import { it, expect, describe, vi, beforeAll, beforeEach, afterAll } from 'vitest';
 
@@ -116,7 +117,7 @@ describe.sequential('counter', () => {
 describe('retrytimes', () => {
   it('should retry after a failure', async () => {
     let count = 0;
-    const fetchMock = vi.fn(function (...args) {
+    const fetchMock = vi.fn((...args) => {
       count += 1;
       // let the first request pass, then fail the first 2 retries, then pass the final retry
       if (count >= 2 && count <= 4) {

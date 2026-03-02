@@ -1,4 +1,4 @@
-import { DerEncodedPublicKey, PublicKey } from '#agent';
+import type { DerEncodedPublicKey, PublicKey } from '#agent';
 import { Ed25519KeyIdentity, Ed25519PublicKey } from './ed25519.ts';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 

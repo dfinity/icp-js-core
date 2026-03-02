@@ -25,9 +25,9 @@ function roundToMinute(millis: bigint): bigint {
   return (millis / MINUTES_TO_MILLISECONDS) * MINUTES_TO_MILLISECONDS;
 }
 
-export type JsonnableExpiry = {
+export interface JsonnableExpiry {
   [JSON_KEY_EXPIRY]: string;
-};
+}
 
 export class Expiry {
   public readonly _isExpiry = true;

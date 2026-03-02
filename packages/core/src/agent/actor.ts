@@ -541,29 +541,30 @@ function _createActorMethod(
             certificate,
             result: decodeReturnValue(func.retTypes, reply),
           };
-        } else if (shouldIncludeCertificate) {
+        }
+        if (shouldIncludeCertificate) {
           return {
             certificate,
             result: decodeReturnValue(func.retTypes, reply),
           };
-        } else if (shouldIncludeHttpDetails) {
+        }
+        if (shouldIncludeHttpDetails) {
           return {
             httpDetails,
             result: decodeReturnValue(func.retTypes, reply),
           };
         }
         return decodeReturnValue(func.retTypes, reply);
-      } else {
-        const errorCode = new UnexpectedErrorCode(
-          `Call was returned undefined. We cannot determine if the call was successful or not. Return types: [${func.retTypes.map(t => t.display()).join(',')}].`,
-        );
-        errorCode.callContext = {
-          canisterId: cid,
-          methodName,
-          httpDetails,
-        };
-        throw UnknownError.fromCode(errorCode);
       }
+      const errorCode = new UnexpectedErrorCode(
+        `Call was returned undefined. We cannot determine if the call was successful or not. Return types: [${func.retTypes.map(t => t.display()).join(',')}].`,
+      );
+      errorCode.callContext = {
+        canisterId: cid,
+        methodName,
+        httpDetails,
+      };
+      throw UnknownError.fromCode(errorCode);
     };
   }
 

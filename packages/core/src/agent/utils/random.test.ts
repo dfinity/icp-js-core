@@ -5,8 +5,12 @@ import { randomInt } from 'node:crypto';
 const webcrypto = new Crypto();
 
 function isInteger(num: number) {
-  if (typeof num !== 'number') return false;
-  if (isNaN(num)) return false;
+  if (typeof num !== 'number') {
+    return false;
+  }
+  if (isNaN(num)) {
+    return false;
+  }
   if (num % 1 !== 0) {
     return false;
   }

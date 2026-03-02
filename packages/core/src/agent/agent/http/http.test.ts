@@ -1,19 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpAgent, Nonce } from '../index.ts';
+import type { Nonce } from '../index.ts';
+import { HttpAgent } from '../index.ts';
 import * as cbor from '../../cbor.ts';
 import { Expiry, httpHeadersTransform } from './transforms.ts';
-import {
-  CallRequest,
-  Envelope,
-  HttpAgentRequestTransformFn,
-  makeNonce,
-  SubmitRequestType,
-} from './types.ts';
+import type { CallRequest, Envelope, HttpAgentRequestTransformFn } from './types.ts';
+import { makeNonce, SubmitRequestType } from './types.ts';
 import { Principal } from '#principal';
-import { RequestId, requestIdOf } from '../../request_id.ts';
+import type { RequestId } from '../../request_id.ts';
+import { requestIdOf } from '../../request_id.ts';
 
 import { JSDOM } from 'jsdom';
-import { AnonymousIdentity, SignIdentity, Signature } from '../../index.ts';
+import type { SignIdentity, Signature } from '../../index.ts';
+import { AnonymousIdentity } from '../../index.ts';
 import { Ed25519KeyIdentity } from '#identity';
 import {
   AgentError,
@@ -628,13 +626,12 @@ describe('retry failures', () => {
           status: 200,
           statusText: 'success!',
         });
-      } else {
-        calls += 1;
-        return new Response('Error', {
-          status: 500,
-          statusText: 'Internal Server Error',
-        });
       }
+      calls += 1;
+      return new Response('Error', {
+        status: 500,
+        statusText: 'Internal Server Error',
+      });
     });
 
     const agent = new HttpAgent({ host: HTTP_AGENT_HOST, fetch: mockFetch });
@@ -747,7 +744,7 @@ describe('default host', () => {
     ];
     for (const host of remoteHosts) {
       (global as any).window = {
-        location: { host: host, hostname: host, protocol: 'https:' },
+        location: { host, hostname: host, protocol: 'https:' },
       };
       const agent = HttpAgent.createSync({ fetch: jest.fn() });
       expect(agent.host.toString()).toBe(`https://${host}/`);

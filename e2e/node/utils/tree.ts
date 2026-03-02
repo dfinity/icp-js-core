@@ -1,4 +1,4 @@
-import {
+import type {
   EmptyHashTree,
   ForkHashTree,
   HashTree,
@@ -6,15 +6,13 @@ import {
   LeafHashTree,
   NodeHash,
   NodeLabel,
-  NodeType,
   NodeValue,
   PrunedHashTree,
   RequestId,
-  RequestStatusResponseStatus,
-  Cbor,
 } from '@icp-sdk/core/agent';
+import { NodeType, RequestStatusResponseStatus, Cbor } from '@icp-sdk/core/agent';
 import { lebEncode } from '@icp-sdk/core/candid';
-import { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
+import type { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
 import { hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 
 /**

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /*
  * @jest-environment node
@@ -31,7 +30,7 @@ function test_args(typs: IDL.Type[], vals: any[], hex: string, _str: string) {
 }
 
 function hashedPropertyName(name: string) {
-  return '_' + idlLabelToId(name) + '_';
+  return `_${idlLabelToId(name)}_`;
 }
 
 test('IDL encoding (magic number)', () => {

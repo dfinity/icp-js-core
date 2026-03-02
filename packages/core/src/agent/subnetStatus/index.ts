@@ -10,7 +10,7 @@ import {
   ProtocolError,
   LookupErrorCode,
 } from '../errors.ts';
-import { HttpAgent } from '../agent/http/index.ts';
+import type { HttpAgent } from '../agent/http/index.ts';
 import {
   type Cert,
   type CanisterRanges,
@@ -23,11 +23,11 @@ import {
 import * as cbor from '../cbor.ts';
 import { decodeTime } from '../utils/leb.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
+import type { CustomPath } from '../utils/readState.ts';
 import {
   type BaseStatus,
   type BaseSubnetStatus,
   type SubnetNodeKeys,
-  CustomPath,
   decodeValue,
   isCustomPath,
   lookupNodeKeysFromCertificate,
@@ -53,7 +53,7 @@ export type Path = 'time' | 'canisterRanges' | 'publicKey' | 'nodeKeys' | Custom
 
 export type StatusMap = Map<Path | string, Status>;
 
-export type SubnetStatusOptions = {
+export interface SubnetStatusOptions {
   /**
    * The subnet ID to query. Use {@link IC_ROOT_SUBNET_ID} for the IC mainnet root subnet.
    * You can use {@link HttpAgent.getSubnetIdFromCanister} to get a subnet ID from a canister.
@@ -73,7 +73,7 @@ export type SubnetStatusOptions = {
    * @default false
    */
   disableCertificateTimeVerification?: boolean;
-};
+}
 
 /**
  * Requests information from a subnet's `read_state` endpoint.
@@ -129,12 +129,11 @@ export async function request(options: SubnetStatusOptions): Promise<StatusMap> 
               path: lookupPath,
               data,
             };
-          } else {
-            return {
-              path: lookupPath,
-              data: lookupResultToBuffer(cert.lookup_path(encodedPath)),
-            };
           }
+          return {
+            path: lookupPath,
+            data: lookupResultToBuffer(cert.lookup_path(encodedPath)),
+          };
         };
 
         const { path, data } = lookup(certificate, uniquePaths[index]);
@@ -250,10 +249,9 @@ export function encodePath(path: Path, subnetId: Principal): Uint8Array[] {
           const encoded =
             typeof path['path'] === 'string' ? utf8ToBytes(path['path']) : path['path'];
           return [utf8ToBytes('subnet'), subnetUint8Array, encoded];
-        } else {
-          // For non-simple paths, return the provided custom path
-          return path['path'];
         }
+        // For non-simple paths, return the provided custom path
+        return path['path'];
       }
     }
   }

@@ -10,7 +10,7 @@ import {
   CertifiedRejectErrorCode,
 } from './errors.ts';
 import { Expiry, ReplicaRejectCode } from './agent/index.ts';
-import { RequestId } from './request_id.ts';
+import type { RequestId } from './request_id.ts';
 
 class TestError extends Error {
   constructor(message: string) {

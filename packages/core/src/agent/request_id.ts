@@ -1,5 +1,5 @@
 import { lebEncode, compare } from '#candid';
-import { Principal } from '#principal';
+import type { Principal } from '#principal';
 import { HashValueErrorCode, InputError } from './errors.ts';
 import { uint8FromBufLike } from './utils/buffer.ts';
 import { concatBytes } from '@noble/hashes/utils';
@@ -19,16 +19,21 @@ interface ToHashable {
 export function hashValue(value: unknown): Uint8Array {
   if (typeof value === 'string') {
     return hashString(value);
-  } else if (typeof value === 'number') {
+  }
+  if (typeof value === 'number') {
     return sha256(lebEncode(value));
-  } else if (value instanceof Uint8Array || ArrayBuffer.isView(value)) {
+  }
+  if (value instanceof Uint8Array || ArrayBuffer.isView(value)) {
     return sha256(uint8FromBufLike(value));
-  } else if (Array.isArray(value)) {
+  }
+  if (Array.isArray(value)) {
     const vals = value.map(hashValue);
     return sha256(concatBytes(...vals));
-  } else if (value && typeof value === 'object' && (value as Principal)._isPrincipal) {
+  }
+  if (value && typeof value === 'object' && (value as Principal)._isPrincipal) {
     return sha256((value as Principal).toUint8Array());
-  } else if (
+  }
+  if (
     typeof value === 'object' &&
     value !== null &&
     typeof (value as ToHashable).toHash === 'function'
@@ -38,9 +43,11 @@ export function hashValue(value: unknown): Uint8Array {
     // the flow to be synchronous to ensure Safari touch id works.
     // } else if (value instanceof Promise) {
     //   return value.then(x => hashValue(x));
-  } else if (typeof value === 'object') {
+  }
+  if (typeof value === 'object') {
     return hashOfMap(value as Record<string, unknown>);
-  } else if (typeof value === 'bigint') {
+  }
+  if (typeof value === 'bigint') {
     // Do this check much later than the other bigint check because this one is much less
     // type-safe.
     // So we want to try all the high-assurance type guards before this 'probable' one.

@@ -48,10 +48,10 @@ describe('getCanisterEnv', () => {
       });
 
       test('should parse cookie with IC_ROOT_KEY and additional env vars', () => {
-        type TestCanisterEnv = {
+        interface TestCanisterEnv {
           readonly ['PUBLIC_CANISTER_ID:backend']: string;
           readonly PUBLIC_API_URL: string;
-        };
+        }
 
         const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_CANISTER_ID:backend=rrkah-fqaaa-aaaaa-aaaaq-cai&PUBLIC_API_URL=https://api.example.com`;
         setCookie(cookieValue);
@@ -65,10 +65,10 @@ describe('getCanisterEnv', () => {
       });
 
       test('should parse cookie with env vars containing = in values', () => {
-        type TestCanisterEnv = {
+        interface TestCanisterEnv {
           readonly IC_ROOT_KEY: Uint8Array;
           readonly PUBLIC_SECRET: string;
-        };
+        }
 
         const valueWithEquals = 'base64value==';
         const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_SECRET=${valueWithEquals}`;
@@ -91,10 +91,10 @@ describe('getCanisterEnv', () => {
       });
 
       test('should handle multiple cookies with ic_env cookie in different positions', () => {
-        type TestCanisterEnv = {
+        interface TestCanisterEnv {
           readonly IC_ROOT_KEY: Uint8Array;
           readonly PUBLIC_API_URL: string;
-        };
+        }
 
         const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_API_URL=https://api.example.com`;
 
@@ -140,10 +140,10 @@ describe('getCanisterEnv', () => {
       });
 
       test('should properly decode URI-encoded cookie values', () => {
-        type TestCanisterEnv = {
+        interface TestCanisterEnv {
           readonly IC_ROOT_KEY: Uint8Array;
           readonly PUBLIC_MESSAGE: string;
-        };
+        }
 
         const specialChars = 'Hello World!=@#$%';
         const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_MESSAGE=${specialChars}`;

@@ -1,16 +1,18 @@
-import {
-  AnonymousIdentity,
+import type {
   CallRequest,
-  HttpAgent,
-  IC_REQUEST_DOMAIN_SEPARATOR,
-  IngressExpiryInvalidErrorCode,
-  InputError,
-  makeNonce,
   Nonce,
   ReadStateRequest,
   Signature,
   Signed,
   UnSigned,
+} from '@icp-sdk/core/agent';
+import {
+  AnonymousIdentity,
+  HttpAgent,
+  IC_REQUEST_DOMAIN_SEPARATOR,
+  IngressExpiryInvalidErrorCode,
+  InputError,
+  makeNonce,
 } from '@icp-sdk/core/agent';
 import { Principal } from '@icp-sdk/core/principal';
 import { IDL } from '@icp-sdk/core/candid';
