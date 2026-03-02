@@ -142,7 +142,7 @@ describe('makeActor', () => {
 
     const expectedCallRequestId = requestIdOf(expectedCallRequest.content);
 
-    const httpAgent = new HttpAgent({ fetch: mockFetch });
+    const httpAgent = await HttpAgent.create({ fetch: mockFetch });
 
     const actor = Actor.createActor(actorInterface, { canisterId, agent: httpAgent });
     const reply = await actor.greet(argValue);
@@ -255,7 +255,7 @@ describe('makeActor', () => {
       })),
     );
 
-    const mockFetch = jest.fn((resource: URL) => {
+    const mockFetch = jest.fn((resource: string | URL | Request) => {
       if (resource.toString().endsWith('/call')) {
         return Promise.resolve(
           new Response(null, {
@@ -288,7 +288,7 @@ describe('makeActor', () => {
         // todo: add method to test update call after Certificate changes have been adjusted
       });
     };
-    const httpAgent = new HttpAgent({
+    const httpAgent = await HttpAgent.create({
       fetch: mockFetch,
       host: 'http://127.0.0.1',
       verifyQuerySignatures: false,
@@ -358,7 +358,7 @@ describe('makeActor', () => {
         greet: IDL.Func([IDL.Text], [IDL.Text]),
       });
     };
-    const httpAgent = new HttpAgent({ fetch: mockFetch, host: 'http://127.0.0.1' });
+    const httpAgent = await HttpAgent.create({ fetch: mockFetch, host: 'http://127.0.0.1' });
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
     const actor = Actor.createActor(actorInterface, { canisterId, agent: httpAgent });
 
@@ -373,7 +373,7 @@ describe('makeActor', () => {
     }
   });
   it('should throw a helpful error if the canisterId is not set', async () => {
-    const httpAgent = new HttpAgent({ host: 'http://127.0.0.1' });
+    const httpAgent = await HttpAgent.create({ host: 'http://127.0.0.1' });
     const actorInterface = () => {
       return IDL.Service({
         greet: IDL.Func([IDL.Text], [IDL.Text]),
@@ -421,7 +421,7 @@ describe('makeActor', () => {
     });
 
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
-    const httpAgent = new HttpAgent({ fetch: mockFetch });
+    const httpAgent = await HttpAgent.create({ fetch: mockFetch });
 
     // Create actor with preSignReadStateRequest enabled
     const actor = Actor.createActor(actorInterface, {
@@ -490,7 +490,7 @@ describe('makeActor', () => {
     });
 
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
-    const httpAgent = new HttpAgent({ fetch: mockFetch });
+    const httpAgent = await HttpAgent.create({ fetch: mockFetch });
 
     // Create actor without preSignReadStateRequest at actor level
     const actor = Actor.createActor(actorInterface, {
@@ -787,6 +787,147 @@ test('it should preserve errors from call', async () => {
     expect(error).toBeInstanceOf(UnknownError);
     expect((error as UnknownError).cause.code).toBeInstanceOf(UnexpectedErrorCode);
   }
+});
+
+describe('replicateQueries', () => {
+  const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
+  const canisterDecodedReturnValue = 'Hello, World!';
+  const expectedReplyArg = IDL.encode([IDL.Text], [canisterDecodedReturnValue]);
+
+  const actorInterface = () => {
+    return IDL.Service({
+      greet: IDL.Func([IDL.Text], [IDL.Text], ['query']),
+      greet_update: IDL.Func([IDL.Text], [IDL.Text]),
+    });
+  };
+
+  function makeMockFetch() {
+    return jest.fn((resource: string | URL | Request) => {
+      if (resource.toString().endsWith('/call')) {
+        return Promise.resolve(
+          new Response(null, {
+            status: 202,
+            statusText: 'accepted',
+          }),
+        );
+      }
+
+      return Promise.resolve(
+        new Response(
+          cbor.encode({
+            status: 'replied',
+            reply: {
+              arg: expectedReplyArg,
+            },
+          }),
+          {
+            status: 200,
+            statusText: 'ok',
+          },
+        ),
+      );
+    });
+  }
+
+  it('sends query methods through the update path when replicateQueries is true', async () => {
+    const pollForResponseMock = jest.fn(async () => ({
+      certificate: undefined,
+      reply: expectedReplyArg,
+    }));
+    const { Actor } = await importActor(() =>
+      jest.doMock('./polling', () => ({
+        ...pollingImport,
+        pollForResponse: pollForResponseMock,
+      })),
+    );
+
+    const mockFetch = makeMockFetch();
+    const httpAgent = await HttpAgent.create({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+    });
+    const actor = Actor.createActor(actorInterface, {
+      canisterId,
+      agent: httpAgent,
+      replicateQueries: true,
+    });
+
+    const reply = await actor.greet('test');
+
+    expect(reply).toEqual(canisterDecodedReturnValue);
+    // Should have called /call endpoint, not /query
+    const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+    expect(callUrls.some(url => url.endsWith('/call'))).toBe(true);
+    expect(callUrls.some(url => url.endsWith('/query'))).toBe(false);
+    // pollForResponse should have been invoked (update path)
+    expect(pollForResponseMock).toHaveBeenCalled();
+  });
+
+  it('sends query methods through the query path by default', async () => {
+    const pollForResponseMock = jest.fn(async () => ({
+      certificate: undefined,
+      reply: expectedReplyArg,
+    }));
+    const { Actor } = await importActor(() =>
+      jest.doMock('./polling', () => ({
+        ...pollingImport,
+        pollForResponse: pollForResponseMock,
+      })),
+    );
+
+    const mockFetch = makeMockFetch();
+    const httpAgent = await HttpAgent.create({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+      verifyQuerySignatures: false,
+    });
+    const actor = Actor.createActor(actorInterface, {
+      canisterId,
+      agent: httpAgent,
+    });
+
+    const reply = await actor.greet('test');
+
+    expect(reply).toEqual(canisterDecodedReturnValue);
+    // Should have called /query endpoint, not /call
+    const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+    expect(callUrls.some(url => url.endsWith('/query'))).toBe(true);
+    expect(callUrls.some(url => url.endsWith('/call'))).toBe(false);
+    // pollForResponse should NOT have been invoked (query path)
+    expect(pollForResponseMock).not.toHaveBeenCalled();
+  });
+
+  it('does not affect update methods when replicateQueries is true', async () => {
+    const pollForResponseMock = jest.fn(async () => ({
+      certificate: undefined,
+      reply: expectedReplyArg,
+    }));
+    const { Actor } = await importActor(() =>
+      jest.doMock('./polling', () => ({
+        ...pollingImport,
+        pollForResponse: pollForResponseMock,
+      })),
+    );
+
+    const mockFetch = makeMockFetch();
+    const httpAgent = await HttpAgent.create({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+    });
+    const actor = Actor.createActor(actorInterface, {
+      canisterId,
+      agent: httpAgent,
+      replicateQueries: true,
+    });
+
+    const reply = await actor.greet_update('test');
+
+    expect(reply).toEqual(canisterDecodedReturnValue);
+    // Update methods always go through /call
+    const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+    expect(callUrls.some(url => url.endsWith('/call'))).toBe(true);
+    expect(pollForResponseMock).toHaveBeenCalled();
+  });
 });
 
 jest.setTimeout(20000);

@@ -91,6 +91,13 @@ export interface ActorConfig extends Pick<CallConfig, 'agent' | 'effectiveCanist
    * Polling options to use when making update calls. This will override the default DEFAULT_POLLING_OPTIONS.
    */
   pollingOptions?: PollingOptions;
+
+  /**
+   * When enabled, query and composite_query methods are sent as replicated
+   * update calls (going through consensus) instead of non-replicated queries.
+   * @default false
+   */
+  replicateQueries?: boolean;
 }
 
 // TODO: move this to proper typing when Candid support TypeScript.
@@ -111,16 +118,20 @@ export interface ActorMethod<Args extends unknown[] = unknown[], Ret = unknown> 
 /**
  * An actor method type, defined for each methods of the actor service.
  */
-export interface ActorMethodWithHttpDetails<Args extends unknown[] = unknown[], Ret = unknown>
-  extends ActorMethod {
+export interface ActorMethodWithHttpDetails<
+  Args extends unknown[] = unknown[],
+  Ret = unknown,
+> extends ActorMethod {
   (...args: Args): Promise<{ httpDetails: HttpDetailsResponse; result: Ret }>;
 }
 
 /**
  * An actor method type, defined for each methods of the actor service.
  */
-export interface ActorMethodExtended<Args extends unknown[] = unknown[], Ret = unknown>
-  extends ActorMethod {
+export interface ActorMethodExtended<
+  Args extends unknown[] = unknown[],
+  Ret = unknown,
+> extends ActorMethod {
   (...args: Args): Promise<{
     certificate?: Certificate;
     httpDetails?: HttpDetailsResponse;
@@ -371,7 +382,10 @@ function _createActorMethod(
   blsVerify?: CreateCertificateOptions['blsVerify'],
 ): ActorMethod {
   let caller: (options: CallConfig, ...args: unknown[]) => Promise<unknown>;
-  if (func.annotations.includes('query') || func.annotations.includes('composite_query')) {
+  const isQueryAnnotated =
+    func.annotations.includes('query') || func.annotations.includes('composite_query');
+  const replicateQueries = actor[metadataSymbol].config.replicateQueries;
+  if (isQueryAnnotated && !replicateQueries) {
     caller = async (options, ...args) => {
       // First, if there's a config transformation, call it.
       options = {
