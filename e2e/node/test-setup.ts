@@ -53,3 +53,15 @@ function testUint8Equality(a: unknown, b: unknown): boolean | undefined {
 }
 
 expect.addEqualityTesters([testPrincipalEquality, testUint8Equality]);
+
+/**
+ * Read a required environment variable or throw a descriptive error.
+ * @param name The environment variable name.
+ */
+export function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}

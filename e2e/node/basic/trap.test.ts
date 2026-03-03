@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import type { ActorMethod } from '@icp-sdk/core/agent';
 import { Actor, HttpAgent, AgentError, CertifiedRejectErrorCode } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
+import { requireEnv } from '../test-setup.ts';
 
-const trapCanisterId = process.env.CANISTER_ID_TRAP!;
+const trapCanisterId = requireEnv('CANISTER_ID_TRAP');
 
 export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
   return IDL.Service({

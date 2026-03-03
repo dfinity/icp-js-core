@@ -2,6 +2,7 @@ import { Actor } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import { Principal } from '@icp-sdk/core/principal';
 import agent from '../utils/agent.ts';
+import { requireEnv } from '../test-setup.ts';
 
 let cache: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +21,7 @@ export default async function (): Promise<{
   idl: IDL.InterfaceFactory;
 }> {
   if (!cache) {
-    const canisterId = Principal.fromText(process.env.CANISTER_ID_WHOAMI!);
+    const canisterId = Principal.fromText(requireEnv('CANISTER_ID_WHOAMI'));
 
     const idl: IDL.InterfaceFactory = ({ IDL }) => {
       return IDL.Service({

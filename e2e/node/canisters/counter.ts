@@ -4,6 +4,7 @@ import { makeAgent } from '../utils/agent.ts';
 import type { _SERVICE } from './declarations/counter/counter.did.ts';
 import type { IDL } from '@icp-sdk/core/candid';
 import { Principal } from '@icp-sdk/core/principal';
+import { requireEnv } from '../test-setup.ts';
 
 export const idl: IDL.InterfaceFactory = ({ IDL }) => {
   return IDL.Service({
@@ -16,9 +17,9 @@ export const idl: IDL.InterfaceFactory = ({ IDL }) => {
   });
 };
 
-export const counterCanisterId = Principal.fromText(process.env.CANISTER_ID_COUNTER!);
+export const counterCanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER'));
 
-export const counter2CanisterId = Principal.fromText(process.env.CANISTER_ID_COUNTER2!);
+export const counter2CanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER2'));
 
 export const createActor = async (
   canisterId: Principal,

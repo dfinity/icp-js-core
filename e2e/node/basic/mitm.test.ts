@@ -7,9 +7,10 @@ import {
   TrustError,
 } from '@icp-sdk/core/agent';
 import { Principal } from '@icp-sdk/core/principal';
+import { requireEnv } from '../test-setup.ts';
 
 test('mitm greet', { timeout: 30000 }, async () => {
-  const counterCanisterId = Principal.fromText(process.env.CANISTER_ID_COUNTER!);
+  const counterCanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER'));
   const counter = createActor(counterCanisterId, {
     agent: await makeAgent({
       host: 'http://127.0.0.1:8888',
@@ -27,7 +28,7 @@ test('mitm greet', { timeout: 30000 }, async () => {
 });
 
 test('mitm with query verification', async () => {
-  const counterCanisterId = Principal.fromText(process.env.CANISTER_ID_COUNTER!);
+  const counterCanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER'));
   const counter = createActor(counterCanisterId, {
     agent: await makeAgent({
       host: 'http://127.0.0.1:8888',
