@@ -8,7 +8,7 @@ import {
 import { Principal } from '@icp-sdk/core/principal';
 import { makeAgent } from '../utils/agent.ts';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getCanisterId } from '../utils/canisterid.ts';
+import { requireEnv } from '../test-setup.ts';
 import {
   MockReplica,
   mockSyncTimeResponse,
@@ -20,7 +20,7 @@ const MINUTE_TO_MSECS = 60 * 1000;
 
 describe('canister status', () => {
   it('should fetch successfully', async () => {
-    const counterCanisterId = getCanisterId('counter');
+    const counterCanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER'));
     const agent = await makeAgent();
     await agent.fetchRootKey();
     const request = await CanisterStatus.request({
@@ -32,7 +32,7 @@ describe('canister status', () => {
     expect(Array.isArray(request.get('controllers'))).toBe(true);
   });
   it('should throw an error if fetchRootKey has not been called', async () => {
-    const counterCanisterId = getCanisterId('counter');
+    const counterCanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER'));
     const agent = HttpAgent.createSync({
       host: `http://127.0.0.1:${process.env.REPLICA_PORT ?? 4943}`,
       verifyQuerySignatures: false,
@@ -49,7 +49,7 @@ describe('canister status', () => {
     }
   });
   it('should fetch the subnet id of a given canister', async () => {
-    const counterCanisterId = getCanisterId('counter');
+    const counterCanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER'));
     const agent = await makeAgent();
     await agent.fetchRootKey();
     const statusMap = await CanisterStatus.request({

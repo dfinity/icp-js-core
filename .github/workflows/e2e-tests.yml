@@ -34,15 +34,12 @@ jobs:
 
       - run: pnpm build
 
-      - uses: dfinity/setup-dfx@main
-
-      - name: running dfx
-        run: pnpm run -F @e2e/node setup
+      - name: Ensure PocketIC binary
+        working-directory: e2e/node
+        run: node node_modules/@dfinity/pic/postinstall.mjs
 
       - name: Node.js e2e tests
         run: pnpm run -F @e2e/node e2e
-        env:
-          REPLICA_PORT: 4943
 
   aggregate:
     name: e2e:required

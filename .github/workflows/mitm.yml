@@ -35,23 +35,20 @@ jobs:
 
       - run: pnpm build
 
+      - name: Ensure PocketIC binary
+        working-directory: e2e/node
+        run: node node_modules/@dfinity/pic/postinstall.mjs
+
       - uses: actions/setup-python@v2
         with:
           python-version: '3.11'
       - run: pip3 install mitmproxy~=10.0.0
 
-      - uses: dfinity/setup-dfx@main
-
-      - name: running dfx
-        working-directory: e2e/node
-        id: dfx
-        run: |
-          dfx start --background
-
-      - name: deploy canisters
+      - name: Start PocketIC
         working-directory: e2e/node
         run: |
-          dfx deploy counter
+          npx tsx setup-pic.ts --gateway-port 4943 &
+          npx tsx setup-pic.ts --wait
 
       - name: Running mitmdump
         id: mitmdump

@@ -3,5 +3,13 @@
   "compilerOptions": {
     "types": ["vitest"]
   },
-  "include": ["utils/**/*.ts", "canisters/**/*.ts", "basic/**/*.ts", "test-setup.ts"]
+  "include": [
+    "utils/**/*.ts",
+    "canisters/**/*.ts",
+    "basic/**/*.ts",
+    "test-setup.ts",
+    "global-setup.ts",
+    "pic-helpers.ts",
+    "setup-pic.ts"
+  ]
 }
