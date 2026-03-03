@@ -789,7 +789,7 @@ test('it should preserve errors from call', async () => {
   }
 });
 
-describe('upgradeQueries', () => {
+describe('queryStrategy', () => {
   const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
   const canisterDecodedReturnValue = 'Hello, World!';
   const expectedReplyArg = IDL.encode([IDL.Text], [canisterDecodedReturnValue]);
@@ -829,7 +829,7 @@ describe('upgradeQueries', () => {
     });
   }
 
-  it('sends query methods through the update path when upgradeQueries is true', async () => {
+  it('sends query methods through the update path when queryStrategy is update', async () => {
     const pollForResponseMock = jest.fn(async () => ({
       certificate: undefined,
       reply: expectedReplyArg,
@@ -849,7 +849,7 @@ describe('upgradeQueries', () => {
     const actor = Actor.createActor(actorInterface, {
       canisterId,
       agent: httpAgent,
-      upgradeQueries: true,
+      queryStrategy: 'update',
     });
 
     const reply = await actor.greet('test');
@@ -897,7 +897,7 @@ describe('upgradeQueries', () => {
     expect(pollForResponseMock).not.toHaveBeenCalled();
   });
 
-  it('does not affect update methods when upgradeQueries is true', async () => {
+  it('does not affect update methods when queryStrategy is update', async () => {
     const pollForResponseMock = jest.fn(async () => ({
       certificate: undefined,
       reply: expectedReplyArg,
@@ -917,7 +917,7 @@ describe('upgradeQueries', () => {
     const actor = Actor.createActor(actorInterface, {
       canisterId,
       agent: httpAgent,
-      upgradeQueries: true,
+      queryStrategy: 'update',
     });
 
     const reply = await actor.greet_update('test');

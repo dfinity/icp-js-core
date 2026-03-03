@@ -25,6 +25,14 @@ import { HttpAgent } from './agent/http/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 
 /**
+ * Controls how query and composite_query methods are executed.
+ *
+ * - `'query'` — standard non-replicated query call (default).
+ * - `'update'` — send query methods as update calls that go through consensus.
+ */
+export type QueryStrategy = 'query' | 'update';
+
+/**
  * Configuration to make calls to the Replica.
  */
 export interface CallConfig {
@@ -93,11 +101,12 @@ export interface ActorConfig extends Pick<CallConfig, 'agent' | 'effectiveCanist
   pollingOptions?: PollingOptions;
 
   /**
-   * When enabled, query and composite_query methods are sent as update
-   * calls (going through consensus) instead of non-replicated queries.
-   * @default false
+   * Controls how query and composite_query methods are executed.
+   * - `'query'` (default) — standard non-replicated query call.
+   * - `'update'` — send query methods as update calls that go through consensus.
+   * @default 'query'
    */
-  upgradeQueries?: boolean;
+  queryStrategy?: QueryStrategy;
 }
 
 // TODO: move this to proper typing when Candid support TypeScript.
@@ -384,8 +393,8 @@ function _createActorMethod(
   let caller: (options: CallConfig, ...args: unknown[]) => Promise<unknown>;
   const isQueryAnnotated =
     func.annotations.includes('query') || func.annotations.includes('composite_query');
-  const upgradeQueries = actor[metadataSymbol].config.upgradeQueries;
-  if (isQueryAnnotated && !upgradeQueries) {
+  const queryStrategy = actor[metadataSymbol].config.queryStrategy ?? 'query';
+  if (isQueryAnnotated && queryStrategy === 'query') {
     caller = async (options, ...args) => {
       // First, if there's a config transformation, call it.
       options = {
