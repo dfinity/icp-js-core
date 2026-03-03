@@ -36,7 +36,6 @@ if (args.includes('--wait')) {
     await new Promise(r => setTimeout(r, 1000));
   }
 
-  // eslint-disable-next-line no-console
   console.error(`Timed out after ${timeoutSec}s waiting for PocketIC .env`);
   process.exit(1);
 }

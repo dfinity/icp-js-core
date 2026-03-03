@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@dfinity/pic": "^0.18.0",
-    "@tsconfig/node22": "^22.0.2",
+    "@tsconfig/node22": "^22.0.5",
     "@types/express": "^5.0.6",
     "express": "^5.2.1"
   }

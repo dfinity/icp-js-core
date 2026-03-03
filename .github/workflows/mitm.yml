@@ -35,6 +35,10 @@ jobs:
 
       - run: pnpm build
 
+      - name: Ensure PocketIC binary
+        working-directory: e2e/node
+        run: node node_modules/@dfinity/pic/postinstall.mjs
+
       - uses: actions/setup-python@v2
         with:
           python-version: '3.11'
