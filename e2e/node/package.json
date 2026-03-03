@@ -5,9 +5,7 @@
   "scripts": {
     "build": "tsc -b",
     "e2e": "vitest",
-    "poste2e": "dfx killall",
-    "mitm": "MITM=true vitest ./basic/mitm.test.ts",
-    "setup": "dfx killall; dfx start --background --clean; dfx deploy"
+    "mitm": "vitest --config vitest.config.mitm.ts"
   },
   "dependencies": {
     "@icp-sdk/core": "workspace:*",
@@ -15,6 +13,7 @@
     "@noble/hashes": "^1.8.0"
   },
   "devDependencies": {
+    "@dfinity/pic": "^0.18.0",
     "@tsconfig/node22": "^22.0.2",
     "@types/express": "^5.0.6",
     "express": "^5.2.1"

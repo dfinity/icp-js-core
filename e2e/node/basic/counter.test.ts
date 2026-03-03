@@ -59,7 +59,7 @@ describe.sequential('counter', () => {
     const counter = await Actor.createActor(idl, {
       canisterId: counterCanisterId,
       agent: await HttpAgent.create({
-        host: 'http://localhost:4943',
+        host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
         shouldFetchRootKey: true,
       }),
       pollingOptions: {
@@ -86,7 +86,7 @@ describe.sequential('counter', () => {
     const counter = await Actor.createActor(idl, {
       canisterId: counterCanisterId,
       agent: await HttpAgent.create({
-        host: 'http://localhost:4943',
+        host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
         shouldFetchRootKey: true,
       }),
     });
@@ -136,7 +136,7 @@ describe('retrytimes', () => {
       agent: await HttpAgent.create({
         fetch: fetchMock as typeof fetch,
         retryTimes: 3,
-        host: 'http://localhost:4943',
+        host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
         shouldFetchRootKey: true,
       }),
     });

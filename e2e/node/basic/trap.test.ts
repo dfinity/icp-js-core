@@ -1,18 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { ActorMethod } from '@icp-sdk/core/agent';
 import { Actor, HttpAgent, AgentError, CertifiedRejectErrorCode } from '@icp-sdk/core/agent';
-import util from 'util';
-import exec from 'child_process';
 import type { IDL } from '@icp-sdk/core/candid';
-const execAsync = util.promisify(exec.exec);
 
-let stdout;
-try {
-  ({ stdout } = await execAsync('dfx canister id trap'));
-} catch {
-  await execAsync('dfx deploy trap');
-  ({ stdout } = await execAsync('dfx canister id trap'));
-}
+const trapCanisterId = process.env.CANISTER_ID_TRAP!;
 
 export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
   return IDL.Service({
@@ -28,12 +19,11 @@ export interface _SERVICE {
 
 describe('trap', () => {
   it('should trap', async () => {
-    const canisterId = stdout.trim();
     const agent = await HttpAgent.create({
-      host: 'http://localhost:4943',
+      host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
       shouldFetchRootKey: true,
     });
-    const actor = Actor.createActor<_SERVICE>(idlFactory, { canisterId, agent });
+    const actor = Actor.createActor<_SERVICE>(idlFactory, { canisterId: trapCanisterId, agent });
     expect.assertions(3);
     try {
       await actor.Throw();
@@ -45,12 +35,11 @@ describe('trap', () => {
     }
   });
   it('should trap', async () => {
-    const canisterId = stdout.trim();
     const agent = await HttpAgent.create({
-      host: 'http://localhost:4943',
+      host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
       shouldFetchRootKey: true,
     });
-    const actor = Actor.createActor<_SERVICE>(idlFactory, { canisterId, agent });
+    const actor = Actor.createActor<_SERVICE>(idlFactory, { canisterId: trapCanisterId, agent });
     expect.assertions(3);
     try {
       await actor.test();

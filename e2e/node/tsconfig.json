@@ -7,9 +7,13 @@
     "moduleResolution": "bundler",
     "noEmit": true
   },
-  "include": ["utils/**/*.ts", "canisters/**/*.ts", "basic/**/*.ts"],
+  "include": [
+    "utils/**/*.ts",
+    "canisters/**/*.ts",
+    "basic/**/*.ts",
+    "pic-helpers.ts",
+    "setup-pic.ts"
+  ],
   "exclude": [".dfx", "lib", "node_modules"],
-  "references": [
-    { "path": "../../packages/core" }
-  ]
+  "references": [{ "path": "../../packages/core" }]
 }

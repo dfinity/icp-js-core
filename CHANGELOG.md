@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - chore: strengthen ESLint rules with cherry-picked `@dfinity/eslint-config-oisy-wallet` rules
+- chore: migrate e2e tests from `dfx` to PocketIC (`@dfinity/pic`)
 
 ## [5.0.0] - 2025-12-18
 

@@ -1,5 +1,4 @@
 import { createActor } from '../canisters/declarations/counter/index.js';
-import type { TestAPI } from 'vitest';
 import { test, expect } from 'vitest';
 import { makeAgent } from '../utils/agent.ts';
 import {
@@ -7,15 +6,10 @@ import {
   QuerySignatureVerificationFailedErrorCode,
   TrustError,
 } from '@icp-sdk/core/agent';
-import { getCanisterId } from '../utils/canisterid.ts';
+import { Principal } from '@icp-sdk/core/principal';
 
-let mitmTest: TestAPI | typeof test.skip = test;
-if (!process.env['MITM']) {
-  mitmTest = test.skip;
-}
-
-mitmTest('mitm greet', { timeout: 30000 }, async () => {
-  const counterCanisterId = getCanisterId('counter');
+test('mitm greet', { timeout: 30000 }, async () => {
+  const counterCanisterId = Principal.fromText(process.env.CANISTER_ID_COUNTER!);
   const counter = createActor(counterCanisterId, {
     agent: await makeAgent({
       host: 'http://127.0.0.1:8888',
@@ -32,8 +26,8 @@ mitmTest('mitm greet', { timeout: 30000 }, async () => {
   expect(await counter.queryGreet('counter')).toEqual('Hullo, counter!');
 });
 
-mitmTest('mitm with query verification', async () => {
-  const counterCanisterId = getCanisterId('counter');
+test('mitm with query verification', async () => {
+  const counterCanisterId = Principal.fromText(process.env.CANISTER_ID_COUNTER!);
   const counter = createActor(counterCanisterId, {
     agent: await makeAgent({
       host: 'http://127.0.0.1:8888',

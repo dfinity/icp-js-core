@@ -2,9 +2,8 @@ import type { ActorSubclass, HttpAgentOptions, Agent, ActorConfig } from '@icp-s
 import { Actor } from '@icp-sdk/core/agent';
 import { makeAgent } from '../utils/agent.ts';
 import type { _SERVICE } from './declarations/counter/counter.did.ts';
-import { getCanisterId } from '../utils/canisterid.ts';
 import type { IDL } from '@icp-sdk/core/candid';
-import type { Principal } from '@icp-sdk/core/principal';
+import { Principal } from '@icp-sdk/core/principal';
 
 export const idl: IDL.InterfaceFactory = ({ IDL }) => {
   return IDL.Service({
@@ -17,9 +16,9 @@ export const idl: IDL.InterfaceFactory = ({ IDL }) => {
   });
 };
 
-export const counterCanisterId = getCanisterId('counter');
+export const counterCanisterId = Principal.fromText(process.env.CANISTER_ID_COUNTER!);
 
-export const counter2CanisterId = getCanisterId('counter2');
+export const counter2CanisterId = Principal.fromText(process.env.CANISTER_ID_COUNTER2!);
 
 export const createActor = async (
   canisterId: Principal,

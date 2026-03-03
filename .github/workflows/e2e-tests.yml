@@ -34,15 +34,8 @@ jobs:
 
       - run: pnpm build
 
-      - uses: dfinity/setup-dfx@main
-
-      - name: running dfx
-        run: pnpm run -F @e2e/node setup
-
       - name: Node.js e2e tests
         run: pnpm run -F @e2e/node e2e
-        env:
-          REPLICA_PORT: 4943
 
   aggregate:
     name: e2e:required

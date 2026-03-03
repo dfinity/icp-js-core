@@ -1,8 +1,7 @@
 import { Actor } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
-import type { Principal } from '@icp-sdk/core/principal';
+import { Principal } from '@icp-sdk/core/principal';
 import agent from '../utils/agent.ts';
-import { getCanisterId } from '../utils/canisterid.ts';
 
 let cache: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,7 +20,7 @@ export default async function (): Promise<{
   idl: IDL.InterfaceFactory;
 }> {
   if (!cache) {
-    const canisterId = getCanisterId('whoami');
+    const canisterId = Principal.fromText(process.env.CANISTER_ID_WHOAMI!);
 
     const idl: IDL.InterfaceFactory = ({ IDL }) => {
       return IDL.Service({
