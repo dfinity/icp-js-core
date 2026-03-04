@@ -371,34 +371,6 @@ describe('transforms', () => {
   });
 });
 
-describe('getDefaultFetch', () => {
-  it("should use fetch from window if it's available", async () => {
-    const generateAgent = () => new HttpAgent({ host: HTTP_AGENT_HOST });
-    expect(generateAgent).not.toThrow();
-  });
-  it('should throw an error if fetch is not available on the window object', async () => {
-    delete (window as any).fetch;
-    const generateAgent = () => new HttpAgent({ host: HTTP_AGENT_HOST });
-
-    expect(generateAgent).toThrow('Fetch implementation was not available');
-  });
-  it('should throw error for defaultFetch with no window or global fetch', () => {
-    delete (global as any).window;
-    delete (global as any).fetch;
-    const generateAgent = () => new HttpAgent({ host: HTTP_AGENT_HOST });
-
-    expect(generateAgent).toThrow('Fetch implementation was not available');
-  });
-  it('should fall back to global.fetch if window is not available', () => {
-    delete (global as any).window;
-    global.fetch = originalFetch;
-    const generateAgent = () => new HttpAgent({ host: HTTP_AGENT_HOST });
-
-    expect(generateAgent).not.toThrow();
-  });
-  it.todo('should throw an error if window, global, and fetch are not available');
-});
-
 describe('invalidate identity', () => {
   const mockFetch: jest.Mock = jest.fn();
   it('should allow its identity to be invalidated', () => {

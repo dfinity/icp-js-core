@@ -594,19 +594,6 @@ export class HashValueErrorCode extends ErrorCode {
   }
 }
 
-export class HttpDefaultFetchErrorCode extends ErrorCode {
-  public name = 'HttpDefaultFetchErrorCode';
-
-  constructor(public readonly error: string) {
-    super();
-    Object.setPrototypeOf(this, HttpDefaultFetchErrorCode.prototype);
-  }
-
-  public toErrorMessage(): string {
-    return this.error;
-  }
-}
-
 export class IdentityInvalidErrorCode extends ErrorCode {
   public name = 'IdentityInvalidErrorCode';
 
