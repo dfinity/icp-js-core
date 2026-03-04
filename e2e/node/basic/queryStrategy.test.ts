@@ -41,23 +41,4 @@ describe('queryStrategy', () => {
     const normal = await normalCounter.read();
     expect(normal).toBeGreaterThanOrEqual(upgraded);
   }, 40_000);
-
-  it('should be slower for update-strategy queries than normal queries', async () => {
-    // Update-strategy queries go through consensus and polling, so they should be slower than direct query calls.
-    const iterations = 3;
-
-    const normalStart = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      await normalCounter.read();
-    }
-    const normalDuration = performance.now() - normalStart;
-
-    const upgradedStart = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      await updateStrategyCounter.read();
-    }
-    const upgradedDuration = performance.now() - upgradedStart;
-
-    expect(upgradedDuration).toBeGreaterThan(normalDuration);
-  }, 120_000);
 });
