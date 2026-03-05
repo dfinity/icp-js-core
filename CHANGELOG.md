@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- fix(agent): deduplicate parallel `fetchSubnetKeys` requests for the same canister to avoid redundant `read_state` round-trips (fixes #1179)
+
 ## [5.0.0] - 2025-12-18
 
 See the [v5 upgrading guide](https://js.icp.build/core/latest/upgrading/v5/) for more information.

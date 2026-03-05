@@ -327,6 +327,9 @@ export class HttpAgent implements Agent {
   #subnetKeys: ExpirableMap<string, SubnetNodeKeys> = new ExpirableMap({
     expirationTime: 5 * MINUTE_TO_MSECS,
   });
+  // Tracks in-flight fetchSubnetKeys promises to deduplicate parallel requests
+  // for the same canister, preventing redundant read_state round-trips.
+  #subnetKeysFetching: Map<string, Promise<SubnetNodeKeys>> = new Map();
   #verifyQuerySignatures = true;
 
   /**
@@ -1451,6 +1454,22 @@ export class HttpAgent implements Agent {
 
   public async fetchSubnetKeys(canisterId: Principal | string): Promise<SubnetNodeKeys> {
     const effectiveCanisterId: Principal = Principal.from(canisterId);
+
+    // Deduplicate parallel requests for the same canister so that concurrent
+    // query calls share a single read_state round-trip instead of each
+    // issuing their own.
+    const inflight = this.#subnetKeysFetching.get(effectiveCanisterId.toText());
+    if (inflight) {
+      return inflight;
+    }
+    const fetchPromise = this.#doFetchSubnetKeys(effectiveCanisterId).finally(() => {
+      this.#subnetKeysFetching.delete(effectiveCanisterId.toText());
+    });
+    this.#subnetKeysFetching.set(effectiveCanisterId.toText(), fetchPromise);
+    return fetchPromise;
+  }
+
+  async #doFetchSubnetKeys(effectiveCanisterId: Principal): Promise<SubnetNodeKeys> {
     await this.#asyncGuard(effectiveCanisterId);
 
     const rootKey = this.rootKey!;
