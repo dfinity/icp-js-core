@@ -829,104 +829,83 @@ describe('queryStrategy', () => {
     });
   }
 
-  it('sends query methods through the update path when queryStrategy is update', async () => {
-    const pollForResponseMock = jest.fn(async () => ({
-      certificate: undefined,
-      reply: expectedReplyArg,
-    }));
-    const { Actor } = await importActor(() =>
-      jest.doMock('./polling', () => ({
-        ...pollingImport,
-        pollForResponse: pollForResponseMock,
-      })),
-    );
+  describe('queryStrategy', () => {
+    let pollForResponseMock: jest.Mock;
+    let Actor: Awaited<ReturnType<typeof importActor>>['Actor'];
+    let mockFetch: jest.Mock;
 
-    const mockFetch = makeMockFetch();
-    const httpAgent = await HttpAgent.create({
-      fetch: mockFetch,
-      host: 'http://127.0.0.1',
-    });
-    const actor = Actor.createActor(actorInterface, {
-      canisterId,
-      agent: httpAgent,
-      queryStrategy: 'update',
+    beforeEach(async () => {
+      pollForResponseMock = jest.fn(async () => ({
+        certificate: undefined,
+        reply: expectedReplyArg,
+      }));
+      ({ Actor } = await importActor(() =>
+        jest.doMock('./polling', () => ({
+          ...pollingImport,
+          pollForResponse: pollForResponseMock,
+        })),
+      ));
+      mockFetch = makeMockFetch();
     });
 
-    const reply = await actor.greet('test');
+    it('sends query methods through the update path when queryStrategy is update', async () => {
+      const httpAgent = await HttpAgent.create({
+        fetch: mockFetch,
+        host: 'http://127.0.0.1',
+      });
+      const actor = Actor.createActor(actorInterface, {
+        canisterId,
+        agent: httpAgent,
+        queryStrategy: 'update',
+      });
 
-    expect(reply).toEqual(canisterDecodedReturnValue);
-    // Should have called /call endpoint, not /query
-    const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
-    expect(callUrls.some(url => url.endsWith('/call'))).toBe(true);
-    expect(callUrls.some(url => url.endsWith('/query'))).toBe(false);
-    // pollForResponse should have been invoked (update path)
-    expect(pollForResponseMock).toHaveBeenCalled();
-  });
+      const reply = await actor.greet('test');
 
-  it('sends query methods through the query path by default', async () => {
-    const pollForResponseMock = jest.fn(async () => ({
-      certificate: undefined,
-      reply: expectedReplyArg,
-    }));
-    const { Actor } = await importActor(() =>
-      jest.doMock('./polling', () => ({
-        ...pollingImport,
-        pollForResponse: pollForResponseMock,
-      })),
-    );
-
-    const mockFetch = makeMockFetch();
-    const httpAgent = await HttpAgent.create({
-      fetch: mockFetch,
-      host: 'http://127.0.0.1',
-      verifyQuerySignatures: false,
-    });
-    const actor = Actor.createActor(actorInterface, {
-      canisterId,
-      agent: httpAgent,
+      expect(reply).toEqual(canisterDecodedReturnValue);
+      const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+      expect(callUrls.some(url => url.endsWith('/call'))).toBe(true);
+      expect(callUrls.some(url => url.endsWith('/query'))).toBe(false);
+      expect(pollForResponseMock).toHaveBeenCalled();
     });
 
-    const reply = await actor.greet('test');
+    it('sends query methods through the query path by default', async () => {
+      const httpAgent = await HttpAgent.create({
+        fetch: mockFetch,
+        host: 'http://127.0.0.1',
+        verifyQuerySignatures: false,
+      });
+      const actor = Actor.createActor(actorInterface, {
+        canisterId,
+        agent: httpAgent,
+      });
 
-    expect(reply).toEqual(canisterDecodedReturnValue);
-    // Should have called /query endpoint, not /call
-    const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
-    expect(callUrls.some(url => url.endsWith('/query'))).toBe(true);
-    expect(callUrls.some(url => url.endsWith('/call'))).toBe(false);
-    // pollForResponse should NOT have been invoked (query path)
-    expect(pollForResponseMock).not.toHaveBeenCalled();
-  });
+      const reply = await actor.greet('test');
 
-  it('does not affect update methods when queryStrategy is update', async () => {
-    const pollForResponseMock = jest.fn(async () => ({
-      certificate: undefined,
-      reply: expectedReplyArg,
-    }));
-    const { Actor } = await importActor(() =>
-      jest.doMock('./polling', () => ({
-        ...pollingImport,
-        pollForResponse: pollForResponseMock,
-      })),
-    );
-
-    const mockFetch = makeMockFetch();
-    const httpAgent = await HttpAgent.create({
-      fetch: mockFetch,
-      host: 'http://127.0.0.1',
-    });
-    const actor = Actor.createActor(actorInterface, {
-      canisterId,
-      agent: httpAgent,
-      queryStrategy: 'update',
+      expect(reply).toEqual(canisterDecodedReturnValue);
+      const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+      expect(callUrls.some(url => url.endsWith('/query'))).toBe(true);
+      expect(callUrls.some(url => url.endsWith('/call'))).toBe(false);
+      expect(pollForResponseMock).not.toHaveBeenCalled();
     });
 
-    const reply = await actor.greet_update('test');
+    it('does not affect update methods when queryStrategy is update', async () => {
+      const httpAgent = await HttpAgent.create({
+        fetch: mockFetch,
+        host: 'http://127.0.0.1',
+      });
+      const actor = Actor.createActor(actorInterface, {
+        canisterId,
+        agent: httpAgent,
+        queryStrategy: 'update',
+      });
 
-    expect(reply).toEqual(canisterDecodedReturnValue);
-    // Update methods always go through /call
-    const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
-    expect(callUrls.some(url => url.endsWith('/call'))).toBe(true);
-    expect(pollForResponseMock).toHaveBeenCalled();
+      const reply = await actor.greet_update('test');
+
+      expect(reply).toEqual(canisterDecodedReturnValue);
+      const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+      expect(callUrls.some(url => url.endsWith('/call'))).toBe(true);
+      expect(pollForResponseMock).toHaveBeenCalled();
+    });
   });
 });
 
