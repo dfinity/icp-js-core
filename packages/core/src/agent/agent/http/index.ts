@@ -699,10 +699,17 @@ export class HttpAgent implements Agent {
           };
           throw RejectError.fromCode(certifiedRejectErrorCode);
         }
-        default:
-          throw UnknownError.fromCode(
-            new UnexpectedErrorCode(`Unexpected request status in v4 sync response: "${status}"`),
+        default: {
+          const unexpectedErrorCode = new UnexpectedErrorCode(
+            `Unexpected request status in v4 sync response: "${status}"`,
           );
+          unexpectedErrorCode.callContext = {
+            canisterId: effectiveCanisterId,
+            methodName: fields.methodName,
+            httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+          };
+          throw UnknownError.fromCode(unexpectedErrorCode);
+        }
       }
     }
 

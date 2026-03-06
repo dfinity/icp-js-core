@@ -244,14 +244,13 @@ describe('pollForResponse', () => {
     }
   });
 
-  it('throws UnknownError when status is done without a reply', async () => {
+  it('throws UnknownError when status is done', async () => {
     const { pollForResponse } = await import('./index.ts');
     const { UnknownError } = await import('../errors.ts');
 
     const canisterId = Principal.anonymous();
     const requestId = new Uint8Array([8, 9, 10]) as RequestId;
     statusesByRequestKey.set(requestId, ['done']);
-    replyByRequestKey.set(requestId, new Uint8Array([42]));
 
     await expect(pollForResponse(mockAgent, canisterId, requestId)).rejects.toThrow(UnknownError);
   });

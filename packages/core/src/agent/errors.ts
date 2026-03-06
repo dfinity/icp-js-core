@@ -29,9 +29,9 @@ export interface CallContext {
   canisterId: Principal;
   methodName: string;
   /**
-   * HTTP details of the call response. May be undefined when the error
-   * originates from `HttpAgent.callAndPoll`, which does not expose
-   * the raw HTTP response on errors.
+   * HTTP details of the call response. Present for direct rejection paths
+   * (v4/v2), but absent for errors from polling (e.g. `pollForResponse`),
+   * which has no associated HTTP response to attach.
    */
   httpDetails?: HttpDetailsResponse;
 }
