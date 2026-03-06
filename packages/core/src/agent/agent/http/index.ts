@@ -731,8 +731,21 @@ export class HttpAgent implements Agent {
     }
 
     // 202 Accepted — fall back to polling
-    const pollResult = await pollForResponse(this, effectiveCanisterId, requestId, options);
-    return { ...pollResult, requestDetails, callResponse: response };
+    if (response.status === 202) {
+      const pollResult = await pollForResponse(this, effectiveCanisterId, requestId, options);
+      return { ...pollResult, requestDetails, callResponse: response };
+    }
+
+    // Unexpected response: status 200 but body is neither v4 (certificate) nor v2 (rejection)
+    const unexpectedErrorCode = new UnexpectedErrorCode(
+      `Unexpected response from call: status ${response.status} with unrecognized body`,
+    );
+    unexpectedErrorCode.callContext = {
+      canisterId: effectiveCanisterId,
+      methodName: fields.methodName,
+      httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+    };
+    throw UnknownError.fromCode(unexpectedErrorCode);
   }
 
   async #requestAndRetryQuery(args: {

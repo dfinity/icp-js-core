@@ -3,6 +3,8 @@ import { HttpAgent } from '../index.ts';
 import type { RequestId } from '../../request_id.ts';
 import type { LookupPathResultFound, LookupPathStatus } from '../../certificate.ts';
 import { ExternalError, RejectError, UnknownError } from '../../errors.ts';
+import type { Expiry } from './transforms.ts';
+import { SubmitRequestType } from './types.ts';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -83,12 +85,12 @@ const canisterId = Principal.anonymous();
 const requestId = new Uint8Array([10, 20, 30]) as RequestId;
 
 const mockRequestDetails = {
-  request_type: 'call' as const,
+  request_type: SubmitRequestType.Call,
   canister_id: canisterId,
   method_name: 'test_method',
   arg: new Uint8Array([1]),
   sender: new Uint8Array([4]),
-  ingress_expiry: { toHash: () => new Uint8Array() },
+  ingress_expiry: { toHash: () => new Uint8Array() } as unknown as Expiry,
 };
 
 const callFields = {
@@ -347,6 +349,32 @@ describe('HttpAgent.callAndPoll', () => {
         expect(code.rejectMessage).toBe('canister trapped');
         expect(code.rejectErrorCode).toBe('IC0503');
       }
+      expect(agent.readState).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('unexpected response handling', () => {
+    it('throws UnknownError for status 200 with unrecognized body', async () => {
+      const agent = createAgentWithCallMock({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        body: null,
+      });
+
+      await expect(agent.callAndPoll(canisterId, callFields)).rejects.toThrow(UnknownError);
+      expect(agent.readState).not.toHaveBeenCalled();
+    });
+
+    it('throws UnknownError for an unexpected status code with null body', async () => {
+      const agent = createAgentWithCallMock({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        body: null,
+      });
+
+      await expect(agent.callAndPoll(canisterId, callFields)).rejects.toThrow(UnknownError);
       expect(agent.readState).not.toHaveBeenCalled();
     });
   });
