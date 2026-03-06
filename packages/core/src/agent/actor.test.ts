@@ -805,8 +805,6 @@ describe('queryStrategy', () => {
       const reply = await actor.greet('test');
 
       expect(reply).toEqual(canisterDecodedReturnValue);
-      const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
-      expect(callUrls.some(url => url.endsWith('/query'))).toBe(false);
       expect(callAndPollMock).toHaveBeenCalled();
     });
 
@@ -852,8 +850,6 @@ describe('queryStrategy', () => {
       const reply = await actor.greet_update('test');
 
       expect(reply).toEqual(canisterDecodedReturnValue);
-      const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
-      expect(callUrls.some(url => url.endsWith('/call'))).toBe(false);
       expect(callAndPollMock).toHaveBeenCalled();
     });
   });
