@@ -142,7 +142,7 @@ describe('makeActor', () => {
 
     const expectedCallRequestId = requestIdOf(expectedCallRequest.content);
 
-    const httpAgent = await HttpAgent.create({ fetch: mockFetch });
+    const httpAgent = new HttpAgent({ fetch: mockFetch });
 
     const actor = Actor.createActor(actorInterface, { canisterId, agent: httpAgent });
     const reply = await actor.greet(argValue);
@@ -255,7 +255,7 @@ describe('makeActor', () => {
       })),
     );
 
-    const mockFetch = jest.fn((resource: string | URL | Request) => {
+    const mockFetch = jest.fn((resource: URL) => {
       if (resource.toString().endsWith('/call')) {
         return Promise.resolve(
           new Response(null, {
@@ -288,7 +288,7 @@ describe('makeActor', () => {
         // todo: add method to test update call after Certificate changes have been adjusted
       });
     };
-    const httpAgent = await HttpAgent.create({
+    const httpAgent = new HttpAgent({
       fetch: mockFetch,
       host: 'http://127.0.0.1',
       verifyQuerySignatures: false,
@@ -358,7 +358,7 @@ describe('makeActor', () => {
         greet: IDL.Func([IDL.Text], [IDL.Text]),
       });
     };
-    const httpAgent = await HttpAgent.create({ fetch: mockFetch, host: 'http://127.0.0.1' });
+    const httpAgent = new HttpAgent({ fetch: mockFetch, host: 'http://127.0.0.1' });
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
     const actor = Actor.createActor(actorInterface, { canisterId, agent: httpAgent });
 
@@ -373,7 +373,7 @@ describe('makeActor', () => {
     }
   });
   it('should throw a helpful error if the canisterId is not set', async () => {
-    const httpAgent = await HttpAgent.create({ host: 'http://127.0.0.1' });
+    const httpAgent = new HttpAgent({ host: 'http://127.0.0.1' });
     const actorInterface = () => {
       return IDL.Service({
         greet: IDL.Func([IDL.Text], [IDL.Text]),
@@ -421,7 +421,7 @@ describe('makeActor', () => {
     });
 
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
-    const httpAgent = await HttpAgent.create({ fetch: mockFetch });
+    const httpAgent = new HttpAgent({ fetch: mockFetch });
 
     // Create actor with preSignReadStateRequest enabled
     const actor = Actor.createActor(actorInterface, {
@@ -490,7 +490,7 @@ describe('makeActor', () => {
     });
 
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
-    const httpAgent = await HttpAgent.create({ fetch: mockFetch });
+    const httpAgent = new HttpAgent({ fetch: mockFetch });
 
     // Create actor without preSignReadStateRequest at actor level
     const actor = Actor.createActor(actorInterface, {

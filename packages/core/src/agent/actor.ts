@@ -377,6 +377,7 @@ function decodeReturnValue(types: IDL.Type[], msg: Uint8Array) {
 
 const DEFAULT_ACTOR_CONFIG: Partial<ActorConfig> = {
   pollingOptions: DEFAULT_POLLING_OPTIONS,
+  queryStrategy: 'query',
 };
 
 export type ActorConstructor = new (config: ActorConfig) => ActorSubclass;
@@ -393,7 +394,7 @@ function _createActorMethod(
   let caller: (options: CallConfig, ...args: unknown[]) => Promise<unknown>;
   const isQueryAnnotated =
     func.annotations.includes('query') || func.annotations.includes('composite_query');
-  const queryStrategy = actor[metadataSymbol].config.queryStrategy ?? 'query';
+  const queryStrategy = actor[metadataSymbol].config.queryStrategy;
   if (isQueryAnnotated && queryStrategy === 'query') {
     caller = async (options, ...args) => {
       // First, if there's a config transformation, call it.
