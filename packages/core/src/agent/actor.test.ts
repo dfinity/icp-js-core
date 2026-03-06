@@ -789,4 +789,124 @@ test('it should preserve errors from call', async () => {
   }
 });
 
+describe('queryStrategy', () => {
+  const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
+  const canisterDecodedReturnValue = 'Hello, World!';
+  const expectedReplyArg = IDL.encode([IDL.Text], [canisterDecodedReturnValue]);
+
+  const actorInterface = () => {
+    return IDL.Service({
+      greet: IDL.Func([IDL.Text], [IDL.Text], ['query']),
+      greet_update: IDL.Func([IDL.Text], [IDL.Text]),
+    });
+  };
+
+  function makeMockFetch() {
+    return jest.fn((resource: string | URL | Request) => {
+      if (resource.toString().endsWith('/call')) {
+        return Promise.resolve(
+          new Response(null, {
+            status: 202,
+            statusText: 'accepted',
+          }),
+        );
+      }
+
+      return Promise.resolve(
+        new Response(
+          cbor.encode({
+            status: 'replied',
+            reply: {
+              arg: expectedReplyArg,
+            },
+          }),
+          {
+            status: 200,
+            statusText: 'ok',
+          },
+        ),
+      );
+    });
+  }
+
+  describe('queryStrategy', () => {
+    let pollForResponseMock: jest.Mock;
+    let Actor: Awaited<ReturnType<typeof importActor>>['Actor'];
+    let mockFetch: jest.Mock;
+
+    beforeEach(async () => {
+      pollForResponseMock = jest.fn(async () => ({
+        certificate: undefined,
+        reply: expectedReplyArg,
+      }));
+      ({ Actor } = await importActor(() =>
+        jest.doMock('./polling', () => ({
+          ...pollingImport,
+          pollForResponse: pollForResponseMock,
+        })),
+      ));
+      mockFetch = makeMockFetch();
+    });
+
+    it('sends query methods through the update path when queryStrategy is update', async () => {
+      const httpAgent = await HttpAgent.create({
+        fetch: mockFetch,
+        host: 'http://127.0.0.1',
+      });
+      const actor = Actor.createActor(actorInterface, {
+        canisterId,
+        agent: httpAgent,
+        queryStrategy: 'update',
+      });
+
+      const reply = await actor.greet('test');
+
+      expect(reply).toEqual(canisterDecodedReturnValue);
+      const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+      expect(callUrls.some(url => url.endsWith('/call'))).toBe(true);
+      expect(callUrls.some(url => url.endsWith('/query'))).toBe(false);
+      expect(pollForResponseMock).toHaveBeenCalled();
+    });
+
+    it('sends query methods through the query path by default', async () => {
+      const httpAgent = await HttpAgent.create({
+        fetch: mockFetch,
+        host: 'http://127.0.0.1',
+        verifyQuerySignatures: false,
+      });
+      const actor = Actor.createActor(actorInterface, {
+        canisterId,
+        agent: httpAgent,
+      });
+
+      const reply = await actor.greet('test');
+
+      expect(reply).toEqual(canisterDecodedReturnValue);
+      const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+      expect(callUrls.some(url => url.endsWith('/query'))).toBe(true);
+      expect(callUrls.some(url => url.endsWith('/call'))).toBe(false);
+      expect(pollForResponseMock).not.toHaveBeenCalled();
+    });
+
+    it('does not affect update methods when queryStrategy is update', async () => {
+      const httpAgent = await HttpAgent.create({
+        fetch: mockFetch,
+        host: 'http://127.0.0.1',
+      });
+      const actor = Actor.createActor(actorInterface, {
+        canisterId,
+        agent: httpAgent,
+        queryStrategy: 'update',
+      });
+
+      const reply = await actor.greet_update('test');
+
+      expect(reply).toEqual(canisterDecodedReturnValue);
+      const callUrls = mockFetch.mock.calls.map(([url]) => url.toString());
+      expect(callUrls.some(url => url.endsWith('/call'))).toBe(true);
+      expect(pollForResponseMock).toHaveBeenCalled();
+    });
+  });
+});
+
 jest.setTimeout(20000);

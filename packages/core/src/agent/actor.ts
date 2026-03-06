@@ -25,6 +25,14 @@ import { HttpAgent } from './agent/http/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 
 /**
+ * Controls how query and composite_query methods are executed.
+ *
+ * - `'query'` — standard non-replicated query call (default).
+ * - `'update'` — send query methods as update calls that go through consensus.
+ */
+export type QueryStrategy = 'query' | 'update';
+
+/**
  * Configuration to make calls to the Replica.
  */
 export interface CallConfig {
@@ -91,6 +99,14 @@ export interface ActorConfig extends Pick<CallConfig, 'agent' | 'effectiveCanist
    * Polling options to use when making update calls. This will override the default DEFAULT_POLLING_OPTIONS.
    */
   pollingOptions?: PollingOptions;
+
+  /**
+   * Controls how query and composite_query methods are executed.
+   * - `'query'` (default) — standard non-replicated query call.
+   * - `'update'` — send query methods as update calls that go through consensus.
+   * @default 'query'
+   */
+  queryStrategy?: QueryStrategy;
 }
 
 // TODO: move this to proper typing when Candid support TypeScript.
@@ -111,16 +127,20 @@ export interface ActorMethod<Args extends unknown[] = unknown[], Ret = unknown> 
 /**
  * An actor method type, defined for each methods of the actor service.
  */
-export interface ActorMethodWithHttpDetails<Args extends unknown[] = unknown[], Ret = unknown>
-  extends ActorMethod {
+export interface ActorMethodWithHttpDetails<
+  Args extends unknown[] = unknown[],
+  Ret = unknown,
+> extends ActorMethod {
   (...args: Args): Promise<{ httpDetails: HttpDetailsResponse; result: Ret }>;
 }
 
 /**
  * An actor method type, defined for each methods of the actor service.
  */
-export interface ActorMethodExtended<Args extends unknown[] = unknown[], Ret = unknown>
-  extends ActorMethod {
+export interface ActorMethodExtended<
+  Args extends unknown[] = unknown[],
+  Ret = unknown,
+> extends ActorMethod {
   (...args: Args): Promise<{
     certificate?: Certificate;
     httpDetails?: HttpDetailsResponse;
@@ -357,6 +377,7 @@ function decodeReturnValue(types: IDL.Type[], msg: Uint8Array) {
 
 const DEFAULT_ACTOR_CONFIG: Partial<ActorConfig> = {
   pollingOptions: DEFAULT_POLLING_OPTIONS,
+  queryStrategy: 'query',
 };
 
 export type ActorConstructor = new (config: ActorConfig) => ActorSubclass;
@@ -371,7 +392,10 @@ function _createActorMethod(
   blsVerify?: CreateCertificateOptions['blsVerify'],
 ): ActorMethod {
   let caller: (options: CallConfig, ...args: unknown[]) => Promise<unknown>;
-  if (func.annotations.includes('query') || func.annotations.includes('composite_query')) {
+  const isQueryAnnotated =
+    func.annotations.includes('query') || func.annotations.includes('composite_query');
+  const queryStrategy = actor[metadataSymbol].config.queryStrategy;
+  if (isQueryAnnotated && queryStrategy === 'query') {
     caller = async (options, ...args) => {
       // First, if there's a config transformation, call it.
       options = {

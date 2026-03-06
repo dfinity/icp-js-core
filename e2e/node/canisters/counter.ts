@@ -21,6 +21,8 @@ export const counterCanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUN
 
 export const counter2CanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER2'));
 
+export const counter3CanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER3'));
+
 export const createActor = async (
   canisterId: Principal,
   options?: {
