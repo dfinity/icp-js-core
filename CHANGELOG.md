@@ -14,6 +14,7 @@
 - feat(agent): add `callAndPollForResponse` function that calls a canister and polls for the response, returning raw certificate bytes and request details
 - feat(agent): add `rawCertificate` field to `pollForResponse` return type
 - feat(agent): add `callAndPollForResponse` function that calls a canister and polls for the response, returning raw certificate bytes and request details
+- feat(agent): add `callAndPoll` to `HttpAgent` and `Agent` interface, and `rawCertificate` to `pollForResponse`, extracting call+poll+certificate logic from Actor into HttpAgent.
 
 ## [5.0.0] - 2025-12-18
 

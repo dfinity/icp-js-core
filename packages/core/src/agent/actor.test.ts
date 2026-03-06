@@ -7,7 +7,6 @@ import type { CallRequest, UnSigned } from './agent/http/types.ts';
 import { SubmitRequestType } from './agent/http/types.ts';
 import * as cbor from './cbor.ts';
 import { requestIdOf } from './request_id.ts';
-import * as pollingImport from './polling/index.ts';
 import * as certificateImport from './certificate.ts';
 import type { ActorConfig } from './actor.ts';
 import {
@@ -246,14 +245,7 @@ describe('makeActor', () => {
   it('should enrich actor interface with httpDetails', async () => {
     const canisterDecodedReturnValue = 'Hello, World!';
     const expectedReplyArg = IDL.encode([IDL.Text], [canisterDecodedReturnValue]);
-    const { Actor } = await importActor(() =>
-      jest.doMock('./polling', () => ({
-        ...pollingImport,
-        pollForResponse: jest.fn(async () => {
-          return { certificate: undefined, reply: expectedReplyArg };
-        }),
-      })),
-    );
+    const { Actor } = await importActor();
 
     const mockFetch = jest.fn((resource: URL) => {
       if (resource.toString().endsWith('/call')) {
@@ -292,6 +284,16 @@ describe('makeActor', () => {
       fetch: mockFetch,
       host: 'http://127.0.0.1',
       verifyQuerySignatures: false,
+    });
+    jest.spyOn(httpAgent, 'callAndPoll').mockImplementation(async (cid, fields) => {
+      const { requestDetails, response } = await httpAgent.call(cid, fields);
+      return {
+        certificate: undefined as unknown as certificateImport.Certificate,
+        rawCertificate: new Uint8Array(),
+        reply: expectedReplyArg,
+        callResponse: response,
+        requestDetails,
+      };
     });
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
     const actor = Actor.createActor(actorInterface, { canisterId, agent: httpAgent });
@@ -390,18 +392,7 @@ describe('makeActor', () => {
     const canisterDecodedReturnValue = 'Hello, World!';
     const expectedReplyArg = IDL.encode([IDL.Text], [canisterDecodedReturnValue]);
 
-    // Mock the polling module with a spy to track calls
-    const mockPollForResponse = jest.fn(async () => {
-      return { certificate: undefined, reply: expectedReplyArg };
-    });
-
-    // Import actor with mocked polling
-    const { Actor } = await importActor(() =>
-      jest.doMock('./polling', () => ({
-        ...pollingImport,
-        pollForResponse: mockPollForResponse,
-      })),
-    );
+    const { Actor } = await importActor();
 
     // Create a simple actor interface
     const actorInterface = () => {
@@ -422,6 +413,15 @@ describe('makeActor', () => {
 
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
     const httpAgent = new HttpAgent({ fetch: mockFetch });
+
+    // Spy on callAndPoll to track calls
+    const mockCallAndPoll = jest.spyOn(httpAgent, 'callAndPoll').mockResolvedValue({
+      certificate: undefined as unknown as certificateImport.Certificate,
+      rawCertificate: new Uint8Array(),
+      reply: expectedReplyArg,
+      callResponse: { ok: true, status: 202, statusText: 'accepted', body: null, headers: [] },
+      requestDetails: undefined,
+    });
 
     // Create actor with preSignReadStateRequest enabled
     const actor = Actor.createActor(actorInterface, {
@@ -438,20 +438,12 @@ describe('makeActor', () => {
     // Verify the result is as expected
     expect(reply).toEqual(canisterDecodedReturnValue);
 
-    // Verify pollForResponse was called with preSignReadStateRequest option
-    expect(mockPollForResponse).toHaveBeenCalledTimes(1);
-    expect(mockPollForResponse.mock.calls.length).toBeGreaterThan(0);
+    // Verify callAndPoll was called with preSignReadStateRequest option
+    expect(mockCallAndPoll).toHaveBeenCalledTimes(1);
 
-    // Use any to handle the mock call structure
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const callArgs = mockPollForResponse.mock.calls[0] as any[];
-    // Options should be the 4th argument (index 3)
-    if (callArgs.length > 3) {
-      const pollOptions = callArgs[3];
-      expect(pollOptions.preSignReadStateRequest).toBe(true);
-    } else {
-      fail('pollOptions was not passed to pollForResponse');
-    }
+    // PollingOptions is the 3rd argument (index 2)
+    const pollOptions = mockCallAndPoll.mock.calls[0][2];
+    expect(pollOptions?.preSignReadStateRequest).toBe(true);
   });
 
   it('should allow method-specific pollingOptions override with withOptions', async () => {
@@ -459,18 +451,7 @@ describe('makeActor', () => {
     const canisterDecodedReturnValue = 'Hello, World!';
     const expectedReplyArg = IDL.encode([IDL.Text], [canisterDecodedReturnValue]);
 
-    // Mock the polling module with a spy to track calls
-    const mockPollForResponse = jest.fn(async () => {
-      return { certificate: undefined, reply: expectedReplyArg };
-    });
-
-    // Import actor with mocked polling
-    const { Actor } = await importActor(() =>
-      jest.doMock('./polling', () => ({
-        ...pollingImport,
-        pollForResponse: mockPollForResponse,
-      })),
-    );
+    const { Actor } = await importActor();
 
     // Create a simple actor interface
     const actorInterface = () => {
@@ -491,6 +472,15 @@ describe('makeActor', () => {
 
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
     const httpAgent = new HttpAgent({ fetch: mockFetch });
+
+    // Spy on callAndPoll to track calls
+    const mockCallAndPoll = jest.spyOn(httpAgent, 'callAndPoll').mockResolvedValue({
+      certificate: undefined as unknown as certificateImport.Certificate,
+      rawCertificate: new Uint8Array(),
+      reply: expectedReplyArg,
+      callResponse: { ok: true, status: 202, statusText: 'accepted', body: null, headers: [] },
+      requestDetails: undefined,
+    });
 
     // Create actor without preSignReadStateRequest at actor level
     const actor = Actor.createActor(actorInterface, {
@@ -512,21 +502,13 @@ describe('makeActor', () => {
     // Verify the result is as expected
     expect(reply).toEqual(canisterDecodedReturnValue);
 
-    // Verify pollForResponse was called with the right options
-    expect(mockPollForResponse).toHaveBeenCalledTimes(1);
-    expect(mockPollForResponse.mock.calls.length).toBeGreaterThan(0);
+    // Verify callAndPoll was called with the right options
+    expect(mockCallAndPoll).toHaveBeenCalledTimes(1);
 
-    // Use any to handle the mock call structure
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const callArgs = mockPollForResponse.mock.calls[0] as any[];
-    // Options should be the 4th argument (index 3)
-    if (callArgs.length > 3) {
-      const pollOptions = callArgs[3];
-      expect(pollOptions.preSignReadStateRequest).toBe(true);
-      expect(pollOptions.strategy).toBe(customStrategy);
-    } else {
-      fail('pollOptions was not passed to pollForResponse');
-    }
+    // PollingOptions is the 3rd argument (index 2)
+    const pollOptions = mockCallAndPoll.mock.calls[0][2];
+    expect(pollOptions?.preSignReadStateRequest).toBe(true);
+    expect(pollOptions?.strategy).toBe(customStrategy);
   });
 
   it('should verify certificate using effectiveCanisterId for update calls', async () => {
@@ -556,14 +538,7 @@ describe('makeActor', () => {
       },
     );
 
-    const { Actor } = await importActor(() => {
-      jest.doMock('./certificate.ts', () => {
-        return {
-          ...certificateImport,
-          Certificate: { create: certificateCreateMock },
-        };
-      });
-    });
+    const { Actor } = await importActor();
 
     const actorInterface = () => {
       return IDL.Service({
@@ -585,6 +560,24 @@ describe('makeActor', () => {
     const httpAgent = HttpAgent.createSync({ fetch: mockFetch, host: 'http://127.0.0.1' });
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
     const effectiveCanisterId = Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai');
+
+    const mockCallAndPoll = jest
+      .spyOn(httpAgent, 'callAndPoll')
+      .mockImplementation(async (_cid, fields) => {
+        // Capture what effectiveCanisterId was passed
+        const cert = await certificateCreateMock({
+          certificate: new Uint8Array([1, 2, 3]),
+          rootKey: new Uint8Array(),
+          principal: { canisterId: Principal.from(fields.effectiveCanisterId) },
+        });
+        return {
+          certificate: cert as unknown as certificateImport.Certificate,
+          rawCertificate: new Uint8Array(),
+          reply: expectedReplyArg,
+          callResponse: { ok: true, status: 200, statusText: 'ok', body: null, headers: [] },
+          requestDetails: undefined,
+        };
+      });
 
     const actor = Actor.createActor(actorInterface, {
       canisterId,
@@ -607,43 +600,15 @@ describe('makeActor', () => {
     } else {
       fail('subnetId should not be used for update calls');
     }
+
+    mockCallAndPoll.mockRestore();
   });
 
   it('should verify certificate using canisterId when effectiveCanisterId is not provided', async () => {
     const decodedReturnValue = 'Hello, World!';
     const expectedReplyArg = IDL.encode([IDL.Text], [decodedReturnValue]);
-    const certificateCreateMock = jest.fn(
-      async (_createOptions: certificateImport.CreateCertificateOptions) => {
-        return {
-          // Minimal interface used by the actor
-          lookup_path: (path: unknown[]) => {
-            const last = path[path.length - 1];
-            if (last === 'status') {
-              return {
-                status: certificateImport.LookupPathStatus.Found,
-                value: new TextEncoder().encode('replied'),
-              };
-            }
-            if (last === 'reply') {
-              return {
-                status: certificateImport.LookupPathStatus.Found,
-                value: expectedReplyArg,
-              };
-            }
-            return { status: certificateImport.LookupPathStatus.Absent };
-          },
-        };
-      },
-    );
 
-    const { Actor } = await importActor(() => {
-      jest.doMock('./certificate.ts', () => {
-        return {
-          ...certificateImport,
-          Certificate: { create: certificateCreateMock },
-        };
-      });
-    });
+    const { Actor } = await importActor();
 
     const actorInterface = () => {
       return IDL.Service({
@@ -665,6 +630,14 @@ describe('makeActor', () => {
     const httpAgent = HttpAgent.createSync({ fetch: mockFetch, host: 'http://127.0.0.1' });
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
 
+    const mockCallAndPoll = jest.spyOn(httpAgent, 'callAndPoll').mockResolvedValue({
+      certificate: undefined as unknown as certificateImport.Certificate,
+      rawCertificate: new Uint8Array(),
+      reply: expectedReplyArg,
+      callResponse: { ok: true, status: 200, statusText: 'ok', body: null, headers: [] },
+      requestDetails: undefined,
+    });
+
     const actor = Actor.createActor(actorInterface, {
       canisterId,
       agent: httpAgent,
@@ -672,54 +645,21 @@ describe('makeActor', () => {
 
     const reply = await actor.greet_update('test');
 
-    // Assert reply decoded correctly
     expect(reply).toEqual(decodedReturnValue);
 
-    // Assert Certificate.create was called with the target canisterId (since no effectiveCanisterId provided)
-    expect(certificateCreateMock).toHaveBeenCalledTimes(1);
-    const callArg = certificateCreateMock.mock.calls[0][0];
-    if ('canisterId' in callArg.principal) {
-      expect(Principal.from(callArg.principal.canisterId).toText()).toBe(canisterId.toText());
-    } else {
-      fail('subnetId should not be used for update calls');
-    }
+    // Actor should pass canisterId as effectiveCanisterId when none is explicitly provided
+    expect(mockCallAndPoll).toHaveBeenCalledTimes(1);
+    const fields = mockCallAndPoll.mock.calls[0][1];
+    expect(Principal.from(fields.effectiveCanisterId).toText()).toBe(canisterId.toText());
+
+    mockCallAndPoll.mockRestore();
   });
 
   it('should verify certificate using effectiveCanisterId passed via withOptions for update calls', async () => {
     const decodedReturnValue = 'Hello, World!';
     const expectedReplyArg = IDL.encode([IDL.Text], [decodedReturnValue]);
-    const certificateCreateMock = jest.fn(
-      async (_createOptions: certificateImport.CreateCertificateOptions) => {
-        return {
-          // Minimal interface used by the actor
-          lookup_path: (path: unknown[]) => {
-            const last = path[path.length - 1];
-            if (last === 'status') {
-              return {
-                status: certificateImport.LookupPathStatus.Found,
-                value: new TextEncoder().encode('replied'),
-              };
-            }
-            if (last === 'reply') {
-              return {
-                status: certificateImport.LookupPathStatus.Found,
-                value: expectedReplyArg,
-              };
-            }
-            return { status: certificateImport.LookupPathStatus.Absent };
-          },
-        };
-      },
-    );
 
-    const { Actor } = await importActor(() => {
-      jest.doMock('./certificate.ts', () => {
-        return {
-          ...certificateImport,
-          Certificate: { create: certificateCreateMock },
-        };
-      });
-    });
+    const { Actor } = await importActor();
 
     const actorInterface = () => {
       return IDL.Service({
@@ -742,6 +682,14 @@ describe('makeActor', () => {
     const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
     const effectiveCanisterId = Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai');
 
+    const mockCallAndPoll = jest.spyOn(httpAgent, 'callAndPoll').mockResolvedValue({
+      certificate: undefined as unknown as certificateImport.Certificate,
+      rawCertificate: new Uint8Array(),
+      reply: expectedReplyArg,
+      callResponse: { ok: true, status: 200, statusText: 'ok', body: null, headers: [] },
+      requestDetails: undefined,
+    });
+
     const actor = Actor.createActor(actorInterface, {
       canisterId,
       agent: httpAgent,
@@ -749,25 +697,23 @@ describe('makeActor', () => {
 
     const reply = await actor.greet_update.withOptions({ effectiveCanisterId })('test');
 
-    // Assert reply decoded correctly
     expect(reply).toEqual(decodedReturnValue);
 
-    // Assert Certificate.create was called with the effectiveCanisterId provided via withOptions
-    expect(certificateCreateMock).toHaveBeenCalledTimes(1);
-    const callArg = certificateCreateMock.mock.calls[0][0];
-    if ('canisterId' in callArg.principal) {
-      expect(Principal.from(callArg.principal.canisterId).toText()).toBe(
-        effectiveCanisterId.toText(),
-      );
-    } else {
-      fail('subnetId should not be used for update calls');
-    }
+    // Assert effectiveCanisterId from withOptions is passed through
+    expect(mockCallAndPoll).toHaveBeenCalledTimes(1);
+    const fields = mockCallAndPoll.mock.calls[0][1];
+    expect(Principal.from(fields.effectiveCanisterId).toText()).toBe(effectiveCanisterId.toText());
+
+    mockCallAndPoll.mockRestore();
   });
 });
 
 test('it should preserve errors from call', async () => {
   const httpAgent = {
     call: () => {
+      throw UnknownError.fromCode(new UnexpectedErrorCode('test error'));
+    },
+    callAndPoll: () => {
       throw UnknownError.fromCode(new UnexpectedErrorCode('test error'));
     },
   };

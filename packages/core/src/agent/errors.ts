@@ -28,7 +28,12 @@ export interface RequestContext {
 export interface CallContext {
   canisterId: Principal;
   methodName: string;
-  httpDetails: HttpDetailsResponse;
+  /**
+   * HTTP details of the call response. May be undefined when the error
+   * originates from `HttpAgent.callAndPoll`, which does not expose
+   * the raw HTTP response on errors.
+   */
+  httpDetails?: HttpDetailsResponse;
 }
 
 abstract class ErrorCode {
@@ -50,11 +55,7 @@ abstract class ErrorCode {
         `  Ingress expiry: ${this.requestContext.ingressExpiry.toString()}`;
     }
     if (this.callContext) {
-      errorMessage +=
-        `\nCall context:\n` +
-        `  Canister ID: ${this.callContext.canisterId.toText()}\n` +
-        `  Method name: ${this.callContext.methodName}\n` +
-        `  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}`;
+      errorMessage += `\nCall context:\n  Canister ID: ${this.callContext.canisterId.toText()}\n  Method name: ${this.callContext.methodName}${this.callContext.httpDetails ? `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}` : ''}`;
     }
     return errorMessage;
   }

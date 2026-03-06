@@ -2,6 +2,7 @@ import type { JsonObject } from '#candid';
 import { Principal } from '#principal';
 import {
   HashTreeDecodeErrorCode,
+  CertifiedRejectErrorCode,
   CreateHttpAgentErrorCode,
   ExcessiveSignaturesErrorCode,
   ExternalError,
@@ -15,8 +16,10 @@ import {
   MissingSignatureErrorCode,
   ProtocolError,
   QuerySignatureVerificationFailedErrorCode,
+  RejectError,
   TimeoutWaitingForResponseErrorCode,
   TrustError,
+  UncertifiedRejectUpdateErrorCode,
   UnexpectedErrorCode,
   UnknownError,
   HttpErrorCode,
@@ -36,11 +39,15 @@ import {
   QueryResponseStatus,
   type Agent,
   type ApiQueryResponse,
+  type CallAndPollResult,
   type QueryFields,
   type QueryResponse,
   type ReadStateOptions,
   type ReadStateResponse,
   type SubmitResponse,
+  type CallOptions,
+  isV4ResponseBody,
+  isV2ResponseBody,
 } from '../api.ts';
 import { Expiry, httpHeadersTransform, makeNonceTransform } from './transforms.ts';
 import {
@@ -66,6 +73,7 @@ import {
   getSubnetIdFromCertificate,
   type HashTree,
   lookup_path,
+  lookupResultToBuffer,
   LookupPathStatus,
 } from '../../certificate.ts';
 import { ed25519 } from '@noble/curves/ed25519';
@@ -78,6 +86,7 @@ import {
   ExponentialBackoff,
 } from '../../polling/backoff.ts';
 import { decodeTime } from '../../utils/leb.ts';
+import { pollForResponse, type PollingOptions } from '../../polling/index.ts';
 import { concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
@@ -618,6 +627,85 @@ export class HttpAgent implements Agent {
       this.log.error(`Error while making call: ${callError.message}`, callError);
       throw callError;
     }
+  }
+
+  /**
+   * Call a canister and poll for the response, handling v4 sync responses,
+   * v2 rejections, and 202 polling fallback.
+   * @param canisterId The canister to call.
+   * @param fields The call options (method name, arg, effective canister ID, optional nonce).
+   * @param options Optional polling configuration.
+   * @returns The certificate, reply bytes, raw certificate bytes, request details, and call response.
+   */
+  public async callAndPoll(
+    canisterId: Principal | string,
+    fields: CallOptions,
+    options: PollingOptions = {},
+  ): Promise<CallAndPollResult> {
+    const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
+    const { requestId, response, requestDetails } = await this.call(canisterId, fields);
+
+    // V4 sync response — certificate is returned inline, no polling needed
+    if (isV4ResponseBody(response.body)) {
+      if (this.rootKey == null) {
+        throw ExternalError.fromCode(new MissingRootKeyErrorCode());
+      }
+      const rawCertificate = response.body.certificate;
+      const certificate = await Certificate.create({
+        certificate: rawCertificate,
+        rootKey: this.rootKey,
+        principal: { canisterId: effectiveCanisterId },
+        blsVerify: options.blsVerify,
+        agent: this,
+      });
+
+      const path = [utf8ToBytes('request_status'), requestId];
+      const status = new TextDecoder().decode(
+        lookupResultToBuffer(certificate.lookup_path([...path, utf8ToBytes('status')])),
+      );
+
+      switch (status) {
+        case RequestStatusResponseStatus.Replied:
+          return {
+            reply: lookupResultToBuffer(certificate.lookup_path([...path, 'reply']))!,
+            certificate,
+            rawCertificate,
+            requestDetails,
+            callResponse: response,
+          };
+        case RequestStatusResponseStatus.Rejected: {
+          const rejectCode = new Uint8Array(
+            lookupResultToBuffer(certificate.lookup_path([...path, 'reject_code']))!,
+          )[0];
+          const rejectMessage = new TextDecoder().decode(
+            lookupResultToBuffer(certificate.lookup_path([...path, 'reject_message']))!,
+          );
+          const errorCodeBuf = lookupResultToBuffer(
+            certificate.lookup_path([...path, 'error_code']),
+          );
+          const errorCode = errorCodeBuf ? new TextDecoder().decode(errorCodeBuf) : undefined;
+          throw RejectError.fromCode(
+            new CertifiedRejectErrorCode(requestId, rejectCode, rejectMessage, errorCode),
+          );
+        }
+        default:
+          throw UnknownError.fromCode(
+            new UnexpectedErrorCode(`Unexpected request status in v4 sync response: "${status}"`),
+          );
+      }
+    }
+
+    // V2 uncertified rejection — throw immediately
+    if (isV2ResponseBody(response.body)) {
+      const { reject_code, reject_message, error_code } = response.body;
+      throw RejectError.fromCode(
+        new UncertifiedRejectUpdateErrorCode(requestId, reject_code, reject_message, error_code),
+      );
+    }
+
+    // 202 Accepted — fall back to polling
+    const pollResult = await pollForResponse(this, effectiveCanisterId, requestId, options);
+    return { ...pollResult, requestDetails, callResponse: response };
   }
 
   async #requestAndRetryQuery(args: {

@@ -4,14 +4,8 @@ import {
   Certificate,
   lookupResultToBuffer,
 } from '../certificate.ts';
-import {
-  type Agent,
-  type CallOptions,
-  type ReadStateResponse,
-  isV4ResponseBody,
-  isV2ResponseBody,
-} from '../agent/api.ts';
-import { Principal } from '#principal';
+import type { Agent, ReadStateResponse } from '../agent/api.ts';
+import type { Principal } from '#principal';
 import {
   CertifiedRejectErrorCode,
   ExternalError,
@@ -20,14 +14,13 @@ import {
   MissingRootKeyErrorCode,
   RejectError,
   RequestStatusDoneNoReplyErrorCode,
-  UncertifiedRejectUpdateErrorCode,
   UnknownError,
   UNREACHABLE_ERROR,
 } from '../errors.ts';
 
 export * as strategy from './strategy.ts';
 import { defaultStrategy } from './strategy.ts';
-import { ReadRequestType, type CallRequest, type ReadStateRequest } from '../agent/http/types.ts';
+import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
 import { RequestStatusResponseStatus } from '../agent/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 export { defaultStrategy } from './strategy.ts';
@@ -42,11 +35,11 @@ export type PollStrategy = (
  * The result of polling for a response, including the certificate, reply bytes, and raw certificate bytes.
  */
 export interface PollForResponseResult {
-  // The certificate for the request, which can be used to verify the reply.
+  /** The certificate for the request, which can be used to verify the reply. */
   certificate: Certificate;
-  // The reply bytes for the request.
+  /** The reply bytes for the request. */
   reply: Uint8Array;
-  // The raw certificate bytes for the request.
+  /** The raw certificate bytes for the request. */
   rawCertificate: Uint8Array;
 }
 
@@ -265,78 +258,4 @@ export async function constructRequest(options: {
     throw InputError.fromCode(new InvalidReadStateRequestErrorCode(request));
   }
   return request;
-}
-
-/**
- * Calls a canister method and returns the response, using the v4 sync response
- * when available or falling back to polling.
- * @param agent The agent to use for the call and polling.
- * @param canisterId The canister to call.
- * @param fields The call options matching the agent's call interface.
- * @param options Optional polling configuration.
- * @returns The poll result (certificate, reply, raw certificate bytes) and the request details from the call.
- */
-export async function callAndPollForResponse(
-  agent: Agent,
-  canisterId: Principal | string,
-  fields: CallOptions,
-  options: PollingOptions = {},
-): Promise<PollForResponseResult & { requestDetails?: CallRequest }> {
-  const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
-  const { requestId, response, requestDetails } = await agent.call(canisterId, fields);
-
-  // V4 sync response — certificate is returned inline, no polling needed
-  if (isV4ResponseBody(response.body)) {
-    if (agent.rootKey == null) {
-      throw ExternalError.fromCode(new MissingRootKeyErrorCode());
-    }
-    const rawCertificate = response.body.certificate;
-    const certificate = await Certificate.create({
-      certificate: rawCertificate,
-      rootKey: agent.rootKey,
-      principal: { canisterId: effectiveCanisterId },
-      blsVerify: options.blsVerify,
-      agent,
-    });
-
-    const path = [utf8ToBytes('request_status'), requestId];
-    const status = new TextDecoder().decode(
-      lookupResultToBuffer(certificate.lookup_path([...path, utf8ToBytes('status')])),
-    );
-
-    switch (status) {
-      case RequestStatusResponseStatus.Replied:
-        return {
-          reply: lookupResultToBuffer(certificate.lookup_path([...path, 'reply']))!,
-          certificate,
-          rawCertificate,
-          requestDetails,
-        };
-      case RequestStatusResponseStatus.Rejected: {
-        const rejectCode = new Uint8Array(
-          lookupResultToBuffer(certificate.lookup_path([...path, 'reject_code']))!,
-        )[0];
-        const rejectMessage = new TextDecoder().decode(
-          lookupResultToBuffer(certificate.lookup_path([...path, 'reject_message']))!,
-        );
-        const errorCodeBuf = lookupResultToBuffer(certificate.lookup_path([...path, 'error_code']));
-        const errorCode = errorCodeBuf ? new TextDecoder().decode(errorCodeBuf) : undefined;
-        throw RejectError.fromCode(
-          new CertifiedRejectErrorCode(requestId, rejectCode, rejectMessage, errorCode),
-        );
-      }
-    }
-  }
-
-  // V2 uncertified rejection — throw immediately
-  if (isV2ResponseBody(response.body)) {
-    const { reject_code, reject_message, error_code } = response.body;
-    throw RejectError.fromCode(
-      new UncertifiedRejectUpdateErrorCode(requestId, reject_code, reject_message, error_code),
-    );
-  }
-
-  // 202 Accepted — fall back to polling
-  const pollResult = await pollForResponse(agent, effectiveCanisterId, requestId, options);
-  return { ...pollResult, requestDetails };
 }

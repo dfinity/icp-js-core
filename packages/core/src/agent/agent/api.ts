@@ -3,6 +3,7 @@ import type { RequestId } from '../request_id.ts';
 import type { JsonObject } from '#candid';
 import type { Identity } from '../auth.ts';
 import type { CallRequest, HttpHeaderField, QueryRequest } from './http/types.ts';
+import type { PollForResponseResult, PollingOptions } from '../polling/index.ts';
 
 /**
  * Codes used by the replica for rejecting a message.
@@ -115,6 +116,11 @@ export interface CallOptions {
    * @see https://internetcomputer.org/docs/current/references/ic-interface-spec/#http-effective-canister-id
    */
   effectiveCanisterId: Principal | string;
+
+  /**
+   * An optional nonce to use for the call, used to prevent replay attacks.
+   */
+  nonce?: Uint8Array;
 }
 
 export interface ReadStateResponse {
@@ -166,6 +172,17 @@ export interface SubmitResponse {
 }
 
 /**
+ * The result of {@link HttpAgent.callAndPoll}, extending {@link PollForResponseResult}
+ * with the request details and raw HTTP response from the call.
+ */
+export interface CallAndPollResult extends PollForResponseResult {
+  /** The request details from the call, if available. */
+  requestDetails?: CallRequest;
+  /** The raw HTTP response from the call endpoint. */
+  callResponse: SubmitResponse['response'];
+}
+
+/**
  * An Agent able to make calls and queries to a Replica.
  */
 export interface Agent {
@@ -201,6 +218,20 @@ export interface Agent {
   ): Promise<ReadStateResponse>;
 
   call(canisterId: Principal | string, fields: CallOptions): Promise<SubmitResponse>;
+
+  /**
+   * Call a canister and poll for the response, handling v4 sync responses,
+   * v2 rejections, and 202 polling fallback.
+   * @param canisterId The canister to call.
+   * @param fields The call options (method name, arg, effective canister ID, optional nonce).
+   * @param options Optional polling configuration.
+   * @returns The certificate, reply bytes, raw certificate bytes, request details, and call response.
+   */
+  callAndPoll(
+    canisterId: Principal | string,
+    fields: CallOptions,
+    options?: PollingOptions,
+  ): Promise<CallAndPollResult>;
 
   /**
    * Query the status endpoint of the replica. This normally has a few fields that

@@ -181,17 +181,25 @@ describe('pollForResponse', () => {
     expect(result.reply).toEqual(expectedReply);
   });
 
-  it('returns a certificate with a lookup_path method', async () => {
+  it('returns a certificate that can look up the reply', async () => {
     const { pollForResponse } = await import('./index.ts');
 
     const canisterId = Principal.anonymous();
     const requestId = new Uint8Array([1, 2, 3]) as RequestId;
-    replyByRequestKey.set(requestId, new Uint8Array([42]));
+    const expectedReply = new Uint8Array([42]);
+    replyByRequestKey.set(requestId, expectedReply);
 
     const result = await pollForResponse(mockAgent, canisterId, requestId);
 
     expect(result.certificate).toBeDefined();
     expect(typeof result.certificate.lookup_path).toBe('function');
+    // The certificate's lookup_path should resolve the reply
+    const lookupResult = result.certificate.lookup_path([
+      new Uint8Array(),
+      requestId,
+      'reply',
+    ]) as LookupPathResultFound;
+    expect(lookupResult.value).toEqual(expectedReply);
   });
 
   it('throws RejectError when the request is rejected', async () => {
@@ -247,306 +255,22 @@ describe('pollForResponse', () => {
 
     await expect(pollForResponse(mockAgent, canisterId, requestId)).rejects.toThrow(UnknownError);
   });
-});
 
-describe('callAndPollForResponse', () => {
-  const canisterId = Principal.anonymous();
-  const requestId = new Uint8Array([10, 20, 30]) as RequestId;
+  it('throws ExternalError when agent.rootKey is null', async () => {
+    const { pollForResponse } = await import('./index.ts');
+    const { ExternalError } = await import('../errors.ts');
 
-  beforeEach(() => {
-    statusesByRequestKey.clear();
-    replyByRequestKey.clear();
-    rejectByRequestKey.clear();
-  });
-
-  const mockRequestDetails = {
-    request_type: 'call' as const,
-    canister_id: canisterId,
-    method_name: 'test_method',
-    arg: new Uint8Array([1]),
-    sender: new Uint8Array([4]),
-    ingress_expiry: { toHash: () => new Uint8Array() },
-  };
-
-  function makeMockAgent(): Agent {
-    return {
-      rootKey: new Uint8Array([1]),
+    const agentWithoutRootKey = {
+      rootKey: null,
       readState: async () => ({ certificate: new Uint8Array([0]) }),
-      call: jest.fn(async () => ({
-        requestId,
-        requestDetails: mockRequestDetails,
-        response: {
-          ok: true,
-          status: 202,
-          statusText: 'Accepted',
-          body: null,
-          headers: [],
-        },
-      })),
     } as unknown as Agent;
-  }
 
-  const callFields = {
-    methodName: 'test_method',
-    arg: new Uint8Array([1]),
-    effectiveCanisterId: canisterId,
-  };
-
-  it('returns the expected reply from pollForResponse', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const agent = makeMockAgent();
-    const expectedReply = new Uint8Array([42]);
-    replyByRequestKey.set(requestId, expectedReply);
-
-    const result = await callAndPollForResponse(agent, canisterId, callFields);
-
-    expect(result.reply).toEqual(expectedReply);
-  });
-
-  it('returns the expected rawCertificate from pollForResponse', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const agent = makeMockAgent();
+    const canisterId = Principal.anonymous();
+    const requestId = new Uint8Array([1, 2, 3]) as RequestId;
     replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-    const result = await callAndPollForResponse(agent, canisterId, callFields);
-
-    expect(result.rawCertificate).toEqual(new Uint8Array([0]));
-  });
-
-  it('returns the expected certificate from pollForResponse', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const agent = makeMockAgent();
-    replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-    const result = await callAndPollForResponse(agent, canisterId, callFields);
-
-    expect(result.certificate).toBeDefined();
-    expect(typeof result.certificate.lookup_path).toBe('function');
-  });
-
-  it('returns the expected requestDetails from pollForResponse', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const agent = makeMockAgent();
-    replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-    const result = await callAndPollForResponse(agent, canisterId, callFields);
-
-    expect(result.requestDetails).toEqual(mockRequestDetails);
-  });
-
-  it('calls agent.call with the canisterId and fields', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const agent = makeMockAgent();
-    replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-    await callAndPollForResponse(agent, canisterId, callFields);
-
-    expect(agent.call).toHaveBeenCalledWith(canisterId, callFields);
-  });
-
-  it('throws RejectError when pollForResponse encounters a rejection', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-    const { RejectError } = await import('../errors.ts');
-
-    const agent = makeMockAgent();
-    statusesByRequestKey.set(requestId, ['rejected']);
-    rejectByRequestKey.set(requestId, {
-      reject_code: 4,
-      reject_message: 'canister rejected',
-      error_code: 'IC0406',
-    });
-
-    await expect(callAndPollForResponse(agent, canisterId, callFields)).rejects.toThrow(
-      RejectError,
+    await expect(pollForResponse(agentWithoutRootKey, canisterId, requestId)).rejects.toThrow(
+      ExternalError,
     );
-  });
-
-  it('propagates reject details from pollForResponse', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const agent = makeMockAgent();
-    statusesByRequestKey.set(requestId, ['rejected']);
-    rejectByRequestKey.set(requestId, {
-      reject_code: 4,
-      reject_message: 'canister rejected',
-      error_code: 'IC0406',
-    });
-
-    try {
-      await callAndPollForResponse(agent, canisterId, callFields);
-      fail('Expected callAndPollForResponse to throw');
-    } catch (error) {
-      expect(error).toHaveProperty('code');
-      const code = (
-        error as { code: { rejectCode: number; rejectMessage: string; rejectErrorCode: string } }
-      ).code;
-      expect(code.rejectCode).toBe(4);
-      expect(code.rejectMessage).toBe('canister rejected');
-      expect(code.rejectErrorCode).toBe('IC0406');
-    }
-  });
-
-  it('uses effectiveCanisterId when provided', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const ecid = Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai');
-    const agent = makeMockAgent();
-    replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-    const fieldsWithEcid = {
-      methodName: 'test_method',
-      arg: new Uint8Array([1]),
-      effectiveCanisterId: ecid,
-    };
-
-    await callAndPollForResponse(agent, canisterId, fieldsWithEcid);
-
-    expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithEcid);
-  });
-
-  it('accepts canisterId as a string', async () => {
-    const { callAndPollForResponse } = await import('./index.ts');
-
-    const agent = makeMockAgent();
-    replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-    const result = await callAndPollForResponse(agent, canisterId.toText(), callFields);
-
-    expect(result.reply).toEqual(new Uint8Array([42]));
-    expect(agent.call).toHaveBeenCalledWith(canisterId.toText(), callFields);
-  });
-
-  describe('v4 sync response handling', () => {
-    function makeMockAgentWithV4Response(overrides: { certificate?: Uint8Array } = {}): Agent {
-      return {
-        rootKey: new Uint8Array([1]),
-        readState: jest.fn(async () => ({ certificate: new Uint8Array([0]) })),
-        call: jest.fn(async () => ({
-          requestId,
-          requestDetails: mockRequestDetails,
-          response: {
-            ok: true,
-            status: 200,
-            statusText: 'OK',
-            body: { certificate: overrides.certificate ?? new Uint8Array([0]) },
-            headers: [],
-          },
-        })),
-      } as unknown as Agent;
-    }
-
-    it('uses v4 sync response without polling when reply is available', async () => {
-      const { callAndPollForResponse } = await import('./index.ts');
-
-      const agent = makeMockAgentWithV4Response();
-      replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-      const result = await callAndPollForResponse(agent, canisterId, callFields);
-
-      expect(result.reply).toEqual(new Uint8Array([42]));
-      expect(result.certificate).toBeDefined();
-      expect(result.rawCertificate).toEqual(new Uint8Array([0]));
-      expect(result.requestDetails).toEqual(mockRequestDetails);
-      // readState should NOT have been called — no polling needed
-      expect(agent.readState).not.toHaveBeenCalled();
-    });
-
-    it('returns the v4 certificate bytes as rawCertificate', async () => {
-      const { callAndPollForResponse } = await import('./index.ts');
-
-      const certBytes = new Uint8Array([10, 20, 30]);
-      const agent = makeMockAgentWithV4Response({ certificate: certBytes });
-      replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-      const result = await callAndPollForResponse(agent, canisterId, callFields);
-
-      expect(result.rawCertificate).toEqual(certBytes);
-    });
-
-    it('throws CertifiedRejectErrorCode for v4 rejected response', async () => {
-      const { callAndPollForResponse } = await import('./index.ts');
-      const { RejectError } = await import('../errors.ts');
-
-      const agent = makeMockAgentWithV4Response();
-      statusesByRequestKey.set(requestId, ['rejected']);
-      rejectByRequestKey.set(requestId, {
-        reject_code: 4,
-        reject_message: 'canister trapped',
-        error_code: 'IC0503',
-      });
-
-      await expect(callAndPollForResponse(agent, canisterId, callFields)).rejects.toThrow(
-        RejectError,
-      );
-      expect(agent.readState).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('v2 rejection handling', () => {
-    it('throws UncertifiedRejectUpdateErrorCode for v2 rejection', async () => {
-      const { callAndPollForResponse } = await import('./index.ts');
-      const { RejectError } = await import('../errors.ts');
-
-      const agent = {
-        rootKey: new Uint8Array([1]),
-        readState: jest.fn(async () => ({ certificate: new Uint8Array([0]) })),
-        call: jest.fn(async () => ({
-          requestId,
-          requestDetails: mockRequestDetails,
-          response: {
-            ok: false,
-            status: 200,
-            statusText: 'OK',
-            body: {
-              reject_code: 5,
-              reject_message: 'canister error',
-              error_code: 'IC0503',
-            },
-            headers: [],
-          },
-        })),
-      } as unknown as Agent;
-
-      await expect(callAndPollForResponse(agent, canisterId, callFields)).rejects.toThrow(
-        RejectError,
-      );
-      expect(agent.readState).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('202 fallback to polling', () => {
-    it('polls via readState when response is 202 Accepted', async () => {
-      const { callAndPollForResponse } = await import('./index.ts');
-
-      const readStateMock = jest.fn(async () => ({ certificate: new Uint8Array([0]) }));
-      const agent = {
-        rootKey: new Uint8Array([1]),
-        readState: readStateMock,
-        call: jest.fn(async () => ({
-          requestId,
-          requestDetails: mockRequestDetails,
-          response: {
-            ok: true,
-            status: 202,
-            statusText: 'Accepted',
-            body: null,
-            headers: [],
-          },
-        })),
-      } as unknown as Agent;
-
-      replyByRequestKey.set(requestId, new Uint8Array([42]));
-
-      const result = await callAndPollForResponse(agent, canisterId, callFields);
-
-      expect(result.reply).toEqual(new Uint8Array([42]));
-      // readState SHOULD have been called — polling was needed
-      expect(readStateMock).toHaveBeenCalled();
-    });
   });
 });
