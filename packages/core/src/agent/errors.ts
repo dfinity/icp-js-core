@@ -55,7 +55,13 @@ abstract class ErrorCode {
         `  Ingress expiry: ${this.requestContext.ingressExpiry.toString()}`;
     }
     if (this.callContext) {
-      errorMessage += `\nCall context:\n  Canister ID: ${this.callContext.canisterId.toText()}\n  Method name: ${this.callContext.methodName}${this.callContext.httpDetails ? `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}` : ''}`;
+      errorMessage +=
+        `\nCall context:\n` +
+        `  Canister ID: ${this.callContext.canisterId.toText()}\n` +
+        `  Method name: ${this.callContext.methodName}`;
+      if (this.callContext.httpDetails) {
+        errorMessage += `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}`;
+      }
     }
     return errorMessage;
   }

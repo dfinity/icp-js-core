@@ -40,6 +40,7 @@ import {
   type Agent,
   type ApiQueryResponse,
   type CallAndPollResult,
+  type HttpDetailsResponse,
   type QueryFields,
   type QueryResponse,
   type ReadStateOptions,
@@ -660,9 +661,10 @@ export class HttpAgent implements Agent {
       });
 
       const path = [utf8ToBytes('request_status'), requestId];
-      const status = new TextDecoder().decode(
-        lookupResultToBuffer(certificate.lookup_path([...path, utf8ToBytes('status')])),
+      const maybeBuf = lookupResultToBuffer(
+        certificate.lookup_path([...path, utf8ToBytes('status')]),
       );
+      const status = maybeBuf ? new TextDecoder().decode(maybeBuf) : undefined;
 
       switch (status) {
         case RequestStatusResponseStatus.Replied:
@@ -684,9 +686,18 @@ export class HttpAgent implements Agent {
             certificate.lookup_path([...path, 'error_code']),
           );
           const errorCode = errorCodeBuf ? new TextDecoder().decode(errorCodeBuf) : undefined;
-          throw RejectError.fromCode(
-            new CertifiedRejectErrorCode(requestId, rejectCode, rejectMessage, errorCode),
+          const certifiedRejectErrorCode = new CertifiedRejectErrorCode(
+            requestId,
+            rejectCode,
+            rejectMessage,
+            errorCode,
           );
+          certifiedRejectErrorCode.callContext = {
+            canisterId: effectiveCanisterId,
+            methodName: fields.methodName,
+            httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+          };
+          throw RejectError.fromCode(certifiedRejectErrorCode);
         }
         default:
           throw UnknownError.fromCode(
@@ -698,9 +709,18 @@ export class HttpAgent implements Agent {
     // V2 uncertified rejection — throw immediately
     if (isV2ResponseBody(response.body)) {
       const { reject_code, reject_message, error_code } = response.body;
-      throw RejectError.fromCode(
-        new UncertifiedRejectUpdateErrorCode(requestId, reject_code, reject_message, error_code),
+      const errorCode = new UncertifiedRejectUpdateErrorCode(
+        requestId,
+        reject_code,
+        reject_message,
+        error_code,
       );
+      errorCode.callContext = {
+        canisterId: effectiveCanisterId,
+        methodName: fields.methodName,
+        httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+      };
+      throw RejectError.fromCode(errorCode);
     }
 
     // 202 Accepted — fall back to polling

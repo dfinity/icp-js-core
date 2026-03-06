@@ -41,7 +41,7 @@ jest.mock('../certificate.ts', () => {
     Certificate: {
       create: jest.fn(async () => {
         return {
-          lookup_path: (path: [string, RequestId, string]): LookupPathResultFound => {
+          lookup_path: (path: [string, RequestId, string]) => {
             // Path shape: ['request_status', requestIdBytes, 'status'|'reject_code'|'reject_message'|'error_code'|'reply']
             const requestIdBytes = path[1];
             const lastPathElement = path[path.length - 1] as string | Uint8Array;
@@ -87,7 +87,7 @@ jest.mock('../certificate.ts', () => {
                   value: textEncoder.encode(reject.error_code),
                 };
               }
-              return undefined as unknown as LookupPathResultFound;
+              return { status: 'Absent' as LookupPathStatus.Absent };
             }
             throw new Error(`Unexpected lastPathElementStr ${lastPathElementStr}`);
           },
