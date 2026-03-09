@@ -79,7 +79,8 @@ import {
 } from '../../certificate.ts';
 import { readCertifiedReject } from '../../utils/certificateReject.ts';
 import { ed25519 } from '@noble/curves/ed25519';
-import { ExpirableMap } from '../../utils/expirableMap.ts';
+import type { ExpirableStore } from '../../utils/expirableStore.ts';
+import { createExpirableStore } from '../../utils/createExpirableStore.ts';
 import { Ed25519PublicKey } from '../../public_key.ts';
 import { ObservableLog } from '../../observable.ts';
 import {
@@ -185,6 +186,13 @@ export interface HttpAgentOptions {
    */
   verifyQuerySignatures?: boolean;
   /**
+   * Custom store for caching subnet node keys.
+   * Allows sharing the cache across multiple HttpAgent instances.
+   * Defaults to IndexedDB in browser environments, in-memory otherwise
+   * (via {@link createExpirableStore}).
+   */
+  subnetNodeKeyExpirableStore?: ExpirableStore<SubnetNodeKeys>;
+  /**
    * Whether to log to the console. Defaults to false.
    */
   logToConsole?: boolean;
@@ -281,6 +289,7 @@ export class HttpAgent implements Agent {
   readonly #retryTimes; // Retry requests N times before erroring by default
   #backoffStrategy: BackoffStrategyFactory;
   readonly #maxIngressExpiryInMinutes: number;
+  readonly #subnetNodeKeyExpirableStore: ExpirableStore<SubnetNodeKeys>;
   get #maxIngressExpiryInMs(): number {
     return this.#maxIngressExpiryInMinutes * MINUTE_TO_MSECS;
   }
@@ -294,9 +303,6 @@ export class HttpAgent implements Agent {
   #queryPipeline: HttpAgentRequestTransformFn[] = [];
   #updatePipeline: HttpAgentRequestTransformFn[] = [];
 
-  #subnetKeys: ExpirableMap<string, SubnetNodeKeys> = new ExpirableMap({
-    expirationTime: 5 * MINUTE_TO_MSECS,
-  });
   // Tracks in-flight fetchSubnetKeys promises to deduplicate parallel requests
   // for the same canister, preventing redundant read_state round-trips.
   #subnetKeysFetching: Map<string, Promise<SubnetNodeKeys>> = new Map();
@@ -329,6 +335,13 @@ export class HttpAgent implements Agent {
     if (options.verifyQuerySignatures !== undefined) {
       this.#verifyQuerySignatures = options.verifyQuerySignatures;
     }
+    this.#subnetNodeKeyExpirableStore =
+      options.subnetNodeKeyExpirableStore ??
+      createExpirableStore<SubnetNodeKeys>({
+        dbName: 'icp-sdk',
+        storeName: 'subnetNodeKeys',
+        expirationTime: 5 * MINUTE_TO_MSECS,
+      });
     // Default is 3
     this.#retryTimes = options.retryTimes ?? 3;
     // Delay strategy for retries. Default is exponential backoff
@@ -1075,7 +1088,7 @@ export class HttpAgent implements Agent {
       } catch {
         // In case the node signatures have changed, refresh the subnet keys and try again
         this.log.warn('Query response verification failed. Retrying with fresh subnet keys.');
-        this.#subnetKeys.delete(ecid.toString());
+        await this.#subnetNodeKeyExpirableStore.delete(ecid.toString());
         const updatedSubnetNodeKeys = await this.fetchSubnetKeys(ecid);
         return this.#verifyQueryResponse(queryWithDetails, updatedSubnetNodeKeys);
       }
@@ -1607,7 +1620,7 @@ export class HttpAgent implements Agent {
 
     const subnetId = getSubnetIdFromCertificate(canisterCertificate.cert, rootKey);
     const nodeKeys = lookupNodeKeysFromCertificate(canisterCertificate.cert, subnetId);
-    this.#subnetKeys.set(effectiveCanisterId.toText(), nodeKeys);
+    await this.#subnetNodeKeyExpirableStore.set(effectiveCanisterId.toText(), nodeKeys);
 
     return nodeKeys;
   }
