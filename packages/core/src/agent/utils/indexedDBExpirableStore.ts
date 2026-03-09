@@ -34,7 +34,9 @@ export class IndexedDBExpirableStore<V> implements ExpirableStore<V> {
 
   constructor(options: IndexedDBExpirableStoreOptions) {
     if (typeof globalThis.indexedDB === 'undefined') {
-      throw new Error('IndexedDBExpirableStore requires IndexedDB, which is not available in this environment');
+      throw new Error(
+        'IndexedDBExpirableStore requires IndexedDB, which is not available in this environment',
+      );
     }
     validateExpirationTime(options.expirationTime);
     this.#dbName = options.dbName;
