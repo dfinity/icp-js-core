@@ -116,6 +116,47 @@ describe('IndexedDBExpirableStore', () => {
     expect(await store2.get('key-1')).toBe('value-1');
   });
 
+  it('should handle different storeNames on the same dbName', async () => {
+    const dbName = 'test-multi-store';
+
+    const storeA = new IndexedDBExpirableStore({
+      dbName,
+      storeName: 'store-a',
+      expirationTime: DEFAULT_TTL,
+    });
+    await storeA.set('key-1', 'value-a');
+
+    // Second store with same dbName but different storeName — triggers version bump
+    const storeB = new IndexedDBExpirableStore({
+      dbName,
+      storeName: 'store-b',
+      expirationTime: DEFAULT_TTL,
+    });
+    await storeB.set('key-1', 'value-b');
+
+    expect(await storeA.get('key-1')).toBe('value-a');
+    expect(await storeB.get('key-1')).toBe('value-b');
+  });
+
+  it('should throw when IndexedDB is unavailable', () => {
+    const original = globalThis.indexedDB;
+    // @ts-expect-error -- intentionally removing indexedDB to test guard
+    delete globalThis.indexedDB;
+
+    try {
+      expect(
+        () =>
+          new IndexedDBExpirableStore({
+            dbName: 'test-no-idb',
+            storeName: 'entries',
+            expirationTime: DEFAULT_TTL,
+          }),
+      ).toThrow('IndexedDBExpirableStore requires IndexedDB');
+    } finally {
+      globalThis.indexedDB = original;
+    }
+  });
+
   it('should overwrite existing entries', async () => {
     const store = new IndexedDBExpirableStore({
       dbName: 'test-overwrite',

@@ -33,6 +33,9 @@ export class IndexedDBExpirableStore<V> implements ExpirableStore<V> {
   #dbPromise: Promise<IDBDatabase> | null = null;
 
   constructor(options: IndexedDBExpirableStoreOptions) {
+    if (typeof globalThis.indexedDB === 'undefined') {
+      throw new Error('IndexedDBExpirableStore requires IndexedDB, which is not available in this environment');
+    }
     validateExpirationTime(options.expirationTime);
     this.#dbName = options.dbName;
     this.#storeName = options.storeName;
@@ -41,24 +44,54 @@ export class IndexedDBExpirableStore<V> implements ExpirableStore<V> {
 
   #getDb(): Promise<IDBDatabase> {
     if (!this.#dbPromise) {
-      const storeName = this.#storeName;
+      this.#dbPromise = this.#openDb();
+    }
+    return this.#dbPromise;
+  }
 
-      this.#dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open(this.#dbName, 1);
+  async #openDb(): Promise<IDBDatabase> {
+    const db = await this.#openRequest();
 
-        request.onupgradeneeded = () => {
-          const db = request.result;
-          if (!db.objectStoreNames.contains(storeName)) {
-            db.createObjectStore(storeName, { keyPath: 'key' });
-          }
-        };
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
+    if (db.objectStoreNames.contains(this.#storeName)) {
+      return db;
     }
 
-    return this.#dbPromise;
+    // Object store is missing — close and reopen with a bumped version
+    // to trigger onupgradeneeded.
+    const nextVersion = db.version + 1;
+    db.close();
+    return this.#openRequest(nextVersion);
+  }
+
+  #openRequest(version?: number): Promise<IDBDatabase> {
+    const storeName = this.#storeName;
+
+    return new Promise<IDBDatabase>((resolve, reject) => {
+      const request = globalThis.indexedDB.open(this.#dbName, version);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(storeName)) {
+          db.createObjectStore(storeName, { keyPath: 'key' });
+        }
+      };
+
+      request.onsuccess = () => {
+        const db = request.result;
+
+        // Cooperatively close when another instance (or this store with a
+        // different storeName) requests a version upgrade. The next
+        // operation will re-acquire the connection via #getDb().
+        db.onversionchange = () => {
+          db.close();
+          this.#dbPromise = null;
+        };
+
+        resolve(db);
+      };
+
+      request.onerror = () => reject(request.error);
+    });
   }
 
   async get(key: string): Promise<V | undefined> {
