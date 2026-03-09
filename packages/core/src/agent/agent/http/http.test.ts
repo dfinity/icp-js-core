@@ -1282,3 +1282,48 @@ describe('error logs for bad signature', () => {
     expect(logs[0].error.cause.code.requestContext).toBeDefined();
   });
 });
+
+describe('subnetNodeKeyExpirableStore option', () => {
+  it('should create agent without indexedDB available', async () => {
+    const agent = await HttpAgent.create({
+      fetch: jest.fn(),
+      host: 'http://127.0.0.1',
+    });
+
+    expect(agent).toBeDefined();
+  });
+
+  it('should create agent with indexedDB available', async () => {
+    const { indexedDB } = await import('fake-indexeddb');
+    const original = globalThis.indexedDB;
+    globalThis.indexedDB = indexedDB;
+
+    try {
+      const agent = await HttpAgent.create({
+        fetch: jest.fn(),
+        host: 'http://127.0.0.1',
+      });
+
+      expect(agent).toBeDefined();
+    } finally {
+      globalThis.indexedDB = original;
+    }
+  });
+
+  it('should create agent with a customSubnetNodeKeyExpirableStore', async () => {
+    const customSubnetNodeKeyExpirableStore = {
+      expirationTime: 5 * 60 * 1000,
+      get: jest.fn().mockResolvedValue(undefined),
+      set: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const agent = await HttpAgent.create({
+      fetch: jest.fn(),
+      host: 'http://127.0.0.1',
+      subnetNodeKeyExpirableStore: customSubnetNodeKeyExpirableStore,
+    });
+
+    expect(agent).toBeDefined();
+  });
+});

@@ -7,6 +7,8 @@
 - chore: migrate e2e tests from `dfx` to PocketIC (`@dfinity/pic`)
 - refactor(agent): use `globalThis.fetch` instead of custom environment detection
 - feat(agent): add `queryStrategy` option to `ActorConfig` for controlling how query methods are executed
+- feat(agent): introduce generic `ExpirableStore<V>` interface with `InMemoryExpirableStore` (default in Node.js) and `IndexedDBExpirableStore` (default in browsers) implementations
+- feat(agent): add `subnetNodeKeyExpirableStore` option to `HttpAgentOptions` for pluggable subnet node key caching
 
 ## [5.0.0] - 2025-12-18
 
