@@ -22,6 +22,7 @@ describe('createExpirableStore', () => {
     try {
       const store = createExpirableStore(DEFAULT_OPTIONS);
       expect(store).toBeInstanceOf(IndexedDBExpirableStore);
+      expect(store.expirationTime).toBe(DEFAULT_OPTIONS.expirationTime);
     } finally {
       globalThis.indexedDB = original;
     }
