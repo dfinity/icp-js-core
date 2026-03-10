@@ -112,7 +112,7 @@ describe('excessive signatures guard', () => {
     },
   );
 
-  it('should not retry with fresh subnet keys when signatures exceed subnet size', async () => {
+  it('should retry with fresh subnet keys and still throw if signatures exceed refreshed subnet size', async () => {
     const mockFetch = createMockFetch(createQueryResponse(4));
     const agent = HttpAgent.createSync({
       fetch: mockFetch,
@@ -121,28 +121,21 @@ describe('excessive signatures guard', () => {
       rootKey: new Uint8Array(96),
     });
 
-    const warnings: string[] = [];
-    agent.log.subscribe(e => {
-      if (e.level === 'warn') {
-        warnings.push(e.message);
-      }
-    });
-
     await expect(
       agent.query(canisterId, { methodName: 'greet', arg: new Uint8Array([]) }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(
+      expect.objectContaining({
+        cause: expect.objectContaining({
+          code: expect.any(ExcessiveSignaturesErrorCode),
+        }),
+      }),
+    );
 
-    // Should only have 2 fetch calls: 1 query + 1 readState (for initial subnet keys).
-    // No extra readState for a retry.
+    // Should have 2 readState calls: initial fetch + retry refresh
     const readStateCalls = mockFetch.mock.calls.filter((call: unknown[]) =>
       String(call[0]).includes('/read_state'),
     );
-    expect(readStateCalls).toHaveLength(1);
-
-    // Should not log the misleading "Retrying with fresh subnet keys" warning
-    expect(warnings).not.toContain(
-      'Query response verification failed. Retrying with fresh subnet keys.',
-    );
+    expect(readStateCalls).toHaveLength(2);
   });
 
   it.each([{ signatureCount: 1 }, { signatureCount: 3 }])(
