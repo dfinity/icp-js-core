@@ -636,6 +636,22 @@ export class CreateHttpAgentErrorCode extends ErrorCode {
   }
 }
 
+export class ExcessiveSignaturesErrorCode extends ErrorCode {
+  public name = 'ExcessiveSignaturesErrorCode';
+
+  constructor(
+    public readonly signatureCount: number,
+    public readonly maxExpected: number,
+  ) {
+    super();
+    Object.setPrototypeOf(this, ExcessiveSignaturesErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return `Query response contains ${this.signatureCount} signatures, which exceeds the subnet size of ${this.maxExpected}. This suggests a malformed or malicious response.`;
+  }
+}
+
 export class MalformedSignatureErrorCode extends ErrorCode {
   public name = 'MalformedSignatureErrorCode';
 
