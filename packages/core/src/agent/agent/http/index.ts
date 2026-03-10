@@ -188,8 +188,7 @@ export interface HttpAgentOptions {
   /**
    * Custom store for caching subnet node keys.
    * Allows sharing the cache across multiple HttpAgent instances.
-   * Defaults to IndexedDB in browser environments, in-memory otherwise
-   * (via {@link createExpirableStore}).
+   * Defaults to IndexedDB in browser environments, in-memory otherwise.
    */
   subnetNodeKeyExpirableStore?: ExpirableStore<SubnetNodeKeys>;
   /**
