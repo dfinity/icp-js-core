@@ -1415,6 +1415,12 @@ export class HttpAgent implements Agent {
   public async fetchSubnetKeys(canisterId: Principal | string): Promise<SubnetNodeKeys> {
     const effectiveCanisterId: Principal = Principal.from(canisterId);
 
+    // Return cached result if available within the TTL.
+    const cached = this.#subnetKeys.get(effectiveCanisterId.toText());
+    if (cached) {
+      return cached;
+    }
+
     // Deduplicate parallel requests for the same canister so that concurrent
     // query calls share a single read_state round-trip instead of each
     // issuing their own.

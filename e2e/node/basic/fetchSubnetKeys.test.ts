@@ -192,3 +192,43 @@ describe('fetchSubnetKeys (parallel calls deduplication)', () => {
     expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('fetchSubnetKeys (sequential calls cache)', () => {
+  const now = new Date('2025-12-16T06:34:56.789Z');
+  const canisterId = Principal.fromText('v2nog-2aaaa-aaaab-p777q-cai');
+
+  const rootSubnetKeyPair = randomKeyPair();
+  const nodeIdentity = randomIdentity();
+  const identity = randomIdentity();
+
+  let mockReplica: MockReplica;
+
+  beforeEach(async () => {
+    mockReplica = await MockReplica.create();
+    vi.setSystemTime(now);
+  });
+
+  it('should issue only one read_state request for sequential fetchSubnetKeys calls within cache TTL', async () => {
+    const agent = await HttpAgent.create({
+      host: mockReplica.address,
+      rootKey: rootSubnetKeyPair.publicKeyDer,
+      identity,
+    });
+
+    const { responseBody: readStateResponseBody } = await prepareV3ReadStateRootSubnetResponse({
+      nodeIdentity,
+      canisterRanges: [[canisterId.toUint8Array(), canisterId.toUint8Array()]],
+      rootSubnetKeyPair,
+      date: now,
+    });
+    mockReplica.setV3ReadStateSpyImplOnce(canisterId.toString(), (_req, res) => {
+      res.status(200).send(readStateResponseBody);
+    });
+
+    const keys1 = await agent.fetchSubnetKeys(canisterId);
+    const keys2 = await agent.fetchSubnetKeys(canisterId);
+
+    expect(keys1).toEqual(keys2);
+    expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+  });
+});
