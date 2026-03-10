@@ -53,17 +53,18 @@ describe('IndexedDBExpirableStore', () => {
     });
 
     const now = Date.now();
-    const originalDateNow = Date.now;
-    Date.now = () => now;
+    const spy = jest.spyOn(Date, 'now').mockReturnValue(now);
 
-    await store.set('key-1', 'value-1');
-    expect(await store.get('key-1')).toBeDefined();
+    try {
+      await store.set('key-1', 'value-1');
+      expect(await store.get('key-1')).toBeDefined();
 
-    // Advance Date.now past expiration
-    Date.now = () => now + 1001;
-    expect(await store.get('key-1')).toBeUndefined();
-
-    Date.now = originalDateNow;
+      // Advance Date.now past expiration
+      spy.mockReturnValue(now + 1001);
+      expect(await store.get('key-1')).toBeUndefined();
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it.each([0, -1, -Infinity, Infinity, NaN])(
