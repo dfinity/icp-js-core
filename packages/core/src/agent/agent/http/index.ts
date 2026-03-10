@@ -1570,7 +1570,7 @@ export class HttpAgent implements Agent {
     const effectiveCanisterId: Principal = Principal.from(canisterId);
 
     // Return cached result if available within the TTL.
-    const cached = this.#subnetKeys.get(effectiveCanisterId.toText());
+    const cached = await this.#subnetNodeKeyExpirableStore.get(effectiveCanisterId.toText());
     if (cached) {
       return cached;
     }
