@@ -220,17 +220,16 @@ export interface Agent {
   call(canisterId: Principal | string, fields: CallOptions): Promise<SubmitResponse>;
 
   /**
-   * Call a canister and poll for the response, handling v4 sync responses,
-   * v2 rejections, and 202 polling fallback.
+   * Call a canister and poll for the response.
    * @param canisterId The canister to call.
    * @param fields The call options (method name, arg, effective canister ID, optional nonce).
-   * @param options Optional polling configuration.
+   * @param pollingOptions Optional polling configuration.
    * @returns The certificate, reply bytes, raw certificate bytes, request details, and call response.
    */
   callAndPoll(
     canisterId: Principal | string,
     fields: CallOptions,
-    options?: PollingOptions,
+    pollingOptions?: PollingOptions,
   ): Promise<CallAndPollResult>;
 
   /**

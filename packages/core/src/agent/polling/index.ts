@@ -4,10 +4,10 @@ import {
   Certificate,
   lookupResultToBuffer,
 } from '../certificate.ts';
+import { readCertifiedReject } from '../utils/certificateReject.ts';
 import type { Agent, ReadStateResponse } from '../agent/api.ts';
 import type { Principal } from '#principal';
 import {
-  CertifiedRejectErrorCode,
   ExternalError,
   InputError,
   InvalidReadStateRequestErrorCode,
@@ -205,17 +205,7 @@ export async function pollForResponse(
     }
 
     case RequestStatusResponseStatus.Rejected: {
-      const rejectCode = new Uint8Array(
-        lookupResultToBuffer(cert.lookup_path([...path, 'reject_code']))!,
-      )[0];
-      const rejectMessage = new TextDecoder().decode(
-        lookupResultToBuffer(cert.lookup_path([...path, 'reject_message']))!,
-      );
-      const errorCodeBuf = lookupResultToBuffer(cert.lookup_path([...path, 'error_code']));
-      const errorCode = errorCodeBuf ? new TextDecoder().decode(errorCodeBuf) : undefined;
-      throw RejectError.fromCode(
-        new CertifiedRejectErrorCode(requestId, rejectCode, rejectMessage, errorCode),
-      );
+      throw RejectError.fromCode(readCertifiedReject(cert, path, requestId));
     }
 
     case RequestStatusResponseStatus.Done:

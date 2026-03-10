@@ -2,7 +2,6 @@ import type { JsonObject } from '#candid';
 import { Principal } from '#principal';
 import {
   HashTreeDecodeErrorCode,
-  CertifiedRejectErrorCode,
   CreateHttpAgentErrorCode,
   ExcessiveSignaturesErrorCode,
   ExternalError,
@@ -77,6 +76,7 @@ import {
   lookupResultToBuffer,
   LookupPathStatus,
 } from '../../certificate.ts';
+import { readCertifiedReject } from '../../utils/certificateReject.ts';
 import { ed25519 } from '@noble/curves/ed25519';
 import { ExpirableMap } from '../../utils/expirableMap.ts';
 import { Ed25519PublicKey } from '../../public_key.ts';
@@ -631,112 +631,40 @@ export class HttpAgent implements Agent {
   }
 
   /**
-   * Call a canister and poll for the response, handling v4 sync responses,
-   * v2 rejections, and 202 polling fallback.
+   * Call a canister and poll for the response.
    * @param canisterId The canister to call.
    * @param fields The call options (method name, arg, effective canister ID, optional nonce).
-   * @param options Optional polling configuration.
+   * @param pollingOptions Optional polling configuration.
    * @returns The certificate, reply bytes, raw certificate bytes, request details, and call response.
    */
   public async callAndPoll(
     canisterId: Principal | string,
     fields: CallOptions,
-    options: PollingOptions = {},
+    pollingOptions: PollingOptions = {},
   ): Promise<CallAndPollResult> {
     const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
     const { requestId, response, requestDetails } = await this.call(canisterId, fields);
 
-    // V4 sync response — certificate is returned inline, no polling needed
     if (isV4ResponseBody(response.body)) {
-      if (this.rootKey == null) {
-        throw ExternalError.fromCode(new MissingRootKeyErrorCode());
-      }
-      const rawCertificate = response.body.certificate;
-      const certificate = await Certificate.create({
-        certificate: rawCertificate,
-        rootKey: this.rootKey,
-        principal: { canisterId: effectiveCanisterId },
-        blsVerify: options.blsVerify,
-        agent: this,
-      });
-
-      const path = [utf8ToBytes('request_status'), requestId];
-      const maybeBuf = lookupResultToBuffer(
-        certificate.lookup_path([...path, utf8ToBytes('status')]),
-      );
-      const status = maybeBuf ? new TextDecoder().decode(maybeBuf) : undefined;
-
-      switch (status) {
-        case RequestStatusResponseStatus.Replied:
-          return {
-            reply: lookupResultToBuffer(certificate.lookup_path([...path, 'reply']))!,
-            certificate,
-            rawCertificate,
-            requestDetails,
-            callResponse: response,
-          };
-        case RequestStatusResponseStatus.Rejected: {
-          const rejectCode = new Uint8Array(
-            lookupResultToBuffer(certificate.lookup_path([...path, 'reject_code']))!,
-          )[0];
-          const rejectMessage = new TextDecoder().decode(
-            lookupResultToBuffer(certificate.lookup_path([...path, 'reject_message']))!,
-          );
-          const errorCodeBuf = lookupResultToBuffer(
-            certificate.lookup_path([...path, 'error_code']),
-          );
-          const errorCode = errorCodeBuf ? new TextDecoder().decode(errorCodeBuf) : undefined;
-          const certifiedRejectErrorCode = new CertifiedRejectErrorCode(
-            requestId,
-            rejectCode,
-            rejectMessage,
-            errorCode,
-          );
-          certifiedRejectErrorCode.callContext = {
-            canisterId: effectiveCanisterId,
-            methodName: fields.methodName,
-            httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
-          };
-          throw RejectError.fromCode(certifiedRejectErrorCode);
-        }
-        default: {
-          const unexpectedErrorCode = new UnexpectedErrorCode(
-            `Unexpected request status in v4 sync response: "${status}"`,
-          );
-          unexpectedErrorCode.callContext = {
-            canisterId: effectiveCanisterId,
-            methodName: fields.methodName,
-            httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
-          };
-          throw UnknownError.fromCode(unexpectedErrorCode);
-        }
-      }
-    }
-
-    // V2 uncertified rejection — throw immediately
-    if (isV2ResponseBody(response.body)) {
-      const { reject_code, reject_message, error_code } = response.body;
-      const errorCode = new UncertifiedRejectUpdateErrorCode(
+      return this.#handleV4SyncResponse(
+        response,
         requestId,
-        reject_code,
-        reject_message,
-        error_code,
+        effectiveCanisterId,
+        fields,
+        requestDetails,
+        pollingOptions,
       );
-      errorCode.callContext = {
-        canisterId: effectiveCanisterId,
-        methodName: fields.methodName,
-        httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
-      };
-      throw RejectError.fromCode(errorCode);
     }
 
-    // 202 Accepted — fall back to polling
+    if (isV2ResponseBody(response.body)) {
+      this.#handleV2Rejection(response, requestId, effectiveCanisterId, fields, requestDetails);
+    }
+
     if (response.status === 202) {
-      const pollResult = await pollForResponse(this, effectiveCanisterId, requestId, options);
+      const pollResult = await pollForResponse(this, effectiveCanisterId, requestId, pollingOptions);
       return { ...pollResult, requestDetails, callResponse: response };
     }
 
-    // Unexpected response: status 200 but body is neither v4 (certificate) nor v2 (rejection)
     const unexpectedErrorCode = new UnexpectedErrorCode(
       `Unexpected response from call: status ${response.status} with unrecognized body`,
     );
@@ -746,6 +674,90 @@ export class HttpAgent implements Agent {
       httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
     };
     throw UnknownError.fromCode(unexpectedErrorCode);
+  }
+
+  async #handleV4SyncResponse(
+    response: SubmitResponse['response'],
+    requestId: RequestId,
+    effectiveCanisterId: Principal,
+    fields: CallOptions,
+    requestDetails: CallAndPollResult['requestDetails'],
+    pollingOptions: PollingOptions,
+  ): Promise<CallAndPollResult> {
+    if (this.rootKey == null) {
+      throw ExternalError.fromCode(new MissingRootKeyErrorCode());
+    }
+    const rawCertificate = (response.body as { certificate: Uint8Array }).certificate;
+    const certificate = await Certificate.create({
+      certificate: rawCertificate,
+      rootKey: this.rootKey,
+      principal: { canisterId: effectiveCanisterId },
+      blsVerify: pollingOptions.blsVerify,
+      agent: this,
+    });
+
+    const path = [utf8ToBytes('request_status'), requestId];
+    const maybeBuf = lookupResultToBuffer(
+      certificate.lookup_path([...path, utf8ToBytes('status')]),
+    );
+    const status = maybeBuf ? new TextDecoder().decode(maybeBuf) : undefined;
+
+    switch (status) {
+      case RequestStatusResponseStatus.Replied:
+        return {
+          reply: lookupResultToBuffer(certificate.lookup_path([...path, 'reply']))!,
+          certificate,
+          rawCertificate,
+          requestDetails,
+          callResponse: response,
+        };
+      case RequestStatusResponseStatus.Rejected: {
+        const error = readCertifiedReject(certificate, path, requestId);
+        error.callContext = {
+          canisterId: effectiveCanisterId,
+          methodName: fields.methodName,
+          httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+        };
+        throw RejectError.fromCode(error);
+      }
+      default: {
+        const unexpectedErrorCode = new UnexpectedErrorCode(
+          `Unexpected request status in v4 sync response: "${status}"`,
+        );
+        unexpectedErrorCode.callContext = {
+          canisterId: effectiveCanisterId,
+          methodName: fields.methodName,
+          httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+        };
+        throw UnknownError.fromCode(unexpectedErrorCode);
+      }
+    }
+  }
+
+  #handleV2Rejection(
+    response: SubmitResponse['response'],
+    requestId: RequestId,
+    effectiveCanisterId: Principal,
+    fields: CallOptions,
+    requestDetails: CallAndPollResult['requestDetails'],
+  ): never {
+    const { reject_code, reject_message, error_code } = response.body as {
+      reject_code: number;
+      reject_message: string;
+      error_code: string | undefined;
+    };
+    const errorCode = new UncertifiedRejectUpdateErrorCode(
+      requestId,
+      reject_code,
+      reject_message,
+      error_code,
+    );
+    errorCode.callContext = {
+      canisterId: effectiveCanisterId,
+      methodName: fields.methodName,
+      httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+    };
+    throw RejectError.fromCode(errorCode);
   }
 
   async #requestAndRetryQuery(args: {
