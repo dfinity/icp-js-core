@@ -3,6 +3,7 @@ import { Principal } from '#principal';
 import {
   HashTreeDecodeErrorCode,
   CreateHttpAgentErrorCode,
+  ExcessiveSignaturesErrorCode,
   ExternalError,
   IdentityInvalidErrorCode,
   IngressExpiryInvalidErrorCode,
@@ -984,6 +985,13 @@ export class HttpAgent implements Agent {
       return queryResponse;
     }
     const { status, signatures = [], requestId } = queryResponse;
+
+    const maxSignatures = subnetNodeKeys.size;
+    if (signatures.length > maxSignatures) {
+      throw ProtocolError.fromCode(
+        new ExcessiveSignaturesErrorCode(signatures.length, maxSignatures),
+      );
+    }
 
     for (const sig of signatures) {
       const { timestamp, identity } = sig;
