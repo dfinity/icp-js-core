@@ -50,13 +50,8 @@ describe('excessive signatures guard', () => {
   const now = 1_700_000_000_000;
 
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.setSystemTime(now);
     (lookupNodeKeysFromCertificate as jest.Mock).mockReturnValue(createSubnetNodeKeys(SUBNET_SIZE));
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
   });
 
   function createMockFetch(queryResponse: unknown) {
@@ -95,8 +90,8 @@ describe('excessive signatures guard', () => {
     };
   }
 
-  it.each([{ signatureCount: 4, subnetSize: SUBNET_SIZE }])(
-    'should throw ExcessiveSignaturesErrorCode for $signatureCount signatures with $subnetSize nodes',
+  it.each([{ signatureCount: 4 }])(
+    'should throw ExcessiveSignaturesErrorCode for $signatureCount signatures',
     async ({ signatureCount }) => {
       const agent = HttpAgent.createSync({
         fetch: createMockFetch(createQueryResponse(signatureCount)),
@@ -150,11 +145,8 @@ describe('excessive signatures guard', () => {
     );
   });
 
-  it.each([
-    { signatureCount: 1, subnetSize: SUBNET_SIZE },
-    { signatureCount: 3, subnetSize: SUBNET_SIZE },
-  ])(
-    'should not throw ExcessiveSignaturesErrorCode for $signatureCount signatures with $subnetSize nodes',
+  it.each([{ signatureCount: 1 }, { signatureCount: 3 }])(
+    'should not throw ExcessiveSignaturesErrorCode for $signatureCount signatures',
     async ({ signatureCount }) => {
       const agent = HttpAgent.createSync({
         fetch: createMockFetch(createQueryResponse(signatureCount)),
