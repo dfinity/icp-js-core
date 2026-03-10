@@ -1,4 +1,4 @@
-import { vi, expect, it, beforeEach, describe } from 'vitest';
+import { vi, expect, it, afterEach, beforeEach, describe } from 'vitest';
 import { CertificateNotAuthorizedErrorCode, HttpAgent, TrustError } from '@icp-sdk/core/agent';
 import { Principal } from '@icp-sdk/core/principal';
 import {
@@ -166,6 +166,10 @@ describe('fetchSubnetKeys (parallel calls deduplication)', () => {
     vi.setSystemTime(now);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should issue only one read_state request when fetchSubnetKeys is called in parallel', async () => {
     const agent = await HttpAgent.create({
       host: mockReplica.address,
@@ -206,6 +210,10 @@ describe('fetchSubnetKeys (sequential calls cache)', () => {
   beforeEach(async () => {
     mockReplica = await MockReplica.create();
     vi.setSystemTime(now);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should issue only one read_state request for sequential fetchSubnetKeys calls within cache TTL', async () => {
