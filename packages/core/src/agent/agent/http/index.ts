@@ -938,7 +938,14 @@ export class HttpAgent implements Agent {
 
       try {
         return this.#verifyQueryResponse(queryWithDetails, subnetNodeKeys);
-      } catch {
+      } catch (verifyError) {
+        // Excessive signatures cannot be resolved by refreshing subnet keys — rethrow immediately
+        if (
+          verifyError instanceof AgentError &&
+          verifyError.hasCode(ExcessiveSignaturesErrorCode)
+        ) {
+          throw verifyError;
+        }
         // In case the node signatures have changed, refresh the subnet keys and try again
         this.log.warn('Query response verification failed. Retrying with fresh subnet keys.');
         this.#subnetKeys.delete(ecid.toString());
