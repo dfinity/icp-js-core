@@ -25,19 +25,24 @@ export interface RequestContext {
   ingressExpiry: Expiry;
 }
 
-export interface CallContext {
+/**
+ * Call context for errors that arise during polling.
+ */
+export interface PollingCallContext {
   canisterId: Principal;
   methodName: string;
-  /**
-   * HTTP details of the call response. Present for direct rejection paths,
-   * but absent for errors from polling, which has no associated HTTP response.
-   */
-  httpDetails?: HttpDetailsResponse;
+}
+
+/**
+ * Call context for errors that arise from a direct HTTP call response.
+ */
+export interface CallContext extends PollingCallContext {
+  httpDetails: HttpDetailsResponse;
 }
 
 abstract class ErrorCode {
   public requestContext?: RequestContext;
-  public callContext?: CallContext;
+  public callContext?: CallContext | PollingCallContext;
 
   constructor(public readonly isCertified: boolean = false) {}
 
@@ -58,7 +63,7 @@ abstract class ErrorCode {
         `\nCall context:\n` +
         `  Canister ID: ${this.callContext.canisterId.toText()}\n` +
         `  Method name: ${this.callContext.methodName}`;
-      if (this.callContext.httpDetails) {
+      if ('httpDetails' in this.callContext) {
         errorMessage += `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}`;
       }
     }
