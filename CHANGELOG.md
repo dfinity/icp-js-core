@@ -11,6 +11,7 @@
 - chore: add unit test coverage thresholds
 - chore: upgrade tooling — `@tsconfig/node22`, native ESLint flat config, `prettier-plugin-motoko`
 - chore: remove unused dependencies (`fake-indexeddb`, `@peculiar/webcrypto`, `@eslint/eslintrc`)
+- refactor(agent): extract `readCertifiedReject` helper to deduplicate certified reject logic
 
 ## [5.0.0] - 2025-12-18
 

@@ -6,7 +6,6 @@ import {
   QueryResponseStatus,
 } from './agent/index.ts';
 import {
-  CertifiedRejectErrorCode,
   ExternalError,
   InputError,
   MissingCanisterIdErrorCode,
@@ -22,6 +21,7 @@ import { pollForResponse, type PollingOptions, DEFAULT_POLLING_OPTIONS } from '.
 import { Principal } from '#principal';
 import { Certificate, type CreateCertificateOptions, lookupResultToBuffer } from './certificate.ts';
 import { HttpAgent } from './agent/http/index.ts';
+import { readCertifiedReject } from './utils/certificateReject.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 
 /**
@@ -498,27 +498,7 @@ function _createActorMethod(
             reply = lookupResultToBuffer(certificate.lookup_path([...path, 'reply']));
             break;
           case 'rejected': {
-            // Find rejection details in the certificate
-            const rejectCode = new Uint8Array(
-              lookupResultToBuffer(certificate.lookup_path([...path, 'reject_code']))!,
-            )[0];
-            const rejectMessage = new TextDecoder().decode(
-              lookupResultToBuffer(certificate.lookup_path([...path, 'reject_message']))!,
-            );
-
-            const error_code_buf = lookupResultToBuffer(
-              certificate.lookup_path([...path, 'error_code']),
-            );
-            const error_code = error_code_buf
-              ? new TextDecoder().decode(error_code_buf)
-              : undefined;
-
-            const certifiedRejectErrorCode = new CertifiedRejectErrorCode(
-              requestId,
-              rejectCode,
-              rejectMessage,
-              error_code,
-            );
+            const certifiedRejectErrorCode = readCertifiedReject(certificate, path, requestId);
             certifiedRejectErrorCode.callContext = {
               canisterId: cid,
               methodName,
