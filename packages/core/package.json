@@ -40,7 +40,7 @@
     "attw": "attw --pack . --profile node16",
     "pretest": "pnpm build",
     "test": "jest",
-    "test:coverage": "pnpm test -- --coverage"
+    "test:coverage": "jest --coverage"
   },
   "types": "./lib/esm/index.d.ts",
   "exports": {
