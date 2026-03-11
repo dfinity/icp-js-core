@@ -123,7 +123,7 @@ function isSignedReadStateRequestWithExpiry(
  * @param canisterId The effective canister ID.
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
- * @param identity - (Optional) The identity to use for the call. If not provided, the agent's current identity will be used.
+ * @param identity - (Optional) The identity to use for the polling requests. If not provided, the agent's current identity will be used.
  */
 export async function pollForResponse(
   agent: Agent,
