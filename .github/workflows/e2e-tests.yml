@@ -1,4 +1,4 @@
-name: E2E Node Tests
+name: E2E Tests
 
 on:
   pull_request:
@@ -7,13 +7,14 @@ on:
       - reopened
       - edited
       - synchronize
+  workflow_dispatch:
 
 concurrency:
-  group: pr-${{ github.workflow }}-${{ github.head_ref }}
-  cancel-in-progress: true
+  group: ${{ github.event_name }}-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test:
+  e2e:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -44,9 +45,9 @@ jobs:
   aggregate:
     name: e2e:required
     if: ${{ always() }}
-    needs: [test]
+    needs: [e2e]
     runs-on: ubuntu-latest
     steps:
       - name: check e2e test result
-        if: ${{ needs.test.result != 'success' }}
+        if: ${{ needs.e2e.result != 'success' }}
         run: exit 1

@@ -6,7 +6,15 @@ const CORE_PACKAGE_PATH = `<rootDir>/packages/core/src`;
 const config = {
   ...baseConfig,
   moduleDirectories: ['node_modules'],
-  collectCoverageFrom: ['src/**/*.{ts,tsx}'],
+  collectCoverageFrom: ['packages/core/src/**/*.{ts,tsx}', '!packages/core/src/**/*.test.{ts,tsx}'],
+  coverageThreshold: {
+    global: {
+      statements: 70,
+      branches: 65,
+      functions: 60,
+      lines: 70,
+    },
+  },
   rootDir: '../..',
   projects: [
     getProjectConfig('agent', { fakeTimers: { enableGlobally: true } }),

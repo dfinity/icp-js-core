@@ -6,30 +6,26 @@
   "type": "module",
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.2",
-    "@eslint/eslintrc": "^3.3.4",
     "@eslint/js": "^10.0.1",
-    "@peculiar/webcrypto": "^1.5.0",
-    "@size-limit/esbuild": "^12.0.0",
-    "@size-limit/preset-small-lib": "^12.0.0",
-    "@tsconfig/node18": "^18.2.6",
+    "@size-limit/esbuild": "^12.0.1",
+    "@size-limit/preset-small-lib": "^12.0.1",
+    "@tsconfig/node22": "^22.0.5",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.3.3",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
+    "@types/node": "^25.4.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/parser": "^8.57.0",
     "dotenv": "^17.3.1",
     "esbuild": "^0.27.3",
-    "eslint": "^10.0.2",
+    "eslint": "^10.0.3",
     "eslint-plugin-jsdoc": "^62.7.1",
     "eslint-plugin-prettier": "^5.5.5",
-    "fake-indexeddb": "^6.2.5",
     "husky": "^9.1.7",
-    "jest": "^30.2.0",
-    "jest-environment-node": "^30.2.0",
+    "jest": "^30.3.0",
     "prettier": "^3.8.1",
     "prettier-plugin-motoko": "^0.12.5",
     "pretty-quick": "^4.2.2",
     "release-it": "^19.2.4",
-    "size-limit": "^12.0.0",
+    "size-limit": "^12.0.1",
     "size-limit-node-esbuild": "^0.4.0",
     "ts-jest": "^29.4.6",
     "tsx": "^4.21.0",
@@ -75,7 +71,7 @@
     {
       "name": "@icp-sdk/core/agent",
       "path": "./packages/core/dist/agent/index.js",
-      "limit": "53 kB"
+      "limit": "53 kb"
     },
     {
       "name": "@icp-sdk/core/candid",
@@ -85,17 +81,17 @@
     {
       "name": "@icp-sdk/core/identity",
       "path": "./packages/core/dist/identity/index.js",
-      "limit": "25 kB"
+      "limit": "25 kb"
     },
     {
       "name": "@icp-sdk/core/identity/secp256k1",
       "path": "./packages/core/dist/identity/secp256k1/index.js",
-      "limit": "40 kB"
+      "limit": "40 kb"
     },
     {
       "name": "@icp-sdk/core/principal",
       "path": "./packages/core/dist/principal/index.js",
-      "limit": "5 kB"
+      "limit": "5 kb"
     }
   ],
   "release-it": {
