@@ -2,7 +2,7 @@ import type { Principal } from '#principal';
 import type { HttpDetailsResponse, NodeSignature, ReplicaRejectCode } from './agent/api.ts';
 import type { RequestId } from './request_id.ts';
 import type { RequestStatusResponseStatus } from './agent/http/index.ts';
-import type { Expiry } from './agent/http/transforms.ts';
+import type { Expiry } from './agent/http/expiry.ts';
 import type { HttpHeaderField } from './agent/http/types.ts';
 import type { LookupPathStatus, LookupSubtreeStatus } from './certificate.ts';
 import { bytesToHex } from '@noble/hashes/utils';
