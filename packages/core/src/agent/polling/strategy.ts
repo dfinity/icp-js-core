@@ -1,5 +1,5 @@
 import type { Principal } from '#principal';
-import type { RequestStatusResponseStatus } from '../agent/index.ts';
+import type { RequestStatusResponseStatus } from '../agent/http/index.ts';
 import type { RequestId } from '../request_id.ts';
 
 export type PollStrategy = (
