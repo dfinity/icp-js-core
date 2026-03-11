@@ -1,4 +1,4 @@
-import { type Certificate, lookupResultToBuffer } from '../certificate.ts';
+import { type Certificate, type NodePath, lookupResultToBuffer } from '../certificate.ts';
 import { CertifiedRejectErrorCode } from '../errors.ts';
 import type { RequestId } from '../request_id.ts';
 
@@ -10,7 +10,7 @@ import type { RequestId } from '../request_id.ts';
  */
 export function readCertifiedReject(
   certificate: Certificate,
-  path: (string | Uint8Array)[],
+  path: NodePath,
   requestId: RequestId,
 ): CertifiedRejectErrorCode {
   const rejectCode = new Uint8Array(
