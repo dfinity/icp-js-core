@@ -28,7 +28,11 @@ export interface RequestContext {
 export interface CallContext {
   canisterId: Principal;
   methodName: string;
-  httpDetails: HttpDetailsResponse;
+  /**
+   * HTTP details of the call response. Present for direct rejection paths,
+   * but absent for errors from polling, which has no associated HTTP response.
+   */
+  httpDetails?: HttpDetailsResponse;
 }
 
 abstract class ErrorCode {
@@ -53,8 +57,10 @@ abstract class ErrorCode {
       errorMessage +=
         `\nCall context:\n` +
         `  Canister ID: ${this.callContext.canisterId.toText()}\n` +
-        `  Method name: ${this.callContext.methodName}\n` +
-        `  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}`;
+        `  Method name: ${this.callContext.methodName}`;
+      if (this.callContext.httpDetails) {
+        errorMessage += `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}`;
+      }
     }
     return errorMessage;
   }
