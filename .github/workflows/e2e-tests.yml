@@ -1,4 +1,4 @@
-name: E2E Node Tests
+name: E2E Tests
 
 on:
   pull_request:
@@ -7,13 +7,14 @@ on:
       - reopened
       - edited
       - synchronize
+  workflow_dispatch:
 
 concurrency:
-  group: pr-${{ github.workflow }}-${{ github.head_ref }}
-  cancel-in-progress: true
+  group: ${{ github.event_name }}-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test:
+  e2e:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -41,12 +42,61 @@ jobs:
       - name: Node.js e2e tests
         run: pnpm run -F @e2e/node e2e
 
+  mitm:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node:
+          - 20
+          - 22
+          - 24
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PNPM
+        uses: dfinity/ci-tools/actions/setup-pnpm@main
+        with:
+          node_version: ${{ matrix.node }}
+
+      - run: pnpm build
+
+      - name: Ensure PocketIC binary
+        working-directory: e2e/node
+        run: node node_modules/@dfinity/pic/postinstall.mjs
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+      - run: pip3 install mitmproxy~=10.0.0
+
+      - name: Start PocketIC
+        working-directory: e2e/node
+        run: |
+          npx tsx setup-pic.ts --gateway-port 4943 &
+          npx tsx setup-pic.ts --wait
+
+      - name: Running mitmdump
+        id: mitmdump
+        run: |
+          set -ex
+          mitmdump -p 8888 --mode reverse:http://localhost:4943 \
+            --modify-headers '/~s/Transfer-Encoding/' \
+            --modify-body '/~s/Hello/Hullo' \
+            &
+          sleep 20
+
+      - name: mitm e2e
+        run: pnpm run -F @e2e/node mitm
+
   aggregate:
     name: e2e:required
     if: ${{ always() }}
-    needs: [test]
+    needs: [e2e, mitm]
     runs-on: ubuntu-latest
     steps:
-      - name: check e2e test result
-        if: ${{ needs.test.result != 'success' }}
+      - name: check e2e test results
+        if: ${{ needs.e2e.result != 'success' || needs.mitm.result != 'success' }}
         run: exit 1
