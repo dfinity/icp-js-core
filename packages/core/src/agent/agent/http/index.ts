@@ -1075,7 +1075,7 @@ export class HttpAgent implements Agent {
   public async readState(
     canisterId: Principal | string,
     fields: ReadStateOptions,
-    _identity?: Identity | Promise<Identity>,
+    identity?: Identity | Promise<Identity>,
     // eslint-disable-next-line
     request?: any,
   ): Promise<ReadStateResponse> {
@@ -1104,8 +1104,8 @@ export class HttpAgent implements Agent {
       requestId = getRequestId(fields);
 
       // Always create a fresh request with the current identity
-      const identity = await this.#identity;
-      if (!identity) {
+      const id = await (identity ?? this.#identity);
+      if (!id) {
         throw ExternalError.fromCode(new IdentityInvalidErrorCode());
       }
       transformedRequest = await this.createReadStateRequest(fields, identity);

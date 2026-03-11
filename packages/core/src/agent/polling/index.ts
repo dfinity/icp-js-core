@@ -23,6 +23,7 @@ import { defaultStrategy } from './strategy.ts';
 import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
 import { RequestStatusResponseStatus } from '../agent/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
+import type { Identity } from '../auth.ts';
 export { defaultStrategy } from './strategy.ts';
 
 export type PollStrategy = (
@@ -122,12 +123,14 @@ function isSignedReadStateRequestWithExpiry(
  * @param canisterId The effective canister ID.
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
+ * @param identity - (Optional) The identity to use for the polling requests. If not provided, the agent's current identity will be used.
  */
 export async function pollForResponse(
   agent: Agent,
   canisterId: Principal,
   requestId: RequestId,
   options: PollingOptions = {},
+  identity?: Identity | Promise<Identity>,
 ): Promise<{
   certificate: Certificate;
   reply: Uint8Array;
@@ -147,7 +150,7 @@ export async function pollForResponse(
     state = await agent.readState(canisterId, { paths: [path] }, undefined, currentRequest);
   } else {
     // If preSignReadStateRequest is false, we use the default strategy and sign the request each time
-    state = await agent.readState(canisterId, { paths: [path] });
+    state = await agent.readState(canisterId, { paths: [path] }, await identity);
   }
 
   if (agent.rootKey == null) {
@@ -190,7 +193,7 @@ export async function pollForResponse(
         // Pass over either the strategy already provided or the new one created above
         strategy,
         request: currentRequest,
-      });
+      }, identity);
     }
 
     case RequestStatusResponseStatus.Rejected: {
