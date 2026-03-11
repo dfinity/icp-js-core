@@ -21,6 +21,7 @@
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
     "jest": "^30.3.0",
+    "madge": "^8.0.0",
     "prettier": "^3.8.1",
     "prettier-plugin-motoko": "^0.12.5",
     "pretty-quick": "^4.2.2",
