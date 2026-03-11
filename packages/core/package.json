@@ -40,7 +40,7 @@
     "attw": "attw --pack . --profile node16",
     "pretest": "pnpm build",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "pnpm test -- --coverage"
   },
   "types": "./lib/esm/index.d.ts",
   "exports": {
@@ -100,7 +100,6 @@
     "asn1js": "^3.0.7"
   },
   "devDependencies": {
-    "@peculiar/webcrypto": "^1.5.0",
     "tsc-alias": "^1.8.16"
   }
 }
