@@ -1,4 +1,4 @@
-name: E2E Tests
+name: Mitm
 
 on:
   pull_request:
@@ -11,10 +11,10 @@ on:
 
 concurrency:
   group: ${{ github.event_name }}-${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }} # this will cancel only PRs
 
 jobs:
-  e2e:
+  test:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -39,15 +39,36 @@ jobs:
         working-directory: e2e/node
         run: node node_modules/@dfinity/pic/postinstall.mjs
 
-      - name: Node.js e2e tests
-        run: pnpm run -F @e2e/node e2e
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+      - run: pip3 install mitmproxy~=10.0.0
+
+      - name: Start PocketIC
+        working-directory: e2e/node
+        run: |
+          npx tsx setup-pic.ts --gateway-port 4943 &
+          npx tsx setup-pic.ts --wait
+
+      - name: Running mitmdump
+        id: mitmdump
+        run: |
+          set -ex
+          mitmdump -p 8888 --mode reverse:http://localhost:4943 \
+            --modify-headers '/~s/Transfer-Encoding/' \
+            --modify-body '/~s/Hello/Hullo' \
+            &
+          sleep 20
+
+      - name: mitm e2e
+        run: pnpm run -F @e2e/node mitm
 
   aggregate:
-    name: e2e:required
+    name: mitm:required
     if: ${{ always() }}
-    needs: [e2e]
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - name: check e2e test result
-        if: ${{ needs.e2e.result != 'success' }}
+        if: ${{ needs.test.result != 'success' }}
         run: exit 1

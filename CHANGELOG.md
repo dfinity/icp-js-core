@@ -8,7 +8,7 @@
 - chore: migrate e2e tests from `dfx` to PocketIC (`@dfinity/pic`)
 - refactor(agent): use `globalThis.fetch` instead of custom environment detection
 - feat(agent): add `queryStrategy` option to `ActorConfig` for controlling how query methods are executed
-- chore: consolidate e2e and MITM into a single CI workflow, add unit test coverage thresholds
+- chore: add unit test coverage thresholds
 - chore: upgrade tooling — `@tsconfig/node22`, native ESLint flat config, `prettier-plugin-motoko`
 - chore: remove unused dependencies (`fake-indexeddb`, `@peculiar/webcrypto`, `@eslint/eslintrc`)
 
