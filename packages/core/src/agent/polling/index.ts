@@ -23,7 +23,7 @@ import { defaultStrategy } from './strategy.ts';
 import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
 import { RequestStatusResponseStatus } from '../agent/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
-import { Identity } from '../auth.ts';
+import type { Identity } from '../auth.ts';
 export { defaultStrategy } from './strategy.ts';
 
 export type PollStrategy = (
