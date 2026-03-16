@@ -20,16 +20,12 @@ import {
 
 export * as strategy from './strategy.ts';
 import { defaultStrategy } from './strategy.ts';
+import type { PollStrategy } from './types.ts';
 import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
-import { RequestStatusResponseStatus } from '../agent/index.ts';
+import { RequestStatusResponseStatus } from '../agent/http/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 export { defaultStrategy } from './strategy.ts';
-
-export type PollStrategy = (
-  canisterId: Principal,
-  requestId: RequestId,
-  status: RequestStatusResponseStatus,
-) => Promise<void>;
+export type { PollStrategy } from './types.ts';
 
 interface SignedReadStateRequestWithExpiry extends ReadStateRequest {
   body: {
