@@ -20,12 +20,12 @@ import {
 
 export * as strategy from './strategy.ts';
 import { defaultStrategy } from './strategy.ts';
-import type { PollStrategy } from './types.ts';
+import type { PollStrategy, PollForResponseResult } from './types.ts';
 import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
 import { RequestStatusResponseStatus } from '../agent/http/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 export { defaultStrategy } from './strategy.ts';
-export type { PollStrategy } from './types.ts';
+export type { PollStrategy, PollForResponseResult } from './types.ts';
 
 interface SignedReadStateRequestWithExpiry extends ReadStateRequest {
   body: {
@@ -118,16 +118,17 @@ function isSignedReadStateRequestWithExpiry(
  * @param canisterId The effective canister ID.
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
+ * @returns The certificate, reply bytes, and raw certificate bytes for the request.
+ * @throws {ExternalError} If the agent's root key is not available.
+ * @throws {RejectError} If the request was rejected by the canister.
+ * @throws {UnknownError} If the request reached `done` status without a reply.
  */
 export async function pollForResponse(
   agent: Agent,
   canisterId: Principal,
   requestId: RequestId,
   options: PollingOptions = {},
-): Promise<{
-  certificate: Certificate;
-  reply: Uint8Array;
-}> {
+): Promise<PollForResponseResult> {
   const path = [utf8ToBytes('request_status'), requestId];
 
   let state: ReadStateResponse;
@@ -171,6 +172,7 @@ export async function pollForResponse(
       return {
         reply: lookupResultToBuffer(cert.lookup_path([...path, 'reply']))!,
         certificate: cert,
+        rawCertificate: state.certificate,
       };
     }
 
