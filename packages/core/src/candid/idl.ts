@@ -1566,19 +1566,9 @@ export class VariantClass extends ConstructType<Record<string, any>> {
         return { [key]: value };
       }
     }
-
-    // Provide detailed error message with received and expected types
-    const wireTypeKind =
-      wireType instanceof ConstructType ? wireType.name.split(" ")[0] : wireType.name;
-    const receivedInfo = `Received field hash: ${wireHash} (type: ${wireTypeKind})`;
     const expectedFields = this._fields.map(([name]) => name).join(', ');
-    const providedTypeInfo = `Provided type: ${this.display()}`;
-
     throw new Error(
-      `Unexpected field hash ${wireHash}. Did you forget to include a variant?\n\n` +
-        `${receivedInfo}\n\n` +
-        `Expected fields: ${expectedFields}\n` +
-        `${providedTypeInfo}`,
+      `Cannot find field hash ${wireHash} in variant, expected fields: [${expectedFields}]`,
     );
   }
 
