@@ -1567,7 +1567,6 @@ export class VariantClass extends ConstructType<Record<string, any>> {
       }
     }
 
-
     // Provide detailed error message with received and expected types
     const wireTypeKind =
       wireType instanceof ConstructType ? wireType.name.split(" ")[0] : wireType.name;
