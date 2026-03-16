@@ -27,6 +27,18 @@ import { utf8ToBytes } from '@noble/hashes/utils';
 export { defaultStrategy } from './strategy.ts';
 export type { PollStrategy } from './types.ts';
 
+/**
+ * The result of polling for a response, including the certificate, reply bytes, and raw certificate bytes.
+ */
+export interface PollForResponseResult {
+  /** The certificate for the request, which can be used to verify the reply. */
+  certificate: Certificate;
+  /** The reply bytes for the request. */
+  reply: Uint8Array;
+  /** The raw certificate bytes for the request. */
+  rawCertificate: Uint8Array;
+}
+
 interface SignedReadStateRequestWithExpiry extends ReadStateRequest {
   body: {
     content: Pick<ReadStateRequest, 'request_type' | 'ingress_expiry'>;
@@ -118,16 +130,14 @@ function isSignedReadStateRequestWithExpiry(
  * @param canisterId The effective canister ID.
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
+ * @returns The certificate, reply bytes, and raw certificate bytes for the request.
  */
 export async function pollForResponse(
   agent: Agent,
   canisterId: Principal,
   requestId: RequestId,
   options: PollingOptions = {},
-): Promise<{
-  certificate: Certificate;
-  reply: Uint8Array;
-}> {
+): Promise<PollForResponseResult> {
   const path = [utf8ToBytes('request_status'), requestId];
 
   let state: ReadStateResponse;
@@ -171,6 +181,7 @@ export async function pollForResponse(
       return {
         reply: lookupResultToBuffer(cert.lookup_path([...path, 'reply']))!,
         certificate: cert,
+        rawCertificate: state.certificate,
       };
     }
 
