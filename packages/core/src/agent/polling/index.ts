@@ -20,24 +20,12 @@ import {
 
 export * as strategy from './strategy.ts';
 import { defaultStrategy } from './strategy.ts';
-import type { PollStrategy } from './types.ts';
+import type { PollStrategy, PollForResponseResult } from './types.ts';
 import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
 import { RequestStatusResponseStatus } from '../agent/http/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 export { defaultStrategy } from './strategy.ts';
-export type { PollStrategy } from './types.ts';
-
-/**
- * The result of polling for a response, including the certificate, reply bytes, and raw certificate bytes.
- */
-export interface PollForResponseResult {
-  /** The certificate for the request, which can be used to verify the reply. */
-  certificate: Certificate;
-  /** The reply bytes for the request. */
-  reply: Uint8Array;
-  /** The raw certificate bytes for the request. */
-  rawCertificate: Uint8Array;
-}
+export type { PollStrategy, PollForResponseResult } from './types.ts';
 
 interface SignedReadStateRequestWithExpiry extends ReadStateRequest {
   body: {
@@ -131,6 +119,9 @@ function isSignedReadStateRequestWithExpiry(
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
  * @returns The certificate, reply bytes, and raw certificate bytes for the request.
+ * @throws {ExternalError} If the agent's root key is not available.
+ * @throws {RejectError} If the request was rejected by the canister.
+ * @throws {UnknownError} If the request reached `done` status without a reply.
  */
 export async function pollForResponse(
   agent: Agent,
