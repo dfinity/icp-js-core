@@ -1326,4 +1326,31 @@ describe('subnetNodeKeyExpirableStore option', () => {
 
     expect(agent).toBeDefined();
   });
+
+  it('should use the custom store get when fetching subnet keys', async () => {
+    const cachedNodeKeys = new Map([['node-1', new ArrayBuffer(32) as ArrayBuffer]]);
+
+    const customSubnetNodeKeyExpirableStore = {
+      expirationTime: 5 * 60 * 1000,
+      get: jest.fn().mockResolvedValue(cachedNodeKeys),
+      set: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockFetch = jest.fn();
+
+    const agent = await HttpAgent.create({
+      fetch: mockFetch,
+      host: 'http://127.0.0.1',
+      subnetNodeKeyExpirableStore: customSubnetNodeKeyExpirableStore,
+    });
+
+    const canisterId = Principal.fromText('bkyz2-fmaaa-aaaaa-qaaaq-cai');
+    const result = await agent.fetchSubnetKeys(canisterId);
+
+    expect(customSubnetNodeKeyExpirableStore.get).toHaveBeenCalledWith(canisterId.toText());
+    expect(result).toBe(cachedNodeKeys);
+    // No network call should be made when the store returns a cached value
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });
