@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- fix(agent): simplify `getSubnetNodeKeys` to use `fetchSubnetKeys` return value directly, removing redundant cache re-read and dead code
 - fix(agent): reject query responses with more signatures than subnet nodes
 - fix(agent): deduplicate parallel `fetchSubnetKeys` requests for the same canister to avoid redundant `read_state` round-trips (fixes #1179)
 - chore: strengthen ESLint rules with cherry-picked `@dfinity/eslint-config-oisy-wallet` rules

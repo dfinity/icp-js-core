@@ -12,7 +12,6 @@ import {
   MalformedPublicKeyErrorCode,
   MalformedSignatureErrorCode,
   MissingRootKeyErrorCode,
-  MissingSignatureErrorCode,
   ProtocolError,
   QuerySignatureVerificationFailedErrorCode,
   TimeoutWaitingForResponseErrorCode,
@@ -911,19 +910,6 @@ export class HttpAgent implements Agent {
       };
     };
 
-    const getSubnetNodeKeys = async (): Promise<SubnetNodeKeys> => {
-      const cachedSubnetNodeKeys = this.#subnetKeys.get(ecid.toString());
-      if (cachedSubnetNodeKeys) {
-        return cachedSubnetNodeKeys;
-      }
-      await this.fetchSubnetKeys(ecid.toString());
-      const subnetNodeKeys = this.#subnetKeys.get(ecid.toString());
-      if (!subnetNodeKeys) {
-        throw TrustError.fromCode(new MissingSignatureErrorCode());
-      }
-      return subnetNodeKeys;
-    };
-
     try {
       if (!this.#verifyQuerySignatures) {
         // Skip verification if the user has disabled it
@@ -933,7 +919,7 @@ export class HttpAgent implements Agent {
       // Make query and fetch subnet keys in parallel
       const [queryWithDetails, subnetNodeKeys] = await Promise.all([
         makeQuery(),
-        getSubnetNodeKeys(),
+        this.fetchSubnetKeys(ecid.toString()),
       ]);
 
       try {
@@ -942,7 +928,7 @@ export class HttpAgent implements Agent {
         // In case the node signatures have changed, refresh the subnet keys and try again
         this.log.warn('Query response verification failed. Retrying with fresh subnet keys.');
         this.#subnetKeys.delete(ecid.toString());
-        const updatedSubnetNodeKeys = await getSubnetNodeKeys();
+        const updatedSubnetNodeKeys = await this.fetchSubnetKeys(ecid.toString());
         return this.#verifyQueryResponse(queryWithDetails, updatedSubnetNodeKeys);
       }
     } catch (error) {
