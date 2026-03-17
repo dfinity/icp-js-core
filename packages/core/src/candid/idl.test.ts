@@ -519,6 +519,15 @@ test('decode / encode unknown variant', () => {
   expect(reencoded).toEqual(encoded);
 });
 
+test("decode variant with unknown field hash throws descriptive error", () => {
+  // Encode {ok: "good"} with variant {ok: Text, err: Text}
+  const encoded = hexToBytes("4449444c016b029cc20171e58eb4027101000004676f6f64");
+  // Decode with a variant that does not include "ok" or "err"
+  const MismatchedVariant = IDL.Variant({ foo: IDL.Text });
+  expect(() => IDL.decode([MismatchedVariant], encoded)).toThrow(/Cannot find field hash/);
+  expect(() => IDL.decode([MismatchedVariant], encoded)).toThrow(/expected fields: \[foo\]/);
+});
+
 test('throw on serializing unknown', () => {
   expect(() => IDL.encode([IDL.Unknown], ['test'])).toThrow('Unknown cannot be serialized');
 });

@@ -1566,7 +1566,10 @@ export class VariantClass extends ConstructType<Record<string, any>> {
         return { [key]: value };
       }
     }
-    throw new Error(`Cannot find field hash ${wireHash}`);
+    const expectedFields = this._fields.map(([name]) => name).join(', ');
+    throw new Error(
+      `Cannot find field hash ${wireHash} in variant, expected fields: [${expectedFields}]`,
+    );
   }
 
   get name() {
