@@ -24,6 +24,19 @@ import { iexp2 } from './utils/bigint-math.ts';
  * as documented at https://github.com/dfinity/candid/blob/119703ba342d2fef6ab4972d2541b9fe36ae8e36/spec/Candid.md
  */
 
+/**
+ * Error thrown when candid decoding fails due to a type mismatch
+ * between the expected and received types.
+ */
+export class CandidDecodeError extends Error {
+  public override name = 'CandidDecodeError';
+
+  constructor(message: string) {
+    super(message);
+    Object.setPrototypeOf(this, CandidDecodeError.prototype);
+  }
+}
+
 enum IDLTypeIds {
   Null = -1,
   Bool = -2,
@@ -294,7 +307,7 @@ export abstract class ConstructType<T = any> extends Type<T> {
     if (t instanceof RecClass) {
       const ty = t.getType();
       if (typeof ty === 'undefined') {
-        throw new Error('type mismatch with uninitialized type');
+        throw new CandidDecodeError('Type mismatch: cannot decode from uninitialized recursive type');
       }
       return ty;
     }
@@ -1016,7 +1029,7 @@ export class VecClass<T> extends ConstructType<T[]> {
   public decodeValue(b: Pipe, t: Type): T[] {
     const vec = this.checkType(t);
     if (!(vec instanceof VecClass)) {
-      throw new Error('Not a vector type');
+      throw new CandidDecodeError(`Expected type '${this.display()}', but received non-vector type '${vec.display()}'`);
     }
     const len = Number(lebDecode(b));
 
@@ -1164,7 +1177,7 @@ export class OptClass<T> extends ConstructType<[T] | []> {
     if (t instanceof RecClass) {
       const ty = t.getType();
       if (typeof ty === 'undefined') {
-        throw new Error('type mismatch with uninitialized type');
+        throw new CandidDecodeError('Type mismatch: cannot decode from uninitialized recursive type');
       } else {
         wireType = ty;
       }
@@ -1191,7 +1204,7 @@ export class OptClass<T> extends ConstructType<[T] | []> {
           }
         }
         default:
-          throw new Error('Not an option value');
+          throw new CandidDecodeError(`Invalid option value: expected 0 (None) or 1 (Some) for type '${this.display()}'`);
       }
     } else if (
       // this check corresponds to `not (null <: <t>)` in the spec
@@ -1319,7 +1332,7 @@ export class RecordClass extends ConstructType<Record<string, any>> {
   public decodeValue(b: Pipe, t: Type) {
     const record = this.checkType(t);
     if (!(record instanceof RecordClass)) {
-      throw new Error('Not a record type');
+      throw new CandidDecodeError(`Expected type '${this.display()}', but received non-record type '${record.display()}'`);
     }
     const x: Record<string, any> = {};
 
@@ -1349,7 +1362,11 @@ export class RecordClass extends ConstructType<Record<string, any>> {
           x[expectKey] = [];
           expectedRecordIdx++;
         } else {
-          throw new Error(`Cannot find required field ${expectKey}`);
+          const expectedFields = this._fields.map(([name]) => name).join(', ');
+          const receivedFields = record._fields.map(([name]) => name).join(', ');
+          throw new CandidDecodeError(
+            `Cannot find required field '${expectKey}' in record, expected fields: [${expectedFields}], received fields: [${receivedFields}]`,
+          );
         }
       } else {
         // The field on the wire does not exist in the output type, so we can skip it
@@ -1364,7 +1381,11 @@ export class RecordClass extends ConstructType<Record<string, any>> {
         // TODO this assumes null value in opt is represented as []
         x[expectKey] = [];
       } else {
-        throw new Error(`Cannot find required field ${expectKey}`);
+        const expectedFields = this._fields.map(([name]) => name).join(', ');
+        const receivedFields = record._fields.map(([name]) => name).join(', ');
+        throw new CandidDecodeError(
+          `Cannot find required field '${expectKey}' in record, expected fields: [${expectedFields}], received fields: [${receivedFields}]`,
+        );
       }
     }
     return x;
@@ -1451,10 +1472,12 @@ export class TupleClass<T extends any[]> extends RecordClass {
   public decodeValue(b: Pipe, t: Type): T {
     const tuple = this.checkType(t);
     if (!(tuple instanceof TupleClass)) {
-      throw new Error('not a tuple type');
+      throw new CandidDecodeError(`Expected type '${this.display()}', but received non-tuple type '${tuple.display()}'`);
     }
     if (tuple._components.length < this._components.length) {
-      throw new Error('tuple mismatch');
+      throw new CandidDecodeError(
+        `Tuple mismatch: expected ${this._components.length} components, but received ${tuple._components.length}`,
+      );
     }
     const res = [];
     for (const [i, wireType] of tuple._components.entries()) {
@@ -1553,7 +1576,7 @@ export class VariantClass extends ConstructType<Record<string, any>> {
   public decodeValue(b: Pipe, t: Type) {
     const variant = this.checkType(t);
     if (!(variant instanceof VariantClass)) {
-      throw new Error('Not a variant type');
+      throw new CandidDecodeError(`Expected type '${this.display()}', but received non-variant type '${variant.display()}'`);
     }
     const idx = Number(lebDecode(b));
     if (idx >= variant._fields.length) {
@@ -1567,7 +1590,7 @@ export class VariantClass extends ConstructType<Record<string, any>> {
       }
     }
     const expectedFields = this._fields.map(([name]) => name).join(', ');
-    throw new Error(
+    throw new CandidDecodeError(
       `Cannot find field hash ${wireHash} in variant, expected fields: [${expectedFields}]`,
     );
   }
