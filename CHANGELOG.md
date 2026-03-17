@@ -13,6 +13,7 @@
 - chore: remove unused dependencies (`fake-indexeddb`, `@peculiar/webcrypto`, `@eslint/eslintrc`)
 - refactor(agent): extract `readCertifiedReject` helper to deduplicate certified reject logic
 - refactor(agent): make `CallContext.httpDetails` optional for polling error paths
+- feat(agent): add `rawCertificate` to `pollForResponse` return type and export `PollForResponseResult`
 - feat(agent): allow passing identity into `pollForResponse`
 
 ## [5.0.0] - 2025-12-18

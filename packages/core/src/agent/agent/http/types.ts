@@ -1,5 +1,5 @@
 import type { Principal } from '#principal';
-import type { Expiry } from './transforms.ts';
+import type { Expiry } from './expiry.ts';
 import { randomNumber } from '../../utils/random.ts';
 
 /**

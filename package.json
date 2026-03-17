@@ -94,6 +94,11 @@
       "limit": "5 kb"
     }
   ],
+  "pnpm": {
+    "overrides": {
+      "undici": ">=6.24.0"
+    }
+  },
   "release-it": {
     "hooks": {
       "after:bump": [
