@@ -172,7 +172,7 @@ export interface SubmitResponse {
 }
 
 /**
- * The result of {@link HttpAgent.callAndPoll}, extending {@link PollForResponseResult}
+ * The result of {@link Agent.callAndPoll}, extending {@link PollForResponseResult}
  * with the request details and raw HTTP response from the call.
  */
 export interface CallAndPollResult extends PollForResponseResult {

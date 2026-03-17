@@ -1,10 +1,10 @@
 import { Principal } from '#principal';
-import { HttpAgent } from '../index.ts';
+import { HttpAgent, type CallOptions, type SubmitResponse } from '../index.ts';
 import type { RequestId } from '../../request_id.ts';
 import type { LookupPathResultFound, LookupPathStatus } from '../../certificate.ts';
 import { ExternalError, RejectError, UnknownError } from '../../errors.ts';
 import type { Expiry } from './transforms.ts';
-import { SubmitRequestType } from './types.ts';
+import { CallRequest, SubmitRequestType } from './types.ts';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -84,7 +84,7 @@ const HTTP_AGENT_HOST = 'http://127.0.0.1:4943';
 const canisterId = Principal.anonymous();
 const requestId = new Uint8Array([10, 20, 30]) as RequestId;
 
-const mockRequestDetails = {
+const mockRequestDetails: CallRequest = {
   request_type: SubmitRequestType.Call,
   canister_id: canisterId,
   method_name: 'test_method',
@@ -93,7 +93,7 @@ const mockRequestDetails = {
   ingress_expiry: { toHash: () => new Uint8Array() } as unknown as Expiry,
 };
 
-const callFields = {
+const callFields: CallOptions = {
   methodName: 'test_method',
   arg: new Uint8Array([1]),
   effectiveCanisterId: canisterId,
@@ -121,7 +121,7 @@ function createAgentWithCallMock(
       ok: responseOverrides.ok ?? true,
       status: responseOverrides.status ?? 202,
       statusText: responseOverrides.statusText ?? 'Accepted',
-      body: responseOverrides.body ?? null,
+      body: (responseOverrides.body ?? null) as SubmitResponse['response']['body'],
       headers: [],
     },
   });
