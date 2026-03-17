@@ -39,7 +39,8 @@
     "bundle": "esbuild src/index.ts src/agent/index.ts src/candid/index.ts src/identity/index.ts src/identity/secp256k1/index.ts src/principal/index.ts --bundle --outdir=dist --platform=browser",
     "attw": "attw --pack . --profile node16",
     "pretest": "pnpm build",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "types": "./lib/esm/index.d.ts",
   "exports": {
@@ -99,7 +100,6 @@
     "asn1js": "^3.0.7"
   },
   "devDependencies": {
-    "@peculiar/webcrypto": "^1.5.0",
     "tsc-alias": "^1.8.16"
   }
 }

@@ -39,7 +39,7 @@ jobs:
         working-directory: e2e/node
         run: node node_modules/@dfinity/pic/postinstall.mjs
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: pip3 install mitmproxy~=10.0.0

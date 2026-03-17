@@ -1,14 +1,10 @@
 import type { Principal } from '#principal';
-import type { RequestStatusResponseStatus } from '../agent/index.ts';
-import type { PollStrategy } from './index.ts';
+import type { RequestStatusResponseStatus } from '../agent/http/index.ts';
 import type { RequestId } from '../request_id.ts';
 import { ProtocolError, TimeoutWaitingForResponseErrorCode } from '../errors.ts';
 
-export type Predicate<T> = (
-  canisterId: Principal,
-  requestId: RequestId,
-  status: RequestStatusResponseStatus,
-) => Promise<T>;
+import type { PollStrategy, Predicate } from './types.ts';
+export type { PollStrategy, Predicate } from './types.ts';
 
 const FIVE_MINUTES_IN_MSEC = 5 * 60 * 1000;
 

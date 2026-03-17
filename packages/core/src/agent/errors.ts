@@ -2,7 +2,7 @@ import type { Principal } from '#principal';
 import type { HttpDetailsResponse, NodeSignature, ReplicaRejectCode } from './agent/api.ts';
 import type { RequestId } from './request_id.ts';
 import type { RequestStatusResponseStatus } from './agent/http/index.ts';
-import type { Expiry } from './agent/http/transforms.ts';
+import type { Expiry } from './agent/http/expiry.ts';
 import type { HttpHeaderField } from './agent/http/types.ts';
 import type { LookupPathStatus, LookupSubtreeStatus } from './certificate.ts';
 import { bytesToHex } from '@noble/hashes/utils';
@@ -25,15 +25,24 @@ export interface RequestContext {
   ingressExpiry: Expiry;
 }
 
-export interface CallContext {
+/**
+ * Call context for errors that arise during polling.
+ */
+export interface PollingCallContext {
   canisterId: Principal;
   methodName: string;
+}
+
+/**
+ * Call context for errors that arise from a direct HTTP call response.
+ */
+export interface CallContext extends PollingCallContext {
   httpDetails: HttpDetailsResponse;
 }
 
 abstract class ErrorCode {
   public requestContext?: RequestContext;
-  public callContext?: CallContext;
+  public callContext?: CallContext | PollingCallContext;
 
   constructor(public readonly isCertified: boolean = false) {}
 
@@ -53,8 +62,10 @@ abstract class ErrorCode {
       errorMessage +=
         `\nCall context:\n` +
         `  Canister ID: ${this.callContext.canisterId.toText()}\n` +
-        `  Method name: ${this.callContext.methodName}\n` +
-        `  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}`;
+        `  Method name: ${this.callContext.methodName}`;
+      if ('httpDetails' in this.callContext) {
+        errorMessage += `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}`;
+      }
     }
     return errorMessage;
   }
@@ -633,6 +644,22 @@ export class CreateHttpAgentErrorCode extends ErrorCode {
 
   public toErrorMessage(): string {
     return 'Failed to create agent from provided agent';
+  }
+}
+
+export class ExcessiveSignaturesErrorCode extends ErrorCode {
+  public name = 'ExcessiveSignaturesErrorCode';
+
+  constructor(
+    public readonly signatureCount: number,
+    public readonly maxExpected: number,
+  ) {
+    super();
+    Object.setPrototypeOf(this, ExcessiveSignaturesErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return `Query response contains ${this.signatureCount} signatures, which exceeds the subnet size of ${this.maxExpected}. This suggests a malformed or malicious response.`;
   }
 }
 

@@ -2,11 +2,19 @@
 
 ## [Unreleased]
 
-- fix(candid): improve error messages for candid decoding errors in Variant types
+- fix(agent): reject query responses with more signatures than subnet nodes
+- fix(agent): deduplicate parallel `fetchSubnetKeys` requests for the same canister to avoid redundant `read_state` round-trips (fixes #1179)
 - chore: strengthen ESLint rules with cherry-picked `@dfinity/eslint-config-oisy-wallet` rules
 - chore: migrate e2e tests from `dfx` to PocketIC (`@dfinity/pic`)
 - refactor(agent): use `globalThis.fetch` instead of custom environment detection
 - feat(agent): add `queryStrategy` option to `ActorConfig` for controlling how query methods are executed
+- chore: add unit test coverage thresholds
+- chore: upgrade tooling — `@tsconfig/node22`, native ESLint flat config, `prettier-plugin-motoko`
+- chore: remove unused dependencies (`fake-indexeddb`, `@peculiar/webcrypto`, `@eslint/eslintrc`)
+- refactor(agent): extract `readCertifiedReject` helper to deduplicate certified reject logic
+- refactor(agent): make `CallContext.httpDetails` optional for polling error paths
+- feat(agent): add `rawCertificate` to `pollForResponse` return type and export `PollForResponseResult`
+- fix(candid): improve error messages for candid decoding errors in Variant types
 
 ## [5.0.0] - 2025-12-18
 

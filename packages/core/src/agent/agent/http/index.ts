@@ -3,6 +3,7 @@ import { Principal } from '#principal';
 import {
   HashTreeDecodeErrorCode,
   CreateHttpAgentErrorCode,
+  ExcessiveSignaturesErrorCode,
   ExternalError,
   IdentityInvalidErrorCode,
   IngressExpiryInvalidErrorCode,
@@ -285,6 +286,9 @@ export class HttpAgent implements Agent {
   #subnetKeys: ExpirableMap<string, SubnetNodeKeys> = new ExpirableMap({
     expirationTime: 5 * MINUTE_TO_MSECS,
   });
+  // Tracks in-flight fetchSubnetKeys promises to deduplicate parallel requests
+  // for the same canister, preventing redundant read_state round-trips.
+  #subnetKeysFetching: Map<string, Promise<SubnetNodeKeys>> = new Map();
   #verifyQuerySignatures = true;
 
   /**
@@ -982,6 +986,13 @@ export class HttpAgent implements Agent {
     }
     const { status, signatures = [], requestId } = queryResponse;
 
+    const maxSignatures = subnetNodeKeys.size;
+    if (signatures.length > maxSignatures) {
+      throw ProtocolError.fromCode(
+        new ExcessiveSignaturesErrorCode(signatures.length, maxSignatures),
+      );
+    }
+
     for (const sig of signatures) {
       const { timestamp, identity } = sig;
       const nodeId = Principal.fromUint8Array(identity).toText();
@@ -1411,6 +1422,28 @@ export class HttpAgent implements Agent {
 
   public async fetchSubnetKeys(canisterId: Principal | string): Promise<SubnetNodeKeys> {
     const effectiveCanisterId: Principal = Principal.from(canisterId);
+
+    // Return cached result if available within the TTL.
+    const cached = this.#subnetKeys.get(effectiveCanisterId.toText());
+    if (cached) {
+      return cached;
+    }
+
+    // Deduplicate parallel requests for the same canister so that concurrent
+    // query calls share a single read_state round-trip instead of each
+    // issuing their own.
+    const inflight = this.#subnetKeysFetching.get(effectiveCanisterId.toText());
+    if (inflight) {
+      return inflight;
+    }
+    const fetchPromise = this.#doFetchSubnetKeys(effectiveCanisterId).finally(() => {
+      this.#subnetKeysFetching.delete(effectiveCanisterId.toText());
+    });
+    this.#subnetKeysFetching.set(effectiveCanisterId.toText(), fetchPromise);
+    return fetchPromise;
+  }
+
+  async #doFetchSubnetKeys(effectiveCanisterId: Principal): Promise<SubnetNodeKeys> {
     await this.#asyncGuard(effectiveCanisterId);
 
     const rootKey = this.rootKey!;

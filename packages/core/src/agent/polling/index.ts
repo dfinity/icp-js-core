@@ -4,10 +4,10 @@ import {
   Certificate,
   lookupResultToBuffer,
 } from '../certificate.ts';
+import { readCertifiedReject } from '../utils/certificateReject.ts';
 import type { Agent, ReadStateResponse } from '../agent/api.ts';
 import type { Principal } from '#principal';
 import {
-  CertifiedRejectErrorCode,
   ExternalError,
   InputError,
   InvalidReadStateRequestErrorCode,
@@ -20,16 +20,12 @@ import {
 
 export * as strategy from './strategy.ts';
 import { defaultStrategy } from './strategy.ts';
+import type { PollStrategy, PollForResponseResult } from './types.ts';
 import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
-import { RequestStatusResponseStatus } from '../agent/index.ts';
+import { RequestStatusResponseStatus } from '../agent/http/index.ts';
 import { utf8ToBytes } from '@noble/hashes/utils';
 export { defaultStrategy } from './strategy.ts';
-
-export type PollStrategy = (
-  canisterId: Principal,
-  requestId: RequestId,
-  status: RequestStatusResponseStatus,
-) => Promise<void>;
+export type { PollStrategy, PollForResponseResult } from './types.ts';
 
 interface SignedReadStateRequestWithExpiry extends ReadStateRequest {
   body: {
@@ -122,16 +118,17 @@ function isSignedReadStateRequestWithExpiry(
  * @param canisterId The effective canister ID.
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
+ * @returns The certificate, reply bytes, and raw certificate bytes for the request.
+ * @throws {ExternalError} If the agent's root key is not available.
+ * @throws {RejectError} If the request was rejected by the canister.
+ * @throws {UnknownError} If the request reached `done` status without a reply.
  */
 export async function pollForResponse(
   agent: Agent,
   canisterId: Principal,
   requestId: RequestId,
   options: PollingOptions = {},
-): Promise<{
-  certificate: Certificate;
-  reply: Uint8Array;
-}> {
+): Promise<PollForResponseResult> {
   const path = [utf8ToBytes('request_status'), requestId];
 
   let state: ReadStateResponse;
@@ -175,6 +172,7 @@ export async function pollForResponse(
       return {
         reply: lookupResultToBuffer(cert.lookup_path([...path, 'reply']))!,
         certificate: cert,
+        rawCertificate: state.certificate,
       };
     }
 
@@ -194,17 +192,7 @@ export async function pollForResponse(
     }
 
     case RequestStatusResponseStatus.Rejected: {
-      const rejectCode = new Uint8Array(
-        lookupResultToBuffer(cert.lookup_path([...path, 'reject_code']))!,
-      )[0];
-      const rejectMessage = new TextDecoder().decode(
-        lookupResultToBuffer(cert.lookup_path([...path, 'reject_message']))!,
-      );
-      const errorCodeBuf = lookupResultToBuffer(cert.lookup_path([...path, 'error_code']));
-      const errorCode = errorCodeBuf ? new TextDecoder().decode(errorCodeBuf) : undefined;
-      throw RejectError.fromCode(
-        new CertifiedRejectErrorCode(requestId, rejectCode, rejectMessage, errorCode),
-      );
+      throw RejectError.fromCode(readCertifiedReject(cert, path, requestId));
     }
 
     case RequestStatusResponseStatus.Done:
