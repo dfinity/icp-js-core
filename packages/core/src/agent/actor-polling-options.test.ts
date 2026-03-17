@@ -1,7 +1,6 @@
 import { IDL } from '#candid';
 import { Principal } from '#principal';
-import type { Agent, CallOptions } from './agent/api.ts';
-import type { PollingOptions } from './polling/index.ts';
+import type { Agent } from './agent/api.ts';
 import type { RequestId } from './request_id.ts';
 import type { LookupPathStatus, LookupPathResultFound } from './certificate.ts';
 
@@ -106,22 +105,6 @@ describe('Actor default polling options are not reused across calls', () => {
         };
       },
       readState: async () => ({ certificate: new Uint8Array([0]) }),
-      async callAndPoll(
-        canisterId: Principal | string,
-        fields: CallOptions,
-        options?: PollingOptions,
-      ) {
-        const { pollForResponse } = await import('./polling/index.ts');
-        const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
-        const { requestId, response, requestDetails } = await fakeAgent.call(canisterId, fields);
-        const pollResult = await pollForResponse(
-          fakeAgent,
-          effectiveCanisterId,
-          requestId,
-          options,
-        );
-        return { ...pollResult, requestDetails, callResponse: response };
-      },
     } as unknown as Agent;
 
     // Simple update method to trigger poll

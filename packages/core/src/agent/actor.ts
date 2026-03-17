@@ -1,20 +1,28 @@
 import {
   type Agent,
-  type CallAndPollResult,
   type HttpDetailsResponse,
+  isV2ResponseBody,
+  isV4ResponseBody,
   QueryResponseStatus,
 } from './agent/index.ts';
 import {
+  ExternalError,
   InputError,
   MissingCanisterIdErrorCode,
+  MissingRootKeyErrorCode,
   RejectError,
   UncertifiedRejectErrorCode,
+  UncertifiedRejectUpdateErrorCode,
+  UnexpectedErrorCode,
+  UnknownError,
 } from './errors.ts';
 import { IDL } from '#candid';
-import { type PollingOptions, DEFAULT_POLLING_OPTIONS } from './polling/index.ts';
+import { pollForResponse, type PollingOptions, DEFAULT_POLLING_OPTIONS } from './polling/index.ts';
 import { Principal } from '#principal';
-import type { Certificate, CreateCertificateOptions } from './certificate.ts';
+import { Certificate, type CreateCertificateOptions, lookupResultToBuffer } from './certificate.ts';
 import { HttpAgent } from './agent/http/index.ts';
+import { readCertifiedReject } from './utils/certificateReject.ts';
+import { utf8ToBytes } from '@noble/hashes/utils';
 
 /**
  * Controls how query and composite_query methods are executed.
@@ -460,52 +468,107 @@ function _createActorMethod(
       const ecid = effectiveCanisterId !== undefined ? Principal.from(effectiveCanisterId) : cid;
       const arg = IDL.encode(func.argTypes, args);
 
-      let reply: Uint8Array;
+      const { requestId, response, requestDetails } = await agent.call(cid, {
+        methodName,
+        arg,
+        effectiveCanisterId: ecid,
+        nonce: options.nonce,
+      });
+      let reply: Uint8Array | undefined;
       let certificate: Certificate | undefined;
-      let callResponse: CallAndPollResult['callResponse'];
-      let requestDetails: CallAndPollResult['requestDetails'];
-      try {
-        ({ reply, certificate, callResponse, requestDetails } = await agent.callAndPoll(
-          cid,
-          {
-            methodName,
-            arg,
-            effectiveCanisterId: ecid,
-            nonce: options.nonce,
-          },
-          { ...pollingOptions, blsVerify },
-        ));
-      } catch (e) {
-        if (e instanceof RejectError) {
-          e.code.callContext = { ...e.code.callContext, canisterId: cid, methodName };
+      if (isV4ResponseBody(response.body)) {
+        if (agent.rootKey == null) {
+          throw ExternalError.fromCode(new MissingRootKeyErrorCode());
         }
-        throw e;
+        const cert = response.body.certificate;
+        certificate = await Certificate.create({
+          certificate: cert,
+          rootKey: agent.rootKey,
+          principal: { canisterId: ecid },
+          blsVerify,
+          agent,
+        });
+        const path = [utf8ToBytes('request_status'), requestId];
+        const status = new TextDecoder().decode(
+          lookupResultToBuffer(certificate.lookup_path([...path, 'status'])),
+        );
+
+        switch (status) {
+          case 'replied':
+            reply = lookupResultToBuffer(certificate.lookup_path([...path, 'reply']));
+            break;
+          case 'rejected': {
+            const certifiedRejectErrorCode = readCertifiedReject(certificate, path, requestId);
+            certifiedRejectErrorCode.callContext = {
+              canisterId: cid,
+              methodName,
+              httpDetails: response,
+            };
+            throw RejectError.fromCode(certifiedRejectErrorCode);
+          }
+        }
+      } else if (isV2ResponseBody(response.body)) {
+        const { reject_code, reject_message, error_code } = response.body;
+        const errorCode = new UncertifiedRejectUpdateErrorCode(
+          requestId,
+          reject_code,
+          reject_message,
+          error_code,
+        );
+        errorCode.callContext = {
+          canisterId: cid,
+          methodName,
+          httpDetails: response,
+        };
+        throw RejectError.fromCode(errorCode);
       }
 
+      // Fall back to polling if we receive an Accepted response code
+      if (response.status === 202) {
+        const pollOptions: PollingOptions = {
+          ...pollingOptions,
+          blsVerify,
+        };
+        // Contains the certificate and the reply from the boundary node
+        const response = await pollForResponse(agent, ecid, requestId, pollOptions);
+        certificate = response.certificate;
+        reply = response.reply;
+      }
       const shouldIncludeHttpDetails = func.annotations.includes(ACTOR_METHOD_WITH_HTTP_DETAILS);
       const shouldIncludeCertificate = func.annotations.includes(ACTOR_METHOD_WITH_CERTIFICATE);
 
-      const httpDetails = { ...callResponse, requestDetails } as HttpDetailsResponse;
-      if (shouldIncludeHttpDetails && shouldIncludeCertificate) {
-        return {
-          httpDetails,
-          certificate,
-          result: decodeReturnValue(func.retTypes, reply),
-        };
+      const httpDetails = { ...response, requestDetails } as HttpDetailsResponse;
+      if (reply !== undefined) {
+        if (shouldIncludeHttpDetails && shouldIncludeCertificate) {
+          return {
+            httpDetails,
+            certificate,
+            result: decodeReturnValue(func.retTypes, reply),
+          };
+        }
+        if (shouldIncludeCertificate) {
+          return {
+            certificate,
+            result: decodeReturnValue(func.retTypes, reply),
+          };
+        }
+        if (shouldIncludeHttpDetails) {
+          return {
+            httpDetails,
+            result: decodeReturnValue(func.retTypes, reply),
+          };
+        }
+        return decodeReturnValue(func.retTypes, reply);
       }
-      if (shouldIncludeCertificate) {
-        return {
-          certificate,
-          result: decodeReturnValue(func.retTypes, reply),
-        };
-      }
-      if (shouldIncludeHttpDetails) {
-        return {
-          httpDetails,
-          result: decodeReturnValue(func.retTypes, reply),
-        };
-      }
-      return decodeReturnValue(func.retTypes, reply);
+      const errorCode = new UnexpectedErrorCode(
+        `Call was returned undefined. We cannot determine if the call was successful or not. Return types: [${func.retTypes.map(t => t.display()).join(',')}].`,
+      );
+      errorCode.callContext = {
+        canisterId: cid,
+        methodName,
+        httpDetails,
+      };
+      throw UnknownError.fromCode(errorCode);
     };
   }
 

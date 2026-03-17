@@ -16,7 +16,7 @@
 - refactor(agent): make `CallContext.httpDetails` optional for polling error paths
 - feat(agent): add `rawCertificate` to `pollForResponse` return type and export `PollForResponseResult`
 - fix(candid): improve error messages for candid decoding errors in Variant types
-- feat(agent): add `callAndPoll` to `HttpAgent` and `Agent` interface, extracting call+poll+certificate logic from Actor
+- feat(agent): add `callAndPoll` to `HttpAgent` and `Agent` interface
 
 ## [5.0.0] - 2025-12-18
 
