@@ -94,7 +94,7 @@ export function hashTreeToString(tree: HashTree): string {
     case NodeType.Empty:
       return '()';
     case NodeType.Fork: {
-      if (tree[1] instanceof Array && tree[2] instanceof Uint8Array) {
+      if (tree[1] instanceof Array && tree[2] instanceof Array) {
         const left = hashTreeToString(tree[1]);
         const right = hashTreeToString(tree[2]);
         return `sub(\n left:\n${indent(left)}\n---\n right:\n${indent(right)}\n)`;
@@ -102,7 +102,7 @@ export function hashTreeToString(tree: HashTree): string {
       throw UnknownError.fromCode(new HashTreeDecodeErrorCode('Invalid tree structure for fork'));
     }
     case NodeType.Labeled: {
-      if (tree[1] instanceof Uint8Array && tree[2] instanceof Uint8Array) {
+      if (tree[1] instanceof Uint8Array && tree[2] instanceof Array) {
         const label = labelToString(tree[1]);
         const sub = hashTreeToString(tree[2]);
         return `label(\n label:\n${indent(label)}\n sub:\n${indent(sub)}\n)`;
