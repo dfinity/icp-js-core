@@ -1158,5 +1158,5 @@ describe('subnet certificates', () => {
 
 test('hashTreeToString', async () => {
   const cert = cbor.decode<Cert.Cert>(SAMPLE_CERT_BYTES);
-  expect(typeof Cert.hashTreeToString(cert.tree).toBe('string'));
+  expect(typeof Cert.hashTreeToString(cert.tree)).toBe('string');
 });
