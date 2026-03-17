@@ -919,7 +919,7 @@ export class HttpAgent implements Agent {
       // Make query and fetch subnet keys in parallel
       const [queryWithDetails, subnetNodeKeys] = await Promise.all([
         makeQuery(),
-        this.fetchSubnetKeys(ecid.toString()),
+        this.fetchSubnetKeys(ecid),
       ]);
 
       try {
@@ -928,7 +928,7 @@ export class HttpAgent implements Agent {
         // In case the node signatures have changed, refresh the subnet keys and try again
         this.log.warn('Query response verification failed. Retrying with fresh subnet keys.');
         this.#subnetKeys.delete(ecid.toString());
-        const updatedSubnetNodeKeys = await this.fetchSubnetKeys(ecid.toString());
+        const updatedSubnetNodeKeys = await this.fetchSubnetKeys(ecid);
         return this.#verifyQueryResponse(queryWithDetails, updatedSubnetNodeKeys);
       }
     } catch (error) {
