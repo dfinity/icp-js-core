@@ -1,10 +1,11 @@
 import { Principal } from '#principal';
-import { HttpAgent, type CallOptions, type SubmitResponse } from '../index.ts';
+import { HttpAgent } from '../index.ts';
+import type { CallOptions, SubmitResponse } from '../index.ts';
 import type { RequestId } from '../../request_id.ts';
 import type { LookupPathResultFound, LookupPathStatus } from '../../certificate.ts';
 import { ExternalError, RejectError, UnknownError } from '../../errors.ts';
 import type { Expiry } from './transforms.ts';
-import { CallRequest, SubmitRequestType } from './types.ts';
+import { type CallRequest, SubmitRequestType } from './types.ts';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
