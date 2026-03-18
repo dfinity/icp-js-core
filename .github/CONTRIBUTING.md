@@ -49,33 +49,31 @@ additional detail if necessary
 
 This will automatically link your commit to the GitHub issue, and automatically close it when the pull request is merged.
 
-Please document your changes in the [CHANGELOG.md](../CHANGELOG.md) file.
+The changelog is automatically generated from conventional commit messages — you do not need to update it manually.
 
 ## Formatting
 
 To save time on formatting, we use automated formatting for this repo using prettier. You can either use git pre-commit hooks or run the command `pnpm prettier:format` before submitting your PR to have your changes pass. We check formatting on CI.
 
-We use GitHub Actions for Continuous Integration. As part of this, we have a workflow for releasing the package. This workflow is triggered manually and includes steps for checking out the code, setting up Node.js, installing dependencies, and running the release script.
-To trigger the release workflow, go to the "Actions" tab in the GitHub repository, select the "Release" workflow, and click on "Run workflow".
-
 ## Continuous Integration (CI)
 
 Changes will have to pass automated tests before they can be merged. If your changes fail the tests, you will have to address the failures and re-run the tests.
 
-We use GitHub Actions for Continuous Integration. As part of this, we have a workflow for releasing the package. This workflow is triggered manually and includes steps for checking out the code, setting up Node.js, installing dependencies, and running the release script.
-To trigger the release workflow, go to the "Actions" tab in the GitHub repository, select the "Release" workflow, and click on "Run workflow".
-
 GitHub Actions for this repo are configured in [./workflows](./workflows).
 
-- [conventional-commits.yml](./workflows/conventional-commits.yml) - checks the title of pull requests to ensure they follow a specified format. It is triggered when a pull request is opened, reopened, edited, or synchronized.
-- [e2e-tests.yml](./workflows/e2e-tests.yml) - runs end-to-end tests for the project. It is triggered when a pull request is opened, reopened, edited, or synchronized.
-- [lint.yml](./workflows/lint.yml) - checks the code for linting errors. It is triggered when a pull request is opened, reopened, edited, or synchronized.
-- [mitm.yml](./workflows/mitm.yml) - sets up a Man-in-the-Middle (MITM) proxy for testing purposes. It is triggered when a pull request is opened, reopened, edited, or synchronized.
-- [prepare-release.yml](./workflows/prepare-release.yml) - prepares a release by creating a pull request and a GitHub release. It is triggered manually through a workflow dispatch event. The user needs to specify the next SemVer version as an input when triggering the workflow.
-- [prettier.yml](./workflows/prettier.yml) - checks the formatting of the code using Prettier. It is triggered when a pull request is opened, reopened, edited, or synchronized.
-- [publish.yml](./workflows/publish.yml) - used to publish and release a new version of the packages. It is triggered when a pull request is closed and merged into the main branch, and the pull request's head branch starts with `release/`.
+- [conventional-commits.yml](./workflows/conventional-commits.yml) - checks the title of pull requests to ensure they follow a specified format.
+- [create-release-pr.yml](./workflows/create-release-pr.yml) - creates a release PR by bumping versions using commitizen and opening a PR. Triggered manually via workflow dispatch.
+- [docs.yml](./workflows/docs.yml) - builds the documentation site to verify it compiles correctly.
+- [e2e-tests.yml](./workflows/e2e-tests.yml) - runs end-to-end tests for the project.
+- [generate-changelog.yml](./workflows/generate-changelog.yml) - automatically generates the changelog based on conventional commits when changes are pushed to main.
+- [lint.yml](./workflows/lint.yml) - checks the code for linting errors.
+- [mitm.yml](./workflows/mitm.yml) - sets up a Man-in-the-Middle (MITM) proxy for testing purposes.
+- [npm-audit.yml](./workflows/npm-audit.yml) - runs `pnpm audit` to check for known vulnerabilities in dependencies.
+- [prettier.yml](./workflows/prettier.yml) - checks the formatting of the code using Prettier.
+- [publish-docs.yml](./workflows/publish-docs.yml) - builds and publishes documentation to the [ICP JS SDK Docs](https://github.com/dfinity/icp-js-sdk-docs) repository. Can be triggered manually or called by the release workflow.
+- [release.yml](./workflows/release.yml) - publishes the package to npm and creates a GitHub release. Triggered when a version tag is pushed (e.g., `v5.1.0`).
 - [size-limit.yml](./workflows/size-limit.yml) - uses the `andresz1/size-limit-action` action to calculate the size of the project.
-- [unit-tests.yml](./workflows/unit-tests.yml) - runs unit tests for the project. It is triggered when a pull request is opened, reopened, edited, or synchronized.
+- [unit-tests.yml](./workflows/unit-tests.yml) - runs unit tests for the project.
 
 ## Reviewing
 
@@ -99,149 +97,54 @@ pnpm preview
 
 # Release new version and Publish it to NPM
 
-> [!IMPORTANT]  
-> The 5-line script shared below should give you an overview of what you need to do to execute the process, however, it is **not recommended** to actually run it this way, because the script will approve and merge the PR - something you should do manually!
->
-> ```shell
-> gh workflow run "prepare-release.yml" -f "semverBump=major" && sleep 3
-> RUN_ID=$(gh run list --workflow=prepare-release.yml --status in_progress --json databaseId --jq '.[0].databaseId')
-> gh run watch $RUN_ID
-> gh pr review $(gh pr list --json number --jq '.[0].number') --approve
-> gh pr merge $(gh pr list --json number --jq '.[0].number')
-> # ... and you're done with releasing and publishing!
-> ```
-
 ## Release process
 
-We utilize the [release-it](https://github.com/release-it/release-it) package to streamline our release process.
+We use [commitizen](https://commitizen-tools.github.io/commitizen/) and shared [dfinity/ci-tools](https://github.com/dfinity/ci-tools) actions to automate the release process. The version is automatically determined from conventional commit messages.
 
-Start the process by initiating the GitHub Action Workflow `prepare-release.yml`. This can be done by:
+### Step 1: Create a release PR
 
-- Navigating to the GitHub web UI and clicking "Run workflow" at https://github.com/dfinity/icp-js-core/actions/workflows/prepare-release.yml, or
+Start the process by triggering the `create-release-pr` workflow. This can be done by:
+
+- Navigating to the GitHub web UI and clicking "Run workflow" at https://github.com/dfinity/icp-js-core/actions/workflows/create-release-pr.yml, or
 - Running this command from your console:
   ```shell
-  gh workflow run "prepare-release.yml" -f "semverBump=major"
+  gh workflow run "create-release-pr.yml"
   ```
-  You can set `semverBump=...` to `prepatch`, `patch`, `preminor`, `minor`, `premajor`, `major`, or any valid SemVer like `0.31.3-beta.2`, `0.32.2-abcdef`, or `0.32.0`. View your workflow progress in the console with this command:
+  For a beta release:
   ```shell
-  gh run watch $(gh run list --workflow=prepare-release.yml --status in_progress --json databaseId --jq '.[0].databaseId')`.
+  gh workflow run "create-release-pr.yml" -f "beta_release=true"
   ```
 
-<details>
-<summary>
-  How does it work?
-</summary>
+The workflow will:
 
-The `prepare-release.yml` GitHub Actions workflow checks out the code, sets up Node.js, installs dependencies, and runs the release script via `release-it`. The process, defined in our `package.json` file, includes the following tasks:
+- Determine the next version from conventional commits
+- Bump the version in `packages/core/package.json`
+- Update the changelog
+- Create a `release/v<version>` branch and open a PR to `main`
 
-- version bump,
-- roll version in [CHANGELOG.md](../CHANGELOG.md),
-- new release branch creation,
-- git tag creation and push,
-- suitable GitHub Release summary creation based on commit history,
-- and release PR opening.
+### Step 2: Review and merge the PR
 
-Looking at the process from perspective of git log, here is how it would look like
+Review the release PR and merge it into `main`.
 
-```mermaid
-%%{init: { 'logLevel': 'debug', 'theme': 'default' , 'themeVariables': {
-              'gitInv0': '#ff0000'
-       } } }%%
-gitGraph:
-    commit id: "PR #3458"
-    commit id: "PR #3451"
-    commit id: "PR #3454" type: HIGHLIGHT
+### Step 3: Tag and publish
 
-    branch release/0.20.0
-    checkout release/0.20.0
-    commit id: "Release 0.20.0" tag: "v0.20.0"
-
-    checkout main
-    merge release/0.20.0 id: "chore: release 0.20.0"
-
-    commit id: "PR #3453"
-    commit id: "PR #3460"
-    commit id: "PR #3455" type: HIGHLIGHT
-
-    branch release/0.21.0
-    checkout release/0.21.0
-    commit id: "Release 0.21.0" tag: "v0.21.0"
-
-    checkout main
-    merge release/0.21.0 id: "chore: release 0.21.0"
-
-    commit id: "etc, etc"
-```
-
-The commits with red square icon, indicate the moment when release process was triggered (either by using GitHub Actionr or by running `pnpm release`)
-
-</details>
-
-<details>
-<summary>
-  Can I trigger the release process without using GitHub Action?
-</summary>
-
-Yes, you can manually initiate the process. To do this, you must first install the GitHub CLI binary on your system and authenticate using `gh auth login`. After login, you can trigger the process using:
+After merging, tag the merge commit to trigger the release:
 
 ```shell
-GITHUB_TOKEN="$(gh auth token)" pnpm release patch # or minor/major/etc
+git checkout main && git pull
+git tag v<version>
+git push origin v<version>
 ```
 
-</details>
+This triggers the [`release.yml`](./workflows/release.yml) workflow, which:
+
+- Publishes `@icp-sdk/core` to npm (with provenance)
+- Creates a GitHub Release with auto-generated release notes
+- Publishes documentation (for non-beta releases)
 
 <details>
 <summary>
-  How can I manually perform everything (bypassing `release-it`)?
-</summary>
-
-You can execute the following commands:
-
-```shell
-# Ensure you are on main branch, and there are no uncommited files
-VERSION="0.20.0"
-pnpm dlx tsx bin/version.ts $VERSION
-pnpm dlx tsx bin/roll-changelog.ts $VERSION
-
-git pull
-git checkout release/$VERSION 2>/dev/null || git checkout -b release/$VERSION
-git merge main
-git push --set-upstream origin release/$VERSION
-
-git add .
-git commit -m "chore: release 0.20.0"
-git tag "v0.20.0"
-git push --force-with-lease
-
-RELEASE_URL=$(gh release create v0.20.0 --generate-notes)
-gh pr create --base main --title 'chore: release $VERSION' --body 'GitHub Release: $RELEASE_URL\nNPM release: https://www.npmjs.com/package/@icp-sdk/core/v/${version}'"
-git checkout main
-```
-
-</details>
-
-## Publishing Packages to NPM
-
-Once you've initiated a release process, the resulting pull request from the `release/...` branch to the `main` branch needs to be reviewed. Upon merging, it automatically triggers the [`publish.yml`](../.github/workflows/publish.yml) workflow, which handles publishing the new version to NPM, along with updating documentation and changelog.
-
-### Package Publishing Strategy
-
-The publish workflow handles two types of releases:
-
-1. **Core-only releases**: When only `@icp-sdk/core` needs updates (at the moment, mainly documentation and configuration), you can release just the core package by bumping only its version in `packages/core/package.json`.
-
-2. **Full releases**: When `@dfinity/*` packages are updated, you **must also release** `@icp-sdk/core` since it has peer dependencies on those packages. This ensures compatibility and prevents version mismatches.
-
-**Release patterns:**
-- **Core-only**: Bump only `@icp-sdk/core` version -> only core package gets published
-- **Full release**: Bump both `@dfinity/*` and `@icp-sdk/core` versions -> all packages get published
-- **Dependencies-only**: Never bump only `@dfinity/*` versions without also updating `@icp-sdk/core`
-
-The [`publish.yml`](../.github/workflows/publish.yml) workflow always runs both `publish:dfinity-packages` and `publish:core-package` commands, but npm/pnpm automatically skips packages whose versions haven't changed.
-
-<details>
-<summary>
-  How to manually publish to NPM (without utilizing `publish.yml` workflow)?
+  How to manually publish to NPM (without utilizing the release workflow)?
 </summary>
 
 Perform the following steps to manually publish a package to NPM:
@@ -250,9 +153,6 @@ Perform the following steps to manually publish a package to NPM:
    - `git clean -dfx`. This removes all non-tracked files and directories.
    - `pnpm i`. This ensures everything is installed and up-to-date locally.
    - `pnpm build`. This builds all applications and packages.
-   - `pnpm version [patch|major|minor|version]`. This updates the version in each package.
-   - Manually update the version in the root package.json file.
-   - `pnpm i`. This updates the packages' versions in the package-lock.json file.
 2. Initiate a new release branch using `git checkout -b release/v<#.#.#>`.
 3. Stage your changes with `git add .`.
 4. Create a commit including your changes using `git commit -m 'chore: release v<#.#.#>'`.
@@ -261,10 +161,7 @@ Perform the following steps to manually publish a package to NPM:
 Once the changes are merged, you can publish to NPM by running:
 
 - `pnpm build`. Re-building for safety.
-- `pnpm publish:dfinity-packages`. To publish `@dfinity/*` packages to NPM.
-  - To do this, you will need publishing authorization under our NPM organization. Contact IT if you require access.
-  - You can include the `--dry-run` flag to verify the versions and packages before actual publishing.
-- `pnpm publish:core-package`. To publish `@icp-sdk/core` package to NPM.
+- `pnpm -F './packages/core' publish --access public`.
   - To do this, you will need publishing authorization under our NPM organization. Contact IT if you require access.
   - You can include the `--dry-run` flag to verify the version before actual publishing.
 
@@ -274,27 +171,29 @@ After publishing to NPM, go to https://github.com/dfinity/icp-js-core/releases/n
 
 ## Publishing Documentation
 
-Docs are built and published in the `publish-docs` step of the [`publish.yml`](../.github/workflows/publish.yml) workflow.
+Docs are automatically built and a PR is opened in the docs repo as part of the [`release.yml`](./workflows/release.yml) workflow for non-beta releases. The PR still needs to be reviewed and merged manually. The [`publish-docs.yml`](./workflows/publish-docs.yml) workflow can also be triggered manually if needed.
 
 <details>
 <summary>
-  How to manually publish a new version of the documents (without utilizing `publish.yml` workflow)?
+  How to manually publish a new version of the documents?
 </summary>
+
+You can trigger the `publish-docs` workflow manually from the GitHub Actions UI or via the CLI:
+
+```shell
+gh workflow run "publish-docs.yml" -f "ref=v5.0.0"
+```
+
+Alternatively, to build and publish docs entirely manually:
 
 1. Start with a fresh clone (or execute `git clean -dfx .`) to ensure no untracked files are present.
 2. Run `pnpm i` to install all dependencies.
 3. Move to the [`docs`](../docs/) directory.
 4. Build the docs setting the proper environment variables:
-  ```shell
-  DOCS_VERSION=v3.2 pnpm build
-  ```
-5. Zip the `dist/v3.2` directory:
-  ```shell
-  cd dist/v3.2
-  zip -r v3.2.zip .
-  ```
-6. Push the zip file to the `icp-pages` branch.
-7. Trigger the [`pull-project-docs.yml`](https://github.com/dfinity/icp-js-sdk-docs/blob/main/.github/workflows/pull-project-docs.yml) workflow on the [ICP JS SDK Docs](https://github.com/dfinity/icp-js-sdk-docs) repository.
+   ```shell
+   DOCS_VERSION=v5.0 pnpm build
+   ```
+5. The built docs will be in `docs/dist/v5.0/`. Follow the [ICP JS SDK Docs](https://github.com/dfinity/icp-js-sdk-docs) repository instructions to deploy.
 
 </details>
 
