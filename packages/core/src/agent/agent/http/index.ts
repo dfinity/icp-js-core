@@ -14,8 +14,10 @@ import {
   MissingRootKeyErrorCode,
   ProtocolError,
   QuerySignatureVerificationFailedErrorCode,
+  RejectError,
   TimeoutWaitingForResponseErrorCode,
   TrustError,
+  UncertifiedRejectUpdateErrorCode,
   UnexpectedErrorCode,
   UnknownError,
   HttpErrorCode,
@@ -35,11 +37,15 @@ import {
   QueryResponseStatus,
   type Agent,
   type ApiQueryResponse,
+  type UpdateResult,
   type QueryFields,
   type QueryResponse,
   type ReadStateOptions,
   type ReadStateResponse,
   type SubmitResponse,
+  type CallOptions,
+  isV4ResponseBody,
+  isV2ResponseBody,
 } from '../api.ts';
 import { Expiry, httpHeadersTransform, makeNonceTransform } from './transforms.ts';
 import {
@@ -65,8 +71,10 @@ import {
   getSubnetIdFromCertificate,
   type HashTree,
   lookup_path,
+  lookupResultToBuffer,
   LookupPathStatus,
 } from '../../certificate.ts';
+import { readCertifiedReject } from '../../utils/certificateReject.ts';
 import { ed25519 } from '@noble/curves/ed25519';
 import { ExpirableMap } from '../../utils/expirableMap.ts';
 import { Ed25519PublicKey } from '../../public_key.ts';
@@ -77,6 +85,7 @@ import {
   ExponentialBackoff,
 } from '../../polling/backoff.ts';
 import { decodeTime } from '../../utils/leb.ts';
+import { pollForResponse, type PollingOptions } from '../../polling/index.ts';
 import { concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
@@ -617,6 +626,110 @@ export class HttpAgent implements Agent {
       this.log.error(`Error while making call: ${callError.message}`, callError);
       throw callError;
     }
+  }
+
+  /**
+   * Executes an update call to a canister and returns the certified result.
+   * @param canisterId The canister to call.
+   * @param fields The call options (method name, arg, effective canister ID, optional nonce).
+   * @param pollingOptions Optional polling configuration.
+   * @returns The certified result including the certificate, reply bytes, and raw certificate bytes.
+   */
+  public async update(
+    canisterId: Principal | string,
+    fields: CallOptions,
+    pollingOptions: PollingOptions = {},
+  ): Promise<UpdateResult> {
+    const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
+    const { requestId, response, requestDetails } = await this.call(canisterId, fields);
+    const { body, ...httpDetails } = response;
+
+    if (isV4ResponseBody(body)) {
+      if (this.rootKey == null) {
+        throw ExternalError.fromCode(new MissingRootKeyErrorCode());
+      }
+      const rawCertificate = body.certificate;
+      const certificate = await Certificate.create({
+        certificate: rawCertificate,
+        rootKey: this.rootKey,
+        principal: { canisterId: effectiveCanisterId },
+        blsVerify: pollingOptions.blsVerify,
+        agent: this,
+      });
+
+      const path = [utf8ToBytes('request_status'), requestId];
+      const maybeBuf = lookupResultToBuffer(
+        certificate.lookup_path([...path, utf8ToBytes('status')]),
+      );
+      const status = maybeBuf ? new TextDecoder().decode(maybeBuf) : undefined;
+
+      switch (status) {
+        case RequestStatusResponseStatus.Replied:
+          return {
+            reply: lookupResultToBuffer(certificate.lookup_path([...path, 'reply']))!,
+            certificate,
+            rawCertificate,
+            requestDetails,
+            callResponse: response,
+          };
+        case RequestStatusResponseStatus.Rejected: {
+          const error = readCertifiedReject(certificate, path, requestId);
+          error.callContext = {
+            canisterId: effectiveCanisterId,
+            methodName: fields.methodName,
+            httpDetails,
+          };
+          throw RejectError.fromCode(error);
+        }
+        default: {
+          const unexpectedErrorCode = new UnexpectedErrorCode(
+            `Unexpected request status in v4 sync response: "${status}"`,
+          );
+          unexpectedErrorCode.callContext = {
+            canisterId: effectiveCanisterId,
+            methodName: fields.methodName,
+            httpDetails,
+          };
+          throw UnknownError.fromCode(unexpectedErrorCode);
+        }
+      }
+    }
+
+    if (isV2ResponseBody(body)) {
+      const { reject_code, reject_message, error_code } = body;
+      const errorCode = new UncertifiedRejectUpdateErrorCode(
+        requestId,
+        reject_code,
+        reject_message,
+        error_code,
+      );
+      errorCode.callContext = {
+        canisterId: effectiveCanisterId,
+        methodName: fields.methodName,
+        httpDetails,
+      };
+      throw RejectError.fromCode(errorCode);
+    }
+
+    if (response.status === 202) {
+      const pollResult = await pollForResponse(
+        this,
+        effectiveCanisterId,
+        requestId,
+        pollingOptions,
+      );
+      return { ...pollResult, requestDetails, callResponse: response };
+    }
+
+    const unexpectedErrorCode = new UnexpectedErrorCode(
+      `Unexpected response from call: status ${response.status} with unrecognized body`,
+    );
+    unexpectedErrorCode.callContext = {
+      canisterId: effectiveCanisterId,
+      methodName: fields.methodName,
+      httpDetails,
+    };
+    throw UnknownError.fromCode(unexpectedErrorCode);
   }
 
   async #requestAndRetryQuery(args: {
