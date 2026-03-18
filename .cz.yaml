@@ -1,8 +1,8 @@
 ---
 commitizen:
+  changelog_start_rev: v5.0.0
   name: cz_conventional_commits
   tag_format: v$version
-  version: 5.0.0
+  version: 5.1.0
   version_files:
-    - packages/core/package.json:version
-  changelog_start_rev: v5.0.0
+  - packages/core/package.json:version
