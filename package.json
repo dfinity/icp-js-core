@@ -18,6 +18,7 @@
     "esbuild": "^0.27.3",
     "eslint": "^10.0.3",
     "eslint-plugin-jsdoc": "^62.7.1",
+    "husky": "^9.1.7",
     "jest": "^30.3.0",
     "prettier": "^3.8.1",
     "prettier-plugin-motoko": "^0.12.5",
@@ -45,6 +46,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "size": "size-limit --json",
+    "prepare": "husky",
     "prettier:check": "npx -p prettier -p pretty-quick pretty-quick --check --branch main",
     "prettier:format": "npx -p prettier -p pretty-quick pretty-quick --branch main"
   },
