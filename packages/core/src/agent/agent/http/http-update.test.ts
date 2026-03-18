@@ -132,7 +132,7 @@ function createAgentWithCallMock(
   return agent;
 }
 
-describe('HttpAgent.callAndPoll', () => {
+describe('HttpAgent.update', () => {
   beforeEach(() => {
     statusesByRequestKey.clear();
     replyByRequestKey.clear();
@@ -145,7 +145,7 @@ describe('HttpAgent.callAndPoll', () => {
       const expectedReply = new Uint8Array([42]);
       replyByRequestKey.set(requestId, expectedReply);
 
-      const result = await agent.callAndPoll(canisterId, callFields);
+      const result = await agent.update(canisterId, callFields);
 
       expect(result.reply).toEqual(expectedReply);
     });
@@ -154,7 +154,7 @@ describe('HttpAgent.callAndPoll', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.callAndPoll(canisterId, callFields);
+      const result = await agent.update(canisterId, callFields);
 
       expect(result.rawCertificate).toEqual(new Uint8Array([0]));
     });
@@ -164,7 +164,7 @@ describe('HttpAgent.callAndPoll', () => {
       const expectedReply = new Uint8Array([42]);
       replyByRequestKey.set(requestId, expectedReply);
 
-      const result = await agent.callAndPoll(canisterId, callFields);
+      const result = await agent.update(canisterId, callFields);
 
       expect(result.certificate).toBeDefined();
       expect(typeof result.certificate.lookup_path).toBe('function');
@@ -180,7 +180,7 @@ describe('HttpAgent.callAndPoll', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.callAndPoll(canisterId, callFields);
+      const result = await agent.update(canisterId, callFields);
 
       expect(result.requestDetails).toEqual(mockRequestDetails);
     });
@@ -189,7 +189,7 @@ describe('HttpAgent.callAndPoll', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      await agent.callAndPoll(canisterId, callFields);
+      await agent.update(canisterId, callFields);
 
       expect(agent.call).toHaveBeenCalledWith(canisterId, callFields);
     });
@@ -204,8 +204,8 @@ describe('HttpAgent.callAndPoll', () => {
       });
 
       try {
-        await agent.callAndPoll(canisterId, callFields);
-        fail('Expected callAndPoll to throw');
+        await agent.update(canisterId, callFields);
+        fail('Expected update to throw');
       } catch (error) {
         expect(error).toBeInstanceOf(RejectError);
         const code = (
@@ -228,7 +228,7 @@ describe('HttpAgent.callAndPoll', () => {
         effectiveCanisterId: ecid,
       };
 
-      await agent.callAndPoll(canisterId, fieldsWithEcid);
+      await agent.update(canisterId, fieldsWithEcid);
 
       expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithEcid);
     });
@@ -237,7 +237,7 @@ describe('HttpAgent.callAndPoll', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.callAndPoll(canisterId.toText(), callFields);
+      const result = await agent.update(canisterId.toText(), callFields);
 
       expect(result.reply).toEqual(new Uint8Array([42]));
       expect(agent.call).toHaveBeenCalledWith(canisterId.toText(), callFields);
@@ -249,7 +249,7 @@ describe('HttpAgent.callAndPoll', () => {
       const nonce = new Uint8Array([99, 88, 77]);
 
       const fieldsWithNonce = { ...callFields, nonce };
-      await agent.callAndPoll(canisterId, fieldsWithNonce);
+      await agent.update(canisterId, fieldsWithNonce);
 
       expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithNonce);
     });
@@ -258,7 +258,7 @@ describe('HttpAgent.callAndPoll', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.callAndPoll(canisterId, callFields);
+      const result = await agent.update(canisterId, callFields);
 
       expect(result.callResponse).toEqual({
         ok: true,
@@ -273,7 +273,7 @@ describe('HttpAgent.callAndPoll', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.callAndPoll(canisterId, callFields);
+      const result = await agent.update(canisterId, callFields);
 
       expect(result.reply).toEqual(new Uint8Array([42]));
       expect(agent.readState).toHaveBeenCalled();
@@ -293,7 +293,7 @@ describe('HttpAgent.callAndPoll', () => {
       const agent = createAgentWithV4Response();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.callAndPoll(canisterId, callFields);
+      const result = await agent.update(canisterId, callFields);
 
       expect(result.reply).toEqual(new Uint8Array([42]));
       expect(result.certificate).toBeDefined();
@@ -307,7 +307,7 @@ describe('HttpAgent.callAndPoll', () => {
       const agent = createAgentWithV4Response({ certificate: certBytes });
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.callAndPoll(canisterId, callFields);
+      const result = await agent.update(canisterId, callFields);
 
       expect(result.rawCertificate).toEqual(certBytes);
     });
@@ -317,7 +317,7 @@ describe('HttpAgent.callAndPoll', () => {
       Object.defineProperty(agent, 'rootKey', { value: null, writable: true });
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      await expect(agent.callAndPoll(canisterId, callFields)).rejects.toThrow(ExternalError);
+      await expect(agent.update(canisterId, callFields)).rejects.toThrow(ExternalError);
     });
 
     it('throws UnknownError immediately without polling for unexpected v4 status', async () => {
@@ -325,7 +325,7 @@ describe('HttpAgent.callAndPoll', () => {
       statusesByRequestKey.set(requestId, ['processing']);
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      await expect(agent.callAndPoll(canisterId, callFields)).rejects.toThrow(UnknownError);
+      await expect(agent.update(canisterId, callFields)).rejects.toThrow(UnknownError);
       expect(agent.readState).not.toHaveBeenCalled();
     });
 
@@ -339,8 +339,8 @@ describe('HttpAgent.callAndPoll', () => {
       });
 
       try {
-        await agent.callAndPoll(canisterId, callFields);
-        fail('Expected callAndPoll to throw');
+        await agent.update(canisterId, callFields);
+        fail('Expected update to throw');
       } catch (error) {
         expect(error).toBeInstanceOf(RejectError);
         const code = (
@@ -363,7 +363,7 @@ describe('HttpAgent.callAndPoll', () => {
         body: null,
       });
 
-      await expect(agent.callAndPoll(canisterId, callFields)).rejects.toThrow(UnknownError);
+      await expect(agent.update(canisterId, callFields)).rejects.toThrow(UnknownError);
       expect(agent.readState).not.toHaveBeenCalled();
     });
 
@@ -375,7 +375,7 @@ describe('HttpAgent.callAndPoll', () => {
         body: null,
       });
 
-      await expect(agent.callAndPoll(canisterId, callFields)).rejects.toThrow(UnknownError);
+      await expect(agent.update(canisterId, callFields)).rejects.toThrow(UnknownError);
       expect(agent.readState).not.toHaveBeenCalled();
     });
   });
@@ -394,8 +394,8 @@ describe('HttpAgent.callAndPoll', () => {
       });
 
       try {
-        await agent.callAndPoll(canisterId, callFields);
-        fail('Expected callAndPoll to throw');
+        await agent.update(canisterId, callFields);
+        fail('Expected update to throw');
       } catch (error) {
         expect(error).toBeInstanceOf(RejectError);
         const code = (

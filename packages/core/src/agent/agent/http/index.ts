@@ -37,8 +37,7 @@ import {
   QueryResponseStatus,
   type Agent,
   type ApiQueryResponse,
-  type CallAndPollResult,
-  type HttpDetailsResponse,
+  type UpdateResult,
   type QueryFields,
   type QueryResponse,
   type ReadStateOptions,
@@ -636,19 +635,20 @@ export class HttpAgent implements Agent {
    * @param pollingOptions Optional polling configuration.
    * @returns The certificate, reply bytes, raw certificate bytes, request details, and call response.
    */
-  public async callAndPoll(
+  public async update(
     canisterId: Principal | string,
     fields: CallOptions,
     pollingOptions: PollingOptions = {},
-  ): Promise<CallAndPollResult> {
+  ): Promise<UpdateResult> {
     const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
     const { requestId, response, requestDetails } = await this.call(canisterId, fields);
+    const { body, ...httpDetails } = response;
 
-    if (isV4ResponseBody(response.body)) {
+    if (isV4ResponseBody(body)) {
       if (this.rootKey == null) {
         throw ExternalError.fromCode(new MissingRootKeyErrorCode());
       }
-      const rawCertificate = response.body.certificate;
+      const rawCertificate = body.certificate;
       const certificate = await Certificate.create({
         certificate: rawCertificate,
         rootKey: this.rootKey,
@@ -677,7 +677,7 @@ export class HttpAgent implements Agent {
           error.callContext = {
             canisterId: effectiveCanisterId,
             methodName: fields.methodName,
-            httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+            httpDetails,
           };
           throw RejectError.fromCode(error);
         }
@@ -688,15 +688,15 @@ export class HttpAgent implements Agent {
           unexpectedErrorCode.callContext = {
             canisterId: effectiveCanisterId,
             methodName: fields.methodName,
-            httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+            httpDetails,
           };
           throw UnknownError.fromCode(unexpectedErrorCode);
         }
       }
     }
 
-    if (isV2ResponseBody(response.body)) {
-      const { reject_code, reject_message, error_code } = response.body;
+    if (isV2ResponseBody(body)) {
+      const { reject_code, reject_message, error_code } = body;
       const errorCode = new UncertifiedRejectUpdateErrorCode(
         requestId,
         reject_code,
@@ -706,7 +706,7 @@ export class HttpAgent implements Agent {
       errorCode.callContext = {
         canisterId: effectiveCanisterId,
         methodName: fields.methodName,
-        httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+        httpDetails,
       };
       throw RejectError.fromCode(errorCode);
     }
@@ -727,7 +727,7 @@ export class HttpAgent implements Agent {
     unexpectedErrorCode.callContext = {
       canisterId: effectiveCanisterId,
       methodName: fields.methodName,
-      httpDetails: { ...response, requestDetails } as HttpDetailsResponse,
+      httpDetails,
     };
     throw UnknownError.fromCode(unexpectedErrorCode);
   }

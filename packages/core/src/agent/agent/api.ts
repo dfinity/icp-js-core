@@ -172,10 +172,10 @@ export interface SubmitResponse {
 }
 
 /**
- * The result of {@link Agent.callAndPoll}, extending {@link PollForResponseResult}
+ * The result of {@link Agent.update}, extending {@link PollForResponseResult}
  * with the request details and raw HTTP response from the call.
  */
-export interface CallAndPollResult extends PollForResponseResult {
+export interface UpdateResult extends PollForResponseResult {
   /** The request details from the call, if available. */
   requestDetails?: CallRequest;
   /** The raw HTTP response from the call endpoint. */
@@ -226,11 +226,11 @@ export interface Agent {
    * @param pollingOptions Optional polling configuration.
    * @returns The certificate, reply bytes, raw certificate bytes, request details, and call response.
    */
-  callAndPoll(
+  update(
     canisterId: Principal | string,
     fields: CallOptions,
     pollingOptions?: PollingOptions,
-  ): Promise<CallAndPollResult>;
+  ): Promise<UpdateResult>;
 
   /**
    * Query the status endpoint of the replica. This normally has a few fields that
