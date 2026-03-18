@@ -76,5 +76,5 @@ jobs:
     if: ${{ needs.release.outputs.is_beta == 'false' }}
     uses: ./.github/workflows/publish-docs.yml
     with:
-      ref: ${{ needs.release.outputs.major_minor_patch_version }}
+      ref: ${{ github.ref_name }}
     secrets: inherit
