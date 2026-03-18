@@ -171,7 +171,7 @@ After publishing to NPM, go to https://github.com/dfinity/icp-js-core/releases/n
 
 ## Publishing Documentation
 
-Docs are automatically built and published as part of the [`release.yml`](./workflows/release.yml) workflow for non-beta releases. The [`publish-docs.yml`](./workflows/publish-docs.yml) workflow can also be triggered manually if needed.
+Docs are automatically built and a PR is opened in the docs repo as part of the [`release.yml`](./workflows/release.yml) workflow for non-beta releases. The PR still needs to be reviewed and merged manually. The [`publish-docs.yml`](./workflows/publish-docs.yml) workflow can also be triggered manually if needed.
 
 <details>
 <summary>
