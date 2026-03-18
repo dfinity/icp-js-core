@@ -477,7 +477,8 @@ function _createActorMethod(
         ));
       } catch (e) {
         if (e instanceof RejectError) {
-          e.code.callContext = { ...e.code.callContext, canisterId: cid, methodName };
+          const existingContext = e.code.callContext ?? {};
+          e.code.callContext = { ...existingContext, canisterId: cid, methodName };
         }
         throw e;
       }
