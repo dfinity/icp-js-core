@@ -220,11 +220,11 @@ export interface Agent {
   call(canisterId: Principal | string, fields: CallOptions): Promise<SubmitResponse>;
 
   /**
-   * Call a canister and poll for the response.
+   * Executes an update call to a canister and returns the certified result.
    * @param canisterId The canister to call.
    * @param fields The call options (method name, arg, effective canister ID, optional nonce).
    * @param pollingOptions Optional polling configuration.
-   * @returns The certificate, reply bytes, raw certificate bytes, request details, and call response.
+   * @returns The certified result including the certificate, reply bytes, and raw certificate bytes.
    */
   update(
     canisterId: Principal | string,
