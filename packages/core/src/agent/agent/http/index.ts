@@ -330,6 +330,14 @@ export class HttpAgent implements Agent {
 
     const host = determineHost(options.host);
     this.host = new URL(host);
+    // Rewrite to avoid redirects and normalize the host before using it for namespacing caches
+    if (this.host.hostname.endsWith(IC0_SUB_DOMAIN)) {
+      this.host.hostname = IC0_DOMAIN;
+    } else if (this.host.hostname.endsWith(ICP0_SUB_DOMAIN)) {
+      this.host.hostname = ICP0_DOMAIN;
+    } else if (this.host.hostname.endsWith(ICP_API_SUB_DOMAIN)) {
+      this.host.hostname = ICP_API_DOMAIN;
+    }
 
     if (options.verifyQuerySignatures !== undefined) {
       this.#verifyQuerySignatures = options.verifyQuerySignatures;
@@ -337,7 +345,7 @@ export class HttpAgent implements Agent {
     this.#subnetNodeKeyExpirableStore =
       options.subnetNodeKeyExpirableStore ??
       createExpirableStore<SubnetNodeKeys>({
-        dbName: 'icp-sdk',
+        dbName: `icp-sdk-${this.host.host}`,
         storeName: 'subnetNodeKeys',
         expirationTime: 5 * MINUTE_TO_MSECS,
       });
@@ -349,14 +357,6 @@ export class HttpAgent implements Agent {
         maxIterations: this.#retryTimes,
       });
     this.#backoffStrategy = options.backoffStrategy || defaultBackoffFactory;
-    // Rewrite to avoid redirects
-    if (this.host.hostname.endsWith(IC0_SUB_DOMAIN)) {
-      this.host.hostname = IC0_DOMAIN;
-    } else if (this.host.hostname.endsWith(ICP0_SUB_DOMAIN)) {
-      this.host.hostname = ICP0_DOMAIN;
-    } else if (this.host.hostname.endsWith(ICP_API_SUB_DOMAIN)) {
-      this.host.hostname = ICP_API_DOMAIN;
-    }
 
     if (options.credentials) {
       const { name, password } = options.credentials;
