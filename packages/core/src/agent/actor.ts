@@ -464,6 +464,7 @@ function _createActorMethod(
       let certificate: Certificate | undefined;
       let callResponse: UpdateResult['callResponse'];
       let requestDetails: UpdateResult['requestDetails'];
+      // Calls the canister and handles v4/v2 responses, falling back to polling on 202
       try {
         ({ reply, certificate, callResponse, requestDetails } = await agent.update(
           cid,
@@ -477,8 +478,12 @@ function _createActorMethod(
         ));
       } catch (e) {
         if (e instanceof RejectError) {
-          const existingContext = e.code.callContext ?? {};
-          e.code.callContext = { ...existingContext, canisterId: cid, methodName };
+          const enrichedCode = Object.create(
+            Object.getPrototypeOf(e.code),
+            Object.getOwnPropertyDescriptors(e.code),
+          );
+          enrichedCode.callContext = { ...e.code.callContext, canisterId: cid, methodName };
+          throw RejectError.fromCode(enrichedCode);
         }
         throw e;
       }
