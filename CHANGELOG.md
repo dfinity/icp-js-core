@@ -1,24 +1,32 @@
 # Changelog
 
-## [Unreleased]
+## Unreleased
 
-- fix(agent): simplify `getSubnetNodeKeys` to use `fetchSubnetKeys` return value directly, removing redundant cache re-read and dead code
-- fix(agent): reject query responses with more signatures than subnet nodes
-- fix(agent): deduplicate parallel `fetchSubnetKeys` requests for the same canister to avoid redundant `read_state` round-trips (fixes #1179)
-- chore: strengthen ESLint rules with cherry-picked `@dfinity/eslint-config-oisy-wallet` rules
-- chore: migrate e2e tests from `dfx` to PocketIC (`@dfinity/pic`)
-- refactor(agent): use `globalThis.fetch` instead of custom environment detection
-- feat(agent): add `queryStrategy` option to `ActorConfig` for controlling how query methods are executed
-- chore: add unit test coverage thresholds
-- chore: upgrade tooling — `@tsconfig/node22`, native ESLint flat config, `prettier-plugin-motoko`
-- chore: remove unused dependencies (`fake-indexeddb`, `@peculiar/webcrypto`, `@eslint/eslintrc`)
-- refactor(agent): extract `readCertifiedReject` helper to deduplicate certified reject logic
-- refactor(agent): make `CallContext.httpDetails` optional for polling error paths
-- feat(agent): add `rawCertificate` to `pollForResponse` return type and export `PollForResponseResult`
-- fix(candid): improve error messages for candid decoding errors in Variant types
-- feat(agent): add `update` method to `HttpAgent` and `Agent` which mirrors similar logic handled in the actor
+### Feat
 
-## [5.0.0] - 2025-12-18
+- **agent**: add callAndPoll to HttpAgent (#1289)
+- **agent**: add rawCertificate to pollForResponse and export PollFor… (#1287)
+- **agent**: add queryStrategy option to ActorConfig (#1274)
+
+### Fix
+
+- **ci**: add changelog_start_rev to prevent commitizen from rewriting… (#1296)
+- **agent**: simplify getSubnetNodeKeys to use fetchSubnetKeys return … (#1291)
+- **candid**: improve error messages for candid decoding errors (#1292)
+- **candid**: improve error messages for candid decoding errors (#1270)
+- hashTreeToString: the types are incorrect (#1290)
+- **agent**: reject query responses with excessive signatures (#1281)
+- **agent**: deduplicate parallel fetchSubnetKeys requests (#1278)
+- resolve security vulnerabilities and upgrade dependencies (#1273)
+
+### Refactor
+
+- **agent**: reduce circular dependencies (#1285)
+- **agent**: make CallContext.httpDetails optional (#1284)
+- **agent**: extract readCertifiedReject helper to deduplicate ce… (#1283)
+- **agent**: use `globalThis.fetch` instead of custom env. detection (#1272)
+
+## v5.0.0 (2025-12-18)
 
 See the [v5 upgrading guide](https://js.icp.build/core/latest/upgrading/v5/) for more information.
 
@@ -49,55 +57,55 @@ See the [v5 upgrading guide](https://js.icp.build/core/latest/upgrading/v5/) for
 - refactor(agent): split inner logic of `check_canister_ranges` into functions
 - test(principal): remove unneeded dependency
 
-## [4.2.3] - 2025-11-19
+## v4.2.3 (2025-11-19)
 
 - docs: fix next button link in guide pages
 
-## [4.2.2] - 2025-11-10
+## v4.2.2 (2025-11-10)
 
 - fix(agent): use minute precision when rounded expiry is at least 60s in future
 
-## [4.2.1] - 2025-10-24
+## v4.2.1 (2025-10-24)
 
-## [4.2.0] - 2025-10-22
+## v4.2.0 (2025-10-22)
 
 - feat(agent): (_experimental_) introduce the `getCanisterEnv` and `safeGetCanisterEnv` functions to load the canister environment from the `ic_env` cookie. See the [Canister Environment guide](https://js.icp.build/core/v4.2/canister-environment/) for more details.
 
-## [4.1.1] - 2025-10-21
+## v4.1.1 (2025-10-21)
 
 - fix(agent): remove exported `CanisterInstallMode` type
 
-## [4.1.0] - 2025-10-13
+## v4.1.0 (2025-10-13)
 
 - feat(principal): export the `base32Encode` and `base32Decode` functions
 
-## [4.0.5] - 2025-09-30
+## v4.0.5 (2025-09-30)
 
 - fix(candid): recursive type table merging preserves concrete type mapping
 - fix(identity): handle ArrayBuffer in delegation chain serialization
 
-## [4.0.4] - 2025-09-18
+## v4.0.4 (2025-09-18)
 
 - fix(agent): create a fresh default polling strategy per request.
 - fix(agent): remove the unused `PollStrategyFactory` type.
 - fix(agent): remove the `nonce` from the `ActorConfig` type. This field must be used through the `CallConfig` type instead.
 
-## [4.0.3] - 2025-09-16
+## v4.0.3 (2025-09-16)
 
 - fix(identity): expose all the exported elements from the `ed25519` module.
 - ci: add provenance to the published packages on NPM.
 - docs(identity-secp256k1): update the submodule name in the README.
 - docs: push markdown files to the docs site.
 
-## [4.0.2] - 2025-09-02
+## v4.0.2 (2025-09-02)
 
 - fix(agent): use the `effectiveCanisterId` (if provided) instead of the `canisterId` to verify the certificate of an update call.
 
-## [4.0.1] - 2025-08-26
+## v4.0.1 (2025-08-26)
 
 - fix(candid): avoid removing shared knot types when multiple `Rec()`s are present in the same struct.
 
-## [4.0.0] - 2025-08-22
+## v4.0.0 (2025-08-22)
 
 Publishes the new `@icp-sdk/core` package.
 
@@ -121,15 +129,15 @@ See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for mo
   - [ic-use-internet-identity](https://www.npmjs.com/package/ic-use-internet-identity)
   - [@ic-reactor/react](https://www.npmjs.com/package/@ic-reactor/react)
 
-## [3.2.2] - 2025-08-21
+## v3.2.2 (2025-08-21)
 
 - fix: add `bigint` to the `JsonValue` types in `@dfinity/candid`.
 
-## [3.2.1] - 2025-08-12
+## v3.2.1 (2025-08-12)
 
 - fix: export the `GenericIdlFuncArgs`, `GenericIdlFuncRets`, and `GenericIdlServiceFields` types from `@dfinity/candid`.
 
-## [3.2.0] - 2025-08-07
+## v3.2.0 (2025-08-07)
 
 - fix: do not subtract the replica permitted clock drift when calculating the ingress expiry.
 - fix: pick the expiry rounding strategy based on the delta, without adding the clock drift to the delta.
@@ -152,21 +160,21 @@ See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for mo
 - fix: avoid syncing time indefinitely in case of an ingress expiry error.
 - fix: throw an error with code `UncertifiedRejectUpdateErrorCode` if the reply from the update call was returned undefined and the method has no return type.
 
-## [3.1.0] - 2025-07-24
+## v3.1.0 (2025-07-24)
 
 - feat: export the `getCrc32` function from `@dfinity/principal`
 
-## [3.0.2] - 2025-07-23
+## v3.0.2 (2025-07-23)
 
 - fix: canonicalizes record and variant labels during subtype checking
 
-## [3.0.1] - 2025-07-22
+## v3.0.1 (2025-07-22)
 
 - fix: override `instanceof` in Candid IDL types to avoid issues when importing `IDL` from multiple locations.
 
-## [3.0.0] - 2025-07-17
+## v3.0.0 (2025-07-17)
 
-## [3.0.0-beta.4] - 2025-07-17
+## v3.0.0-beta.4 (2025-07-17)
 
 ### Changed
 
@@ -182,14 +190,14 @@ See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for mo
 
 - feat: Starlight documentation website, with custom plugin for typedoc
 
-## [3.0.0-beta.1] - 2025-06-19
+## v3.0.0-beta.1 (2025-06-19)
 
 ### Changed
 
 - chore: update `@noble/*` dependencies
 - fix: mark `@noble/hashes` as a dependency rather than a dev dependency
 
-## [3.0.0-beta.0] - 2025-06-17
+## v3.0.0-beta.0 (2025-06-17)
 
 ### Changed
 
@@ -230,7 +238,7 @@ See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for mo
   - This means we now follow the Candid spec more closely, and reduces the risk of calling services with the wrong argument types
 - fix: retry requests that fail due to a malformed response body
 
-## [2.4.1] - 2025-04-10
+## v2.4.1 (2025-04-10)
 
 ### Changed
 
@@ -240,7 +248,7 @@ See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for mo
 - fix: fixes a bug in the `Principal` library where the management canister id util was incorrectly importing using `fromHex`
 - feat: change auth-client's default identity provider url
 
-## [2.4.0] - 2025-03-24
+## v2.4.0 (2025-03-24)
 
 ### Changed
 
@@ -264,7 +272,7 @@ See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for mo
 - feat: refactor nonce logic to prioritize options and ensure compatibility with ArrayBuffer and Uint8Array
 - test: added e2e test for CanisterStatus requesting a subnet path, as a reference for getting the subnet id of a given canister id
 
-## [2.3.0] - 2025-02-07
+## v2.3.0 (2025-02-07)
 
 ### Added
 
@@ -280,13 +288,13 @@ See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for mo
 - feat: enhanced details in agent call, query, and read_state errors
   - error now includes hex encoded response, requestId, sender_pubkey, and sender_sig in addition to message for improved debugging process
 
-## [2.2.1] - 2025-02-07
+## v2.2.1 (2025-02-07)
 
 ### Changed
 
 - fix: reverts read_state polling expiry changes due to mismatched signature introduced in 2.1.3. Polling will re-use the original request as before, up to the point where the request expires
 
-## [2.2.0] - 2024-12-12
+## v2.2.0 (2024-12-12)
 
 ### Added
 
@@ -301,7 +309,7 @@ See the [upgrading guide](https://js.icp.build/core/latest/upgrading/v4/) for mo
 - chore: Removes warning that users found unhelpful, when a message originates from other sources than the identity provider in `AuthClient` during authentication.
 - fix: Make pollForResponse typesafe to avoid exceptions from unknown requests
 
-## [2.1.3] - 2024-10-23
+## v2.1.3 (2024-10-23)
 
 ### Added
 
@@ -328,17 +336,17 @@ AgentError: Call failed:
 - feat: the `UpdateCallRejected` error now exposes `reject_code: ReplicaRejectCode`, `reject_message: string`, and `error_code?: string` properties directly on the error object.
 - fix: recalculates body to use a fresh `Expiry` when polling for `read_state` requests. This prevents the request from exceeding the `maximum_ingress_expiry` when the replica is slow to respond.
 
-## [2.1.2] - 2024-09-30
+## v2.1.2 (2024-09-30)
 
 - fix: revert https://github.com/dfinity/agent-js/pull/923 allow option to set agent replica time
 
-## [2.1.1] - 2024-09-13
+## v2.1.1 (2024-09-13)
 
 ### Added
 
 - fix: support for headers during upload with `@dfinity/assets`
 
-## [2.1.0] - 2024-09-12
+## v2.1.0 (2024-09-12)
 
 ### Added
 
@@ -367,7 +375,7 @@ AgentError: Call failed:
 - chore: bumps dev dependency versions to remove warnings
 - chore: addresses eslint errors uncovered by bumping eslint version
 
-## [2.0.0] - 2024-07-16
+## v2.0.0 (2024-07-16)
 
 ### Changed
 
@@ -383,7 +391,7 @@ AgentError: Call failed:
   - `create` is async and returns a promise. It will sync time with the replica and fetch the root key if the host is not `https://icp-api.io`
   - Replaces `source` option with a `from` and `fromSync` methods, similar to `Principal.from`
 
-## [1.4.0] - 2024-06-17
+## v1.4.0 (2024-06-17)
 
 ### Added
 
@@ -400,7 +408,7 @@ AgentError: Call failed:
 - chore: updates dfinity/conventional-pr-title-action to v4.0.0
 - chore: updates dfinity/conventional-pr-title-action to v3.2.0
 
-## [1.3.0] - 2024-05-01
+## v1.3.0 (2024-05-01)
 
 ### Added
 
@@ -413,7 +421,7 @@ AgentError: Call failed:
 - chore: upgrades github actions to v4
 - fix: retry logic now includes delays with exponential backoff matching the dfx strategy. Retries should no longer happen too quickly for the replica to catch up.
 
-## [1.2.1] - 2024-04-25
+## v1.2.1 (2024-04-25)
 
 ### Added
 
@@ -421,7 +429,7 @@ AgentError: Call failed:
 - chore: add context to errors thrown when failing to decode CBOR values.
 - chore: replaces global npm install with setup-node for size-limit action
 
-## [1.2.0] - 2024-03-25
+## v1.2.0 (2024-03-25)
 
 ### Added
 
@@ -466,11 +474,11 @@ const result = await management.bitcoin_get_balance_query({
 - feat: allow passing `DBCreateOptions` to `IdbStorage` constructor
 - updated management canister interface
 
-## [1.1.1] - 2024-03-19
+## v1.1.1 (2024-03-19)
 
 - fix: work around `PublicKeyCredential` not being enumerable
 
-## [1.1.0] - 2024-03-18
+## v1.1.0 (2024-03-18)
 
 ### Added
 
@@ -478,14 +486,14 @@ const result = await management.bitcoin_get_balance_query({
 - feat: HttpAgent tracks a watermark from the latest readState call. Queries with signatures made before the watermark will be automatically retried, and rejected if they are still behind.
 - fix: remove `ArrrayBuffer` checks from `WebAuthnIdentity` to resolve issues with the Bitwarden password manager
 
-## [1.0.1] - 2024-02-20
+## v1.0.1 (2024-02-20)
 
 ### Changed
 
 - fix: `Ed25519KeyIdentity` was not generating unique identities when no seed was provided. This issue was introduced in `v0.20.0-beta.0`. If your code was affected please upgrade to `>=1.0.1`
 - chore: export `AuthClientStorage` to aid with custom implementations
 
-## [1.0.0]
+## v1.0.0
 
 ### Added
 
@@ -499,7 +507,7 @@ const result = await management.bitcoin_get_balance_query({
 - feat: new `CustomPath` class, better docs, and deprecating metadata path type for `CanisterStatus`
 - chore: adding new controller to snapshot for e2e canister status
 
-## [0.21.4]
+## v0.21.4
 
 ### Changed
 
@@ -509,7 +517,7 @@ const result = await management.bitcoin_get_balance_query({
 - feat: release automation changes
 - fix: distinguish remote dev environments from known hosts
 
-## [0.21.0]
+## v0.21.0
 
 ### Added
 
@@ -526,20 +534,20 @@ const result = await management.bitcoin_get_balance_query({
 - fix: honor disableIdle flag
 - fix: add `github.dev` and `gitpod.io` to known hosts
 
-## [0.20.2]
+## v0.20.2
 
 ### Changed
 
 - chore: lowering prettier version for CI
 - fix: restoring localhost to list of known hosts
 
-## [0.20.1]
+## v0.20.1
 
 ### Changed
 
 - feat: retry query signature verification in case cache is stale
 
-## [0.20.0]
+## v0.20.0
 
 ### Added
 
@@ -569,7 +577,7 @@ const result = await management.bitcoin_get_balance_query({
 - feat: retry logic will catch and retry for thrown errors
 - feat!: adds certificate logic to decode subnet and node key paths from the hashtree. Changes the interface for `lookup\_path` to allow returning a `HashTree`, but also constrains `lookup` response to an `ArrayBuffer` using a new `lookupResultToBuffer` export
 
-## [0.19.3]
+## v0.19.3
 
 ### Changed
 
@@ -581,19 +589,19 @@ const result = await management.bitcoin_get_balance_query({
 - chore: limit npm version to 9 in ci for compatibility with node 16
 - Adds more helpful error message for when principal is undefined during actor creation
 
-## [0.19.2]
+## v0.19.2
 
 ### Changed
 
 - fix: subdomains on `icp0.io` and `ic0.app` were incorrectly sending requests to `icp-api` and encountering CSP issues
 
-## [0.19.1]
+## v0.19.1
 
 ### Changed
 
 - fix: default host logic fixed and tests added
 
-## [0.19.0]
+## v0.19.0
 
 ### Changed
 
@@ -602,7 +610,7 @@ const result = await management.bitcoin_get_balance_query({
 - Feat: `HttpAgent` now uses a default address of https://icp-api.io. Users will be warned for not setting a host, but the code will default to mainnet.
 - Feat: use webcrypto or node crypto instead of Math.random for nonce generation if available
 
-## [0.18.1]
+## v0.18.1
 
 ### Changed
 
@@ -617,7 +625,7 @@ const result = await management.bitcoin_get_balance_query({
 - feat: include boundary node http details to query and update calls
 - feat: adds method for actor creation that includes boundary node http details
 
-## [0.15.7]
+## v0.15.7
 
 ### Changed
 
@@ -625,19 +633,19 @@ const result = await management.bitcoin_get_balance_query({
 
 - fix: finish all tasks before calling onSuccess auth callback in `@dfinity/auth-client`
 
-## [0.15.6]
+## v0.15.6
 
 ### Changed
 
 - feat: retry failed `read\_state` requests
 
-## [0.15.5]
+## v0.15.5
 
 ### Changed
 
 - add support for WebAuthn level 3 [authenticatorAttachment](https://w3c.github.io/webauthn/#dom-publickeycredential-authenticatorattachment)
 
-## [0.15.4]
+## v0.15.4
 
 ### Changed
 
@@ -648,13 +656,13 @@ const result = await management.bitcoin_get_balance_query({
 - chore: removes a circular dependency on index for canisterStatus
 - chore: documents usage of fetch and fetchOptions for `HttpAgent`
 
-## [0.15.3]
+## v0.15.3
 
 ### Changed
 
 - reverts the `X-IC-Request-ID header` until we coordinate cors support with icx-proxy
 
-## [0.15.2]
+## v0.15.2
 
 ### Changed
 
@@ -665,13 +673,13 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 
 - updates link to `identity-secp256k1` in docs site
 
-## [0.15.1]
+## v0.15.1
 
 ### Changed
 
 - fixes a package configuration issue with `@dfinity/identity-secp256k1`
 
-## [0.15.0]
+## v0.15.0
 
 ### Changed
 
@@ -682,7 +690,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 - chore: links assets docs in index
 - chore: sets up new size-limit job for packages, in preparation for CI
 
-## [0.14.1]
+## v0.14.1
 
 ### Changed
 
@@ -692,7 +700,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 - chore: adds `js-sha256` dependency to principal
 - bug: fixes idlemanager initializing - now either requires `createOptions.identity` or `authClient.login` to be called before starting idle timeout
 
-## [0.14.0]
+## v0.14.0
 
 ### Changed
 
@@ -706,7 +714,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 - New package: @dfinity/assets. This package provides an asset manager to manage assets on an assets canister.
 - bug: `auth-client` storage wrapper returns after resolve to avoid idb to be recreated
 
-## [0.13.3]
+## v0.13.3
 
 ### Changed
 
@@ -716,20 +724,20 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 - `HttpAgent` now offers a method to sync time with the replica, provided a specific canister. This can be used to set proper `Expiry` times when a device has fallen out of sync with the replica.
 - Fixes a candid bug where when decoding, optional fields could be skipped if the data on the wire contains additional fields.
 
-## [0.13.2]
+## v0.13.2
 
 ### Changed
 
 - `auth-client` avoids localstorage global and can be used in a web worker or nodejs
 - bug: `auth-client` logout now awaits clearing storage
 
-## [0.13.1]
+## v0.13.1
 
 ### Changed
 
 - fixes a bug with the localstorage migration strategy
 
-## [0.13.0]
+## v0.13.0
 
 ### Changed
 
@@ -739,7 +747,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 
 - `AuthClient` migrates gracefully from localstorage to IDB when upgrading
 
-## [0.12.2]
+## v0.12.2
 
 ### Changed
 
@@ -747,7 +755,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 - `CanisterStatus` no longer suppresses rootKey errors
 - Readme's point to https://agent-js.icp.xyz
 
-## [0.12.1]
+## v0.12.1
 
 ### Changed
 
@@ -759,13 +767,13 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 - Use the `createReadStateRequest` and the extra parameter when polling for the response to avoid signing requests during polling.
 - Adds `derivationOrigin` to `auth-client` login to support the ability to login using the identity derived from a different origin. See [proposed changes](https://github.com/dfinity/internet-identity/pull/724/files#diff-44c106928503ccfb1b3f09f02513578552f66b68dea01c5ec4bd2de858bbba1a)
 
-## [0.12.0]
+## v0.12.0
 
 ### Changed
 
 - Changed the certificate verification interface and fixed its logic. The public constructor is now static and asynchronous. There is no separate verification method, the check is done automatically in the constructor and newly also checks that the delegation is authoritative for the given canister ID, as required by the Internet Computer interface specification.
 
-## [0.11.2]
+## v0.11.2
 
 ### Changed
 
@@ -777,13 +785,13 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 
 - updates to package.json files for metadata in npm
 
-## [0.11.1]
+## v0.11.1
 
 ### Changed
 
 - Fix for a corner case that could lead to incorrect decoding of record types.
 
-## [0.11.0]
+## v0.11.0
 
 ### Changed
 
@@ -796,7 +804,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 
   If you are currently using `agent.addTransform(makeNonceTransform())` , please note that you should remove that logic, or add the `disableNonce` option to your agent when upgrading.
 
-## [0.10.3]
+## v0.10.3
 
 ### Changed
 
@@ -804,7 +812,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 - In `auth-client`, login `onSuccess` callback and `onError` callback now supports async pattern.
 - Updates npm dependencies to resolve warnings for typedoc and node-fetch. No runtime dependencies were affected.
 
-## [0.10.2]
+## v0.10.2
 
 ### Changed
 
@@ -818,7 +826,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 
 - Improves error messages for when `HttpAgent` cannot infer `fetch` implementation
 
-## [0.10.1]
+## v0.10.1
 
 ### Changed
 
@@ -826,7 +834,7 @@ Changes default stored key for `auth-client` to use ECDSAKey\* Also updates the 
 - Sets the default Internet Identity expiration to 1 day for the `authClient`, up from 15 minutes
 - No longer checks instanceof `Principal` in `@dfinity/agent`, which should allow non-identical versions of packages to interoperate, as long as they share the same API
 
-## [0.10.0]
+## v0.10.0
 
 ### Changed
 
