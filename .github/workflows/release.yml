@@ -58,11 +58,10 @@ jobs:
         run: |
           npm pack ./packages/core/
 
-          release_cmd="npm publish --verbose --access public"
+          release_cmd="npm publish ./packages/core/ --verbose --access public"
           if [ "${{ steps.is_beta.outputs.is_beta_tag }}" = 'true' ]; then
             release_cmd="$release_cmd --tag beta"
           fi
-          release_cmd="$release_cmd ./packages/core/"
           $release_cmd
 
       - name: Create Github release
