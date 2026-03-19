@@ -46,7 +46,11 @@ export class IndexedDBExpirableStore<V> implements ExpirableStore<V> {
 
   #getDb(): Promise<IDBDatabase> {
     if (!this.#dbPromise) {
-      this.#dbPromise = this.#openDb();
+      this.#dbPromise = this.#openDb().catch((error) => {
+        // Reset the cached promise so future calls can retry opening the DB
+        this.#dbPromise = null;
+        throw error;
+      });
     }
     return this.#dbPromise;
   }
