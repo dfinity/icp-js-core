@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Refactor
+
+- **agent**: simplify Actor to delegate update calls to agent.update (#1294)
+
 ## v5.1.0 (2026-03-19)
 
 ### Feat
