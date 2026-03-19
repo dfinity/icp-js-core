@@ -4,6 +4,7 @@
 
 ### Refactor
 
+- **agent**: extract #handleV4SyncResponse and #handleV2Rejection from update (#1306)
 - **agent**: simplify Actor to delegate update calls to agent.update (#1294)
 
 ## v5.1.0 (2026-03-19)
