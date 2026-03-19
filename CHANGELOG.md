@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fix
+
+- **ci**: use npm publish instead of pnpm filter for npm release (#1308)
+
 ### Refactor
 
 - **agent**: extract #handleV4SyncResponse and #handleV2Rejection from update (#1306)
