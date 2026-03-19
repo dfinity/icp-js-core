@@ -10,6 +10,7 @@
 
 ### Fix
 
+- **ci**: convert changelog to commitizen format (#1302)
 - **ci**: add changelog_start_rev to prevent commitizen from rewriting… (#1296)
 - **agent**: simplify getSubnetNodeKeys to use fetchSubnetKeys return … (#1291)
 - **candid**: improve error messages for candid decoding errors (#1292)
