@@ -56,7 +56,9 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: 'true'
         run: |
-          release_cmd="pnpm -F './packages/core' publish --access public"
+          npm pack ./packages/core/
+
+          release_cmd="npm publish ./packages/core/ --verbose --access public"
           if [ "${{ steps.is_beta.outputs.is_beta_tag }}" = 'true' ]; then
             release_cmd="$release_cmd --tag beta"
           fi
@@ -65,6 +67,7 @@ jobs:
       - name: Create Github release
         uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1.20.0
         with:
+          artifacts: 'icp-sdk-core-${{ steps.extract-version.outputs.major }}.${{ steps.extract-version.outputs.minor }}.${{ steps.extract-version.outputs.patch }}.tgz'
           bodyFile: 'RELEASE_NOTES.md'
           tag: '${{ github.ref_name }}'
           commit: 'main'
