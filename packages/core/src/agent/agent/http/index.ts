@@ -95,12 +95,22 @@ import { concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
 
+/**
+ * Possible values for the request status in the IC state tree.
+ * @see https://internetcomputer.org/docs/references/ic-interface-spec#state-tree-request-status
+ */
 export enum RequestStatusResponseStatus {
+  /** The call has made it past the endpoint into the IC's state. */
   Received = 'received',
+  /** The initial effect of the call has happened or will happen. */
   Processing = 'processing',
+  /** The call completed successfully; the reply is available at `/request_status/<id>/reply`. */
   Replied = 'replied',
+  /** The call failed; reject code and message are available at `/request_status/<id>/reject_code` and `/reject_message`. */
   Rejected = 'rejected',
+  /** The request status path is absent from the state tree, the request is unknown to the IC (never received or pruned after expiry). */
   Unknown = 'unknown',
+  /** The IC has forgotten the response data but remembers the request to prevent replay attacks. */
   Done = 'done',
 }
 
@@ -685,7 +695,7 @@ export class HttpAgent implements Agent {
       this.#handleV2Rejection(body, requestId, effectiveCanisterId, fields.methodName, httpDetails);
     }
 
-    if (response.status === 202) {
+    if (response.status === HTTP_STATUS_ACCEPTED) {
       const pollResult = await pollForResponse(
         this,
         effectiveCanisterId,
