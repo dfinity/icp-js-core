@@ -8,10 +8,10 @@ import {
   UnknownError,
   UncertifiedRejectErrorCode,
   CertifiedRejectErrorCode,
-  CallContext,
   ErrorVerbosity,
   ErrorCode,
 } from './errors.ts';
+import type { CallContext } from './errors.ts';
 import { Expiry, ReplicaRejectCode } from './agent/index.ts';
 import type { RequestId } from './request_id.ts';
 
