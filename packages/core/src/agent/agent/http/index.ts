@@ -313,7 +313,7 @@ export class HttpAgent implements Agent {
    */
   constructor(options: HttpAgentOptions = {}) {
     this.config = options;
-    this.#fetch = options.fetch ?? globalThis.fetch;
+    this.#fetch = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.#fetchOptions = options.fetchOptions;
     this.#callOptions = options.callOptions;
     this.#shouldFetchRootKey = options.shouldFetchRootKey ?? false;

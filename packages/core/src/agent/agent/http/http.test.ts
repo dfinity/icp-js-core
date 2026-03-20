@@ -984,6 +984,31 @@ test('it should fail when setting an expiry in the past', async () => {
   ).toThrow(`Ingress expiry time must be greater than 0`);
 });
 
+test('should work when globalThis.fetch requires binding (bundler scenario)', async () => {
+  const originalGlobalFetch = globalThis.fetch;
+  try {
+    // Simulate a bundler extracting fetch without proper binding by creating
+    // a fetch-like function that throws "Illegal invocation" when called without
+    // the correct `this` context, mimicking browser behavior with Vite/webpack.
+    const strictFetch = function (this: unknown, ...args: Parameters<typeof fetch>) {
+      if (this !== globalThis && this !== undefined && this !== null) {
+        throw new TypeError('Illegal invocation');
+      }
+      return originalGlobalFetch.apply(globalThis, args);
+    };
+
+    // Assign to globalThis without binding — this is what bundlers do
+    globalThis.fetch = strictFetch as typeof fetch;
+
+    // HttpAgent.createSync should bind fetch to globalThis internally,
+    // so this should not throw
+    const agent = HttpAgent.createSync({ host: 'http://127.0.0.1' });
+    expect(agent).toBeDefined();
+  } finally {
+    globalThis.fetch = originalGlobalFetch;
+  }
+});
+
 describe('await fetching root keys before making a call to the network.', () => {
   const mockResponse = {
     headers: [
