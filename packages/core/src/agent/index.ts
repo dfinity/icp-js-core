@@ -108,6 +108,7 @@ export * from './request_id.ts';
 export * from './utils/bls.ts';
 export * from './utils/buffer.ts';
 export * from './utils/random.ts';
+export { type ExpirableStore } from './utils/expirableStore.ts';
 export * as polling from './polling/index.ts';
 import * as CanisterStatus from './canisterStatus/index.ts';
 import * as SubnetStatus from './subnetStatus/index.ts';
