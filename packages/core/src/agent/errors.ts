@@ -42,8 +42,10 @@ export interface CallContext extends PollingCallContext {
 
 /**
  * Controls the level of detail included in error messages.
- * - `Normal` (default): error message.
- * - `Verbose`: same as Normal, but includes hex-encoded binary fields e.g. arg, certificate, nonce.
+ * - `Normal` (default): includes error message, call context, and HTTP details, but omits large binary fields (arg, certificate, nonce).
+ * - `Verbose`: same as Normal, but includes hex-encoded binary fields.
+ *
+ * To enable verbose mode: `ErrorCode.verbosity = ErrorVerbosity.Verbose`
  */
 export enum ErrorVerbosity {
   Normal = 'normal',
@@ -56,7 +58,7 @@ function bytesReplacer(verbosity: ErrorVerbosity): (key: string, value: unknown)
   return (key: string, value: unknown): unknown => {
     if (value instanceof Uint8Array) {
       if (verbosity === ErrorVerbosity.Normal && VERBOSE_EXCLUDED_KEYS.has(key)) {
-        return `<${value.length} bytes, use ErrorVerbosity.Verbose to display>`;
+        return `<${value.length} bytes, set ErrorCode.verbosity = ErrorVerbosity.Verbose to display>`;
       }
       return `hex(${value.length}):${bytesToHex(value)}`;
     }

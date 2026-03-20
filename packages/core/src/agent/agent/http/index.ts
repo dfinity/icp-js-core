@@ -106,7 +106,7 @@ export enum RequestStatusResponseStatus {
   Processing = 'processing',
   /** The call completed successfully; the reply is available at `/request_status/<id>/reply`. */
   Replied = 'replied',
-  /** The call failed; reject code and message are available at `/request_status/<id>/reject_code` and `/reject_message`. */
+  /** The call failed; reject code and message are available at `/request_status/<id>/reject_code` and `/request_status/<id>/reject_message`. */
   Rejected = 'rejected',
   /** The request status path is absent from the state tree, the request is unknown to the IC (never received or pruned after expiry). */
   Unknown = 'unknown',

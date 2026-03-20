@@ -173,14 +173,14 @@ describe('ErrorCode httpDetails verbosity in toString()', () => {
   it.each([
     {
       verbosity: ErrorVerbosity.Normal,
-      expectedToContain: 'use ErrorVerbosity.Verbose to display',
+      expectedToContain: 'set ErrorCode.verbosity = ErrorVerbosity.Verbose to display',
       expectedNotToContain: 'hex(20000):',
       shouldContainHex: false,
     },
     {
       verbosity: ErrorVerbosity.Verbose,
       expectedToContain: 'hex(20000):',
-      expectedNotToContain: 'use ErrorVerbosity.Verbose to display',
+      expectedNotToContain: 'set ErrorCode.verbosity = ErrorVerbosity.Verbose to display',
       shouldContainHex: true,
     },
   ])(
