@@ -110,7 +110,7 @@ export enum RequestStatusResponseStatus {
   Rejected = 'rejected',
   /** The request status path is absent from the state tree, the request is unknown to the IC (never received or pruned after expiry). */
   Unknown = 'unknown',
-  /** The IC has forgotten the response data but remembers the request to prevent replay attacks. */
+  /** The IC has pruned the response data but remembers the request to prevent replay attacks. */
   Done = 'done',
 }
 
