@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## v5.2.0-beta.0 (2026-03-23)
 
 ### Feat
