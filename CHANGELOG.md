@@ -1,5 +1,88 @@
 # Changelog
 
+## Unreleased
+
+### Feat
+
+- **agent**: hex-encode Uint8Array fields in error messages and add E… (#1312)
+- **agent**: introduce pluggable ExpirableStore for subnet node key c… (#1280)
+
+### Fix
+
+- **ci**: add full git history to release workflow for changelog gener… (#1322)
+- **agent**: bind globalThis.fetch to prevent "Illegal invocation" (#1316)
+
+## v5.1.0 (2026-03-19)
+
+### Feat
+
+- **agent**: add callAndPoll to HttpAgent (#1289)
+- **agent**: add rawCertificate to pollForResponse and export PollFor… (#1287)
+- **agent**: add queryStrategy option to ActorConfig (#1274)
+
+### Fix
+
+- **ci**: use npm publish instead of pnpm filter for npm release (#1308)
+- **ci**: convert changelog to commitizen format (#1302)
+- **ci**: add changelog_start_rev to prevent commitizen from rewriting… (#1296)
+- **agent**: simplify getSubnetNodeKeys to use fetchSubnetKeys return … (#1291)
+- **candid**: improve error messages for candid decoding errors (#1292)
+- **candid**: improve error messages for candid decoding errors (#1270)
+- hashTreeToString: the types are incorrect (#1290)
+- **agent**: reject query responses with excessive signatures (#1281)
+- **agent**: deduplicate parallel fetchSubnetKeys requests (#1278)
+- resolve security vulnerabilities and upgrade dependencies (#1273)
+
+### Refactor
+
+- **agent**: extract #handleV4SyncResponse and #handleV2Rejection from update (#1306)
+- **agent**: simplify Actor to delegate update calls to agent.update (#1294)
+- **agent**: reduce circular dependencies (#1285)
+- **agent**: make CallContext.httpDetails optional (#1284)
+- **agent**: extract readCertifiedReject helper to deduplicate ce… (#1283)
+- **agent**: use `globalThis.fetch` instead of custom env. detection (#1272)
+
+## v5.0.0 (2025-12-18)
+
+### Feat
+
+- deprecate `@dfinity/assets` (#1244)
+- **agent**: use `/api/v3` for query and read_state requests (#1228)
+- **agent**: `syncTimeWithSubnet` method for `HttpAgent` (#1240)
+- **agent**: `SubnetStatus` module (#1238)
+- **agent**: support both subnet id and canister id for certificate verification (#1234)
+- **agent**: export `IC_STATE_ROOT_DOMAIN_SEPARATOR` constant (#1233)
+- **agent**: `readSubnetState` and `getSubnetIdFromCanister` methods (#1232)
+- **agent**: use `/api/v4` for call requests (#1223)
+- **agent**: lookup canister ranges using the `/canister_ranges/<subnet_id>/<ranges>` certificate path (#1221)
+- **agent**: `list_paths` internal function (#1219)
+
+### Fix
+
+- **agent**: sync time if ingress expiry is invalid in read_state (#1268)
+- **agent**: sync time before retrying if query signature is outdated (#1260)
+- **agent**: sync time if ingress expiry is invalid in queries (#1259)
+- **agent,identity/secp256k1**: remove `console.*` statements (#1267)
+- **agent**: verify all query signatures instead of only the first one (#1257)
+- **agent**: check if canister is in ranges for certificates without delegation (#1256)
+- **agent**: remove duplicated exports (#1246)
+- **agent**: do not fetch subnet state for node keys (#1241)
+
+### Refactor
+
+- remove `@dfinity/use-auth-client` source code (#1264)
+- remove `@dfinity/auth-client` source code (#1263)
+- remove `@dfinity/principal` source code (#1251)
+- remove `@dfinity/candid` source code (#1250)
+- remove `@dfinity/agent` source code (#1249)
+- remove `@dfinity/identity` source code (#1248)
+- remove `@dfinity/identity-secp256k1` source code (#1247)
+- **agent**: split `CanisterStatus` into smaller reusable functions (#1237)
+- **agent,identity**: remove deprecated code and fix root export docs (#1236)
+- **agent**: split read state into inner function (#1231)
+- remove unused file (#1229)
+- **agent**: prepare certificate functions for new logic (#1220)
+
 ## v5.2.0-beta.0 (2026-03-23)
 
 ### Feat
