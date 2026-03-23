@@ -6,6 +6,10 @@
 
 - **agent**: introduce pluggable ExpirableStore for subnet node key c… (#1280)
 
+### Fix
+
+- **agent**: bind globalThis.fetch to prevent "Illegal invocation" (#1316)
+
 ## v5.1.0 (2026-03-19)
 
 ### Feat
