@@ -8,7 +8,10 @@ import {
   UnknownError,
   UncertifiedRejectErrorCode,
   CertifiedRejectErrorCode,
+  ErrorVerbosity,
+  ErrorCode,
 } from './errors.ts';
+import type { CallContext } from './errors.ts';
 import { Expiry, ReplicaRejectCode } from './agent/index.ts';
 import type { RequestId } from './request_id.ts';
 
@@ -130,4 +133,68 @@ test('Error code certification', () => {
   agentError.code = certifiedRejectErrorCode;
   expect(certifiedRejectErrorCode.isCertified).toBe(true);
   expect(agentError.isCertified).toBe(true);
+});
+
+describe('ErrorCode httpDetails verbosity in toString()', () => {
+  function createErrorWithLargeArg() {
+    const errorCode = new UnexpectedErrorCode(new Error('test'));
+    const largeArg = new Uint8Array(20000);
+    for (let i = 0; i < largeArg.length; i++) {
+      largeArg[i] = i % 256;
+    }
+    errorCode.callContext = {
+      canisterId: Principal.anonymous(),
+      methodName: 'upload_asset_chunk',
+      httpDetails: {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: [],
+        requestDetails: {
+          request_type: 'call',
+          canister_id: Principal.anonymous(),
+          method_name: 'upload_asset_chunk',
+          arg: largeArg,
+          sender: Principal.anonymous(),
+          ingress_expiry: { __expiry__: '0' },
+        },
+      } as unknown as CallContext['httpDetails'],
+    };
+    return errorCode;
+  }
+
+  afterEach(() => {
+    ErrorCode.verbosity = ErrorVerbosity.Normal;
+  });
+
+  // First bytes of the arg are [0, 1, 2, ..., 255, 0, 1, ...] → hex starts with "000102030405..."
+  const expectedHexPrefix = '000102030405060708090a0b0c0d0e0f';
+
+  it.each([
+    {
+      verbosity: ErrorVerbosity.Normal,
+      expectedToContain: 'set ErrorCode.verbosity = ErrorVerbosity.Verbose to display',
+      expectedNotToContain: 'hex(20000):',
+      shouldContainHex: false,
+    },
+    {
+      verbosity: ErrorVerbosity.Verbose,
+      expectedToContain: 'hex(20000):',
+      expectedNotToContain: 'set ErrorCode.verbosity = ErrorVerbosity.Verbose to display',
+      shouldContainHex: true,
+    },
+  ])(
+    'should format binary fields correctly with $verbosity verbosity',
+    ({ verbosity, expectedToContain, expectedNotToContain, shouldContainHex }) => {
+      ErrorCode.verbosity = verbosity;
+      const errorCode = createErrorWithLargeArg();
+      const output = errorCode.toString();
+      expect(output).not.toContain('"0":');
+      expect(output).toContain(expectedToContain);
+      expect(output).not.toContain(expectedNotToContain);
+      if (shouldContainHex) {
+        expect(output).toContain(`hex(20000):${expectedHexPrefix}`);
+      }
+    },
+  );
 });
