@@ -18,14 +18,14 @@ jobs:
       contents: write
     steps:
       - name: Create GitHub App Token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         id: generate_token
         with:
           app-id: ${{ vars.PR_AUTOMATION_BOT_PUBLIC_APP_ID }}
           private-key: ${{ secrets.PR_AUTOMATION_BOT_PUBLIC_PRIVATE_KEY }}
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
