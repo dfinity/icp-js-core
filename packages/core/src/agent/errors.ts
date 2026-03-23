@@ -52,12 +52,12 @@ export enum ErrorVerbosity {
   Verbose = 'verbose',
 }
 
-const VERBOSE_EXCLUDED_KEYS = new Set(['arg', 'certificate', 'nonce']);
+const VERBOSE_ONLY_KEYS = new Set(['arg', 'certificate', 'nonce']);
 
 function bytesReplacer(verbosity: ErrorVerbosity): (key: string, value: unknown) => unknown {
   return (key: string, value: unknown): unknown => {
     if (value instanceof Uint8Array) {
-      if (verbosity === ErrorVerbosity.Normal && VERBOSE_EXCLUDED_KEYS.has(key)) {
+      if (verbosity === ErrorVerbosity.Normal && VERBOSE_ONLY_KEYS.has(key)) {
         return `<${value.length} bytes, set ErrorCode.verbosity = ErrorVerbosity.Verbose to display>`;
       }
       return `hex(${value.length}):${bytesToHex(value)}`;
