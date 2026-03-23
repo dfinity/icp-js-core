@@ -4,6 +4,7 @@
 
 ### Feat
 
+- **agent**: hex-encode Uint8Array fields in error messages and add E… (#1312)
 - **agent**: introduce pluggable ExpirableStore for subnet node key c… (#1280)
 
 ### Fix
