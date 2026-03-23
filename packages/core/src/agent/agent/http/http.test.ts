@@ -984,6 +984,58 @@ test('it should fail when setting an expiry in the past', async () => {
   ).toThrow(`Ingress expiry time must be greater than 0`);
 });
 
+test('should work when globalThis.fetch requires binding (bundler scenario)', async () => {
+  const originalGlobalFetch = globalThis.fetch;
+  try {
+    // Simulate a bundler extracting fetch without proper binding by creating
+    // a fetch-like function that throws "Illegal invocation" when called without
+    // the correct `this` context, mimicking browser behavior with Vite/webpack.
+    const strictFetch = jest.fn(function (this: unknown) {
+      if (this !== globalThis && this !== undefined && this !== null) {
+        throw new TypeError('Illegal invocation');
+      }
+      return Promise.resolve(
+        new Response(null, {
+          status: 200,
+        }),
+      );
+    });
+
+    // Assign to globalThis without binding — this is what bundlers do
+    globalThis.fetch = strictFetch as unknown as typeof fetch;
+
+    // HttpAgent.createSync should bind fetch to globalThis internally,
+    // so this should not throw
+    const agent = HttpAgent.createSync({ host: 'http://127.0.0.1' });
+    expect(agent).toBeDefined();
+
+    const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
+    // Actually invoke the agent's internal fetch to verify the binding works
+    await agent.call(canisterId, {
+      methodName: 'greet',
+      arg: new Uint8Array([]),
+    });
+
+    expect(strictFetch).toHaveBeenCalled();
+  } finally {
+    globalThis.fetch = originalGlobalFetch;
+  }
+});
+
+test('should throw InputError when globalThis.fetch is not available', () => {
+  const originalGlobalFetch = globalThis.fetch;
+  try {
+    // Remove fetch from globalThis
+    delete (globalThis as any).fetch;
+
+    expect(() => HttpAgent.createSync({ host: 'http://127.0.0.1' })).toThrow(
+      'No fetch implementation available',
+    );
+  } finally {
+    globalThis.fetch = originalGlobalFetch;
+  }
+});
+
 describe('await fetching root keys before making a call to the network.', () => {
   const mockResponse = {
     headers: [

@@ -634,6 +634,19 @@ export class IngressExpiryInvalidErrorCode extends ErrorCode {
   }
 }
 
+export class MissingFetchErrorCode extends ErrorCode {
+  public name = 'MissingFetchErrorCode';
+
+  constructor() {
+    super();
+    Object.setPrototypeOf(this, MissingFetchErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return 'No fetch implementation available. Provide a `fetch` function in HttpAgentOptions or ensure `globalThis.fetch` is defined.';
+  }
+}
+
 export class CreateHttpAgentErrorCode extends ErrorCode {
   public name = 'CreateHttpAgentErrorCode';
 

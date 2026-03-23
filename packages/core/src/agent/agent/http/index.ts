@@ -3,6 +3,7 @@ import { Principal } from '#principal';
 import {
   HashTreeDecodeErrorCode,
   CreateHttpAgentErrorCode,
+  MissingFetchErrorCode,
   ExcessiveSignaturesErrorCode,
   ExternalError,
   IdentityInvalidErrorCode,
@@ -313,7 +314,15 @@ export class HttpAgent implements Agent {
    */
   constructor(options: HttpAgentOptions = {}) {
     this.config = options;
-    this.#fetch = options.fetch ?? globalThis.fetch;
+    if (options.fetch) {
+      this.#fetch = options.fetch;
+    } else {
+      const globalFetch = (globalThis as Record<string, unknown>).fetch;
+      if (typeof globalFetch !== 'function') {
+        throw InputError.fromCode(new MissingFetchErrorCode());
+      }
+      this.#fetch = (globalFetch as typeof fetch).bind(globalThis);
+    }
     this.#fetchOptions = options.fetchOptions;
     this.#callOptions = options.callOptions;
     this.#shouldFetchRootKey = options.shouldFetchRootKey ?? false;
