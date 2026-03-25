@@ -118,6 +118,11 @@ export interface CallOptions {
   effectiveCanisterId: Principal | string;
 
   /**
+   * Whether to use synchronous call mode. Defaults to true.
+   */
+  callSync?: boolean;
+
+  /**
    * An optional nonce to use for the call, used to prevent replay attacks.
    */
   nonce?: Uint8Array;
