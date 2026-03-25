@@ -94,7 +94,7 @@ export interface QueryFields {
   /**
    * Overrides canister id for path to fetch. This is used for management canister calls.
    */
-  effectiveCanisterId?: Principal;
+  effectiveCanisterId?: Principal | string;
 }
 
 /**
@@ -115,7 +115,7 @@ export interface CallOptions {
    * An effective canister ID, used for routing. Usually the canister ID, except for management canister calls.
    * @see https://internetcomputer.org/docs/current/references/ic-interface-spec/#http-effective-canister-id
    */
-  effectiveCanisterId: Principal | string;
+  effectiveCanisterId?: Principal | string;
 
   /**
    * An optional nonce to use for the call, used to prevent replay attacks.
@@ -199,7 +199,10 @@ export interface Agent {
    * `readState` uses this internally.
    * Useful to avoid signing the same request multiple times.
    */
-  createReadStateRequest?(options: ReadStateOptions, identity?: Identity): Promise<unknown>;
+  createReadStateRequest?(
+    options: ReadStateOptions,
+    identity?: Identity | Promise<Identity>,
+  ): Promise<unknown>;
 
   /**
    * Send a read state query to the replica. This includes a list of paths to return,
@@ -213,7 +216,7 @@ export interface Agent {
   readState(
     effectiveCanisterId: Principal | string,
     options: ReadStateOptions,
-    identity?: Identity,
+    identity?: Identity | Promise<Identity>,
     request?: unknown,
   ): Promise<ReadStateResponse>;
 
@@ -230,6 +233,7 @@ export interface Agent {
     canisterId: Principal | string,
     fields: CallOptions,
     pollingOptions?: PollingOptions,
+    identity?: Identity | Promise<Identity>,
   ): Promise<UpdateResult>;
 
   /**

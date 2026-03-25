@@ -147,7 +147,7 @@ export async function pollForResponse(
     state = await agent.readState(canisterId, { paths: [path] }, undefined, currentRequest);
   } else {
     // If preSignReadStateRequest is false, we use the default strategy and sign the request each time
-    state = await agent.readState(canisterId, { paths: [path] }, await identity);
+    state = await agent.readState(canisterId, { paths: [path] }, identity);
   }
 
   if (agent.rootKey == null) {
