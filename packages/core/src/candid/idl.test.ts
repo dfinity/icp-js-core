@@ -519,6 +519,15 @@ test('decode / encode unknown variant', () => {
   expect(reencoded).toEqual(encoded);
 });
 
+test("decode variant with unknown field hash throws descriptive error", () => {
+  // Encode {ok: "good"} with variant {ok: Text, err: Text}
+  const encoded = hexToBytes("4449444c016b029cc20171e58eb4027101000004676f6f64");
+  // Decode with a variant that does not include "ok" or "err"
+  const MismatchedVariant = IDL.Variant({ foo: IDL.Text });
+  expect(() => IDL.decode([MismatchedVariant], encoded)).toThrow(/Cannot find field hash/);
+  expect(() => IDL.decode([MismatchedVariant], encoded)).toThrow(/expected fields: \[foo\]/);
+});
+
 test('throw on serializing unknown', () => {
   expect(() => IDL.encode([IDL.Unknown], ['test'])).toThrow('Unknown cannot be serialized');
 });
@@ -1302,5 +1311,43 @@ describe('IDL subtyping', () => {
         'expects subtyping check to fail',
       );
     });
+  });
+});
+
+describe('descriptive decoding error messages', () => {
+  test('variant: unexpected field hash includes expected variants', () => {
+    // Encode a variant with {ok, err}, then decode expecting only {Invalid}
+    const wireType = IDL.Variant({ ok: IDL.Text, err: IDL.Text });
+    const encoded = IDL.encode([wireType], [{ ok: 'good' }]);
+    const expectType = IDL.Variant({ Invalid: IDL.Null });
+
+    expect(() => IDL.decode([expectType], encoded)).toThrow(IDL.CandidDecodeError);
+    expect(() => IDL.decode([expectType], encoded)).toThrow(
+      /Cannot find field hash .+ in variant, expected fields: \[Invalid\]/,
+    );
+  });
+
+  test('record: missing required field includes expected and received fields', () => {
+    // Encode a record with {bar}, then decode expecting {bar, foo} where foo is required
+    const wireType = IDL.Record({ bar: IDL.Bool });
+    const encoded = IDL.encode([wireType], [{ bar: true }]);
+    const expectType = IDL.Record({ bar: IDL.Bool, foo: IDL.Text });
+
+    expect(() => IDL.decode([expectType], encoded)).toThrow(IDL.CandidDecodeError);
+    expect(() => IDL.decode([expectType], encoded)).toThrow(
+      /Cannot find required field 'foo' in record, expected fields: \[bar, foo\], received fields: \[.+\]/,
+    );
+  });
+
+  test('tuple: mismatch includes component counts', () => {
+    // Encode a tuple with 1 component, decode expecting 2
+    const wireType = IDL.Tuple(IDL.Nat);
+    const encoded = IDL.encode([wireType], [[BigInt(1)]]);
+    const expectType = IDL.Tuple(IDL.Nat, IDL.Nat);
+
+    expect(() => IDL.decode([expectType], encoded)).toThrow(IDL.CandidDecodeError);
+    expect(() => IDL.decode([expectType], encoded)).toThrow(
+      /Tuple mismatch: expected 2 components, but received 1/,
+    );
   });
 });

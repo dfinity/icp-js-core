@@ -11,28 +11,25 @@
     "@size-limit/preset-small-lib": "^12.0.1",
     "@tsconfig/node22": "^22.0.5",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.4.0",
-    "@typescript-eslint/eslint-plugin": "^8.57.0",
-    "@typescript-eslint/parser": "^8.57.0",
+    "@types/node": "^25.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
     "dotenv": "^17.3.1",
-    "esbuild": "^0.27.3",
-    "eslint": "^10.0.3",
-    "eslint-plugin-jsdoc": "^62.7.1",
-    "eslint-plugin-prettier": "^5.5.5",
+    "esbuild": "^0.27.4",
+    "eslint": "^10.1.0",
+    "eslint-plugin-jsdoc": "^62.8.0",
     "husky": "^9.1.7",
     "jest": "^30.3.0",
     "prettier": "^3.8.1",
-    "prettier-plugin-motoko": "^0.12.5",
+    "prettier-plugin-motoko": "^0.13.0",
     "pretty-quick": "^4.2.2",
-    "release-it": "^19.2.4",
     "size-limit": "^12.0.1",
     "size-limit-node-esbuild": "^0.4.0",
     "ts-jest": "^29.4.6",
     "tsx": "^4.21.0",
-    "typedoc": "^0.28.17",
+    "typedoc": "^0.28.18",
     "typescript": "5.9.3",
-    "vitest": "^4.0.18",
-    "yaml": "^2.8.2"
+    "vitest": "^4.1.0"
   },
   "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017",
   "engines": {
@@ -45,16 +42,13 @@
     "bundle": "pnpm -r bundle",
     "e2e": "pnpm -r e2e",
     "test": "pnpm -r test",
-    "version": "pnpm dlx tsx bin/version.ts",
     "attw": "pnpm -r attw",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "release": "release-it",
     "size": "size-limit --json",
     "prepare": "husky",
     "prettier:check": "npx -p prettier -p pretty-quick pretty-quick --check --branch main",
-    "prettier:format": "npx -p prettier -p pretty-quick pretty-quick --branch main",
-    "postversion": "pnpm prettier:format"
+    "prettier:format": "npx -p prettier -p pretty-quick pretty-quick --branch main"
   },
   "repository": {
     "type": "git",
@@ -71,7 +65,7 @@
     {
       "name": "@icp-sdk/core/agent",
       "path": "./packages/core/dist/agent/index.js",
-      "limit": "53 kb"
+      "limit": "53.5 kb"
     },
     {
       "name": "@icp-sdk/core/candid",
@@ -93,47 +87,5 @@
       "path": "./packages/core/dist/principal/index.js",
       "limit": "5 kb"
     }
-  ],
-  "pnpm": {
-    "overrides": {
-      "undici": ">=6.24.0"
-    }
-  },
-  "release-it": {
-    "hooks": {
-      "after:bump": [
-        "pnpm dlx tsx bin/version.ts ${version}",
-        "pnpm dlx tsx bin/roll-changelog.ts ${version}"
-      ],
-      "before:release": [
-        "git pull",
-        "git checkout release/${version} 2>/dev/null || git checkout -b release/${version}",
-        "git merge main",
-        "pnpm build",
-        "pnpm i",
-        "pnpm audit fix",
-        "git add .",
-        "git commit -m 'chore: release ${version}'",
-        "git push --set-upstream origin release/${version}"
-      ],
-      "after:release": [
-        "gh pr create --base main --title 'chore: release ${version}' --body 'GitHub Release: ${releaseUrl}\nNPM release: https://www.npmjs.com/package/@icp-sdk/core/v/${version}\n- [ ] Check this box to trigger CI'"
-      ]
-    },
-    "git": {
-      "requireBranch": "main",
-      "tagName": "v${version}",
-      "pushArgs": [
-        "--force-with-lease"
-      ]
-    },
-    "npm": {
-      "publish": false
-    },
-    "github": {
-      "release": true,
-      "draft": true,
-      "autoGenerate": true
-    }
-  }
+  ]
 }

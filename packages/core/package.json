@@ -1,6 +1,6 @@
 {
   "name": "@icp-sdk/core",
-  "version": "5.0.0",
+  "version": "5.2.0",
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
   "description": "JavaScript and TypeScript library to interact with the Internet Computer",
@@ -100,6 +100,7 @@
     "asn1js": "^3.0.7"
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
     "tsc-alias": "^1.8.16"
   }
 }

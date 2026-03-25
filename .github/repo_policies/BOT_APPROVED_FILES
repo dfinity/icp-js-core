@@ -1,4 +1,5 @@
 CHANGELOG.md
+.cz.yaml
 package.json
 package-lock.json
 packages/*/package.json

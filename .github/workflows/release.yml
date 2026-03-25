@@ -1,0 +1,86 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+'
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    outputs:
+      is_beta: ${{ steps.is_beta.outputs.is_beta_tag }}
+      major_minor_patch_version: ${{ steps.ver.outputs.major_minor_patch_version }}
+    environment:
+      name: Release
+      url: https://www.npmjs.com/package/@icp-sdk/core
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Python
+        uses: dfinity/ci-tools/actions/setup-python@main
+
+      - name: Setup Commitizen
+        uses: dfinity/ci-tools/actions/setup-commitizen@main
+
+      - name: Setup PNPM
+        uses: dfinity/ci-tools/actions/setup-pnpm@main
+
+      - name: Determine if Beta Release
+        id: is_beta
+        uses: dfinity/ci-tools/actions/is-beta-tag@main
+
+      - uses: dfinity/ci-tools/actions/extract-version@main
+        id: extract-version
+        with:
+          file: 'packages/core/package.json'
+
+      - name: Prepare version
+        id: ver
+        run: |
+          echo "major_minor_patch_version=v${{ steps.extract-version.outputs.major }}.${{ steps.extract-version.outputs.minor }}.${{ steps.extract-version.outputs.patch }}" >> $GITHUB_OUTPUT
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Generate release notes
+        uses: dfinity/ci-tools/actions/generate-release-notes@main
+
+      - name: Publish to npm
+        env:
+          NPM_CONFIG_PROVENANCE: 'true'
+        run: |
+          npm pack ./packages/core/
+
+          release_cmd="npm publish ./packages/core/ --verbose --access public"
+          if [ "${{ steps.is_beta.outputs.is_beta_tag }}" = 'true' ]; then
+            release_cmd="$release_cmd --tag beta"
+          fi
+          $release_cmd
+
+      - name: Create Github release
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
+        with:
+          artifacts: 'icp-sdk-core-${{ steps.extract-version.outputs.major }}.${{ steps.extract-version.outputs.minor }}.${{ steps.extract-version.outputs.patch }}${{ steps.extract-version.outputs.prerelease }}.tgz'
+          bodyFile: 'RELEASE_NOTES.md'
+          tag: '${{ github.ref_name }}'
+          commit: 'main'
+          prerelease: ${{ steps.is_beta.outputs.is_beta_tag == 'true' }}
+          makeLatest: ${{ steps.is_beta.outputs.is_beta_tag == 'false' }}
+
+  publish_docs:
+    needs: release
+    if: ${{ needs.release.outputs.is_beta == 'false' }}
+    uses: ./.github/workflows/publish-docs.yml
+    with:
+      ref: ${{ github.ref_name }}
+    secrets: inherit

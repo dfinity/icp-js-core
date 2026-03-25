@@ -3,6 +3,7 @@ import { Principal } from '#principal';
 import {
   HashTreeDecodeErrorCode,
   CreateHttpAgentErrorCode,
+  MissingFetchErrorCode,
   ExcessiveSignaturesErrorCode,
   ExternalError,
   IdentityInvalidErrorCode,
@@ -12,11 +13,12 @@ import {
   MalformedPublicKeyErrorCode,
   MalformedSignatureErrorCode,
   MissingRootKeyErrorCode,
-  MissingSignatureErrorCode,
   ProtocolError,
   QuerySignatureVerificationFailedErrorCode,
+  RejectError,
   TimeoutWaitingForResponseErrorCode,
   TrustError,
+  UncertifiedRejectUpdateErrorCode,
   UnexpectedErrorCode,
   UnknownError,
   HttpErrorCode,
@@ -36,11 +38,18 @@ import {
   QueryResponseStatus,
   type Agent,
   type ApiQueryResponse,
+  type UpdateResult,
+  type HttpDetailsResponse,
   type QueryFields,
   type QueryResponse,
   type ReadStateOptions,
   type ReadStateResponse,
   type SubmitResponse,
+  type CallOptions,
+  type v2ResponseBody,
+  type v4ResponseBody,
+  isV4ResponseBody,
+  isV2ResponseBody,
 } from '../api.ts';
 import { Expiry, httpHeadersTransform, makeNonceTransform } from './transforms.ts';
 import {
@@ -66,10 +75,13 @@ import {
   getSubnetIdFromCertificate,
   type HashTree,
   lookup_path,
+  lookupResultToBuffer,
   LookupPathStatus,
 } from '../../certificate.ts';
+import { readCertifiedReject } from '../../utils/certificateReject.ts';
 import { ed25519 } from '@noble/curves/ed25519';
-import { ExpirableMap } from '../../utils/expirableMap.ts';
+import type { ExpirableStore } from '../../utils/expirableStore.ts';
+import { createExpirableStore } from '../../utils/createExpirableStore.ts';
 import { Ed25519PublicKey } from '../../public_key.ts';
 import { ObservableLog } from '../../observable.ts';
 import {
@@ -78,16 +90,27 @@ import {
   ExponentialBackoff,
 } from '../../polling/backoff.ts';
 import { decodeTime } from '../../utils/leb.ts';
+import { pollForResponse, type PollingOptions } from '../../polling/index.ts';
 import { concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
 
+/**
+ * Possible values for the request status in the IC state tree.
+ * @see https://internetcomputer.org/docs/references/ic-interface-spec#state-tree-request-status
+ */
 export enum RequestStatusResponseStatus {
+  /** The call has made it past the endpoint into the IC's state. */
   Received = 'received',
+  /** The initial effect of the call has happened or will happen. */
   Processing = 'processing',
+  /** The call completed successfully; the reply is available at `/request_status/<id>/reply`. */
   Replied = 'replied',
+  /** The call failed; reject code and message are available at `/request_status/<id>/reject_code` and `/request_status/<id>/reject_message`. */
   Rejected = 'rejected',
+  /** The request status path is absent from the state tree, the request is unknown to the IC (never received or pruned after expiry). */
   Unknown = 'unknown',
+  /** The IC has pruned the response data but remembers the request to prevent replay attacks. */
   Done = 'done',
 }
 
@@ -173,6 +196,12 @@ export interface HttpAgentOptions {
    * @default true
    */
   verifyQuerySignatures?: boolean;
+  /**
+   * Custom store for caching subnet node keys.
+   * Allows sharing the cache across multiple HttpAgent instances.
+   * Defaults to IndexedDB in browser environments, in-memory otherwise.
+   */
+  subnetNodeKeyExpirableStore?: ExpirableStore<SubnetNodeKeys>;
   /**
    * Whether to log to the console. Defaults to false.
    */
@@ -270,6 +299,7 @@ export class HttpAgent implements Agent {
   readonly #retryTimes; // Retry requests N times before erroring by default
   #backoffStrategy: BackoffStrategyFactory;
   readonly #maxIngressExpiryInMinutes: number;
+  readonly #subnetNodeKeyExpirableStore: ExpirableStore<SubnetNodeKeys>;
   get #maxIngressExpiryInMs(): number {
     return this.#maxIngressExpiryInMinutes * MINUTE_TO_MSECS;
   }
@@ -283,9 +313,6 @@ export class HttpAgent implements Agent {
   #queryPipeline: HttpAgentRequestTransformFn[] = [];
   #updatePipeline: HttpAgentRequestTransformFn[] = [];
 
-  #subnetKeys: ExpirableMap<string, SubnetNodeKeys> = new ExpirableMap({
-    expirationTime: 5 * MINUTE_TO_MSECS,
-  });
   // Tracks in-flight fetchSubnetKeys promises to deduplicate parallel requests
   // for the same canister, preventing redundant read_state round-trips.
   #subnetKeysFetching: Map<string, Promise<SubnetNodeKeys>> = new Map();
@@ -297,7 +324,15 @@ export class HttpAgent implements Agent {
    */
   constructor(options: HttpAgentOptions = {}) {
     this.config = options;
-    this.#fetch = options.fetch ?? globalThis.fetch;
+    if (options.fetch) {
+      this.#fetch = options.fetch;
+    } else {
+      const globalFetch = (globalThis as Record<string, unknown>).fetch;
+      if (typeof globalFetch !== 'function') {
+        throw InputError.fromCode(new MissingFetchErrorCode());
+      }
+      this.#fetch = (globalFetch as typeof fetch).bind(globalThis);
+    }
     this.#fetchOptions = options.fetchOptions;
     this.#callOptions = options.callOptions;
     this.#shouldFetchRootKey = options.shouldFetchRootKey ?? false;
@@ -314,10 +349,25 @@ export class HttpAgent implements Agent {
 
     const host = determineHost(options.host);
     this.host = new URL(host);
+    // Rewrite to avoid redirects and normalize the host before using it for namespacing caches
+    if (this.host.hostname.endsWith(IC0_SUB_DOMAIN)) {
+      this.host.hostname = IC0_DOMAIN;
+    } else if (this.host.hostname.endsWith(ICP0_SUB_DOMAIN)) {
+      this.host.hostname = ICP0_DOMAIN;
+    } else if (this.host.hostname.endsWith(ICP_API_SUB_DOMAIN)) {
+      this.host.hostname = ICP_API_DOMAIN;
+    }
 
     if (options.verifyQuerySignatures !== undefined) {
       this.#verifyQuerySignatures = options.verifyQuerySignatures;
     }
+    this.#subnetNodeKeyExpirableStore =
+      options.subnetNodeKeyExpirableStore ??
+      createExpirableStore<SubnetNodeKeys>({
+        dbName: `icp-sdk-${this.host.host}`,
+        storeName: 'subnetNodeKeys',
+        expirationTime: 5 * MINUTE_TO_MSECS,
+      });
     // Default is 3
     this.#retryTimes = options.retryTimes ?? 3;
     // Delay strategy for retries. Default is exponential backoff
@@ -326,14 +376,6 @@ export class HttpAgent implements Agent {
         maxIterations: this.#retryTimes,
       });
     this.#backoffStrategy = options.backoffStrategy || defaultBackoffFactory;
-    // Rewrite to avoid redirects
-    if (this.host.hostname.endsWith(IC0_SUB_DOMAIN)) {
-      this.host.hostname = IC0_DOMAIN;
-    } else if (this.host.hostname.endsWith(ICP0_SUB_DOMAIN)) {
-      this.host.hostname = ICP0_DOMAIN;
-    } else if (this.host.hostname.endsWith(ICP_API_SUB_DOMAIN)) {
-      this.host.hostname = ICP_API_DOMAIN;
-    }
 
     if (options.credentials) {
       const { name, password } = options.credentials;
@@ -618,6 +660,142 @@ export class HttpAgent implements Agent {
       this.log.error(`Error while making call: ${callError.message}`, callError);
       throw callError;
     }
+  }
+
+  /**
+   * Executes an update call to a canister and returns the certified result.
+   * @param canisterId The canister to call.
+   * @param fields The call options (method name, arg, effective canister ID, optional nonce).
+   * @param pollingOptions Optional polling configuration.
+   * @returns The certified result including the certificate, reply bytes, and raw certificate bytes.
+   */
+  public async update(
+    canisterId: Principal | string,
+    fields: CallOptions,
+    pollingOptions: PollingOptions = {},
+  ): Promise<UpdateResult> {
+    const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
+    const { requestId, response, requestDetails } = await this.call(canisterId, fields);
+    const { body, ...httpDetails } = response;
+
+    if (isV4ResponseBody(body)) {
+      return this.#handleV4SyncResponse(
+        body,
+        response,
+        requestId,
+        effectiveCanisterId,
+        fields.methodName,
+        httpDetails,
+        requestDetails,
+        pollingOptions,
+      );
+    }
+
+    if (isV2ResponseBody(body)) {
+      this.#handleV2Rejection(body, requestId, effectiveCanisterId, fields.methodName, httpDetails);
+    }
+
+    if (response.status === HTTP_STATUS_ACCEPTED) {
+      const pollResult = await pollForResponse(
+        this,
+        effectiveCanisterId,
+        requestId,
+        pollingOptions,
+      );
+      return { ...pollResult, requestDetails, callResponse: response };
+    }
+
+    const unexpectedErrorCode = new UnexpectedErrorCode(
+      `Unexpected response from call: status ${response.status} with unrecognized body`,
+    );
+    unexpectedErrorCode.callContext = {
+      canisterId: effectiveCanisterId,
+      methodName: fields.methodName,
+      httpDetails,
+    };
+    throw UnknownError.fromCode(unexpectedErrorCode);
+  }
+
+  async #handleV4SyncResponse(
+    body: v4ResponseBody,
+    response: SubmitResponse['response'],
+    requestId: RequestId,
+    effectiveCanisterId: Principal,
+    methodName: string,
+    httpDetails: HttpDetailsResponse,
+    requestDetails: UpdateResult['requestDetails'],
+    pollingOptions: PollingOptions,
+  ): Promise<UpdateResult> {
+    if (this.rootKey == null) {
+      throw ExternalError.fromCode(new MissingRootKeyErrorCode());
+    }
+    const rawCertificate = body.certificate;
+    const certificate = await Certificate.create({
+      certificate: rawCertificate,
+      rootKey: this.rootKey,
+      principal: { canisterId: effectiveCanisterId },
+      blsVerify: pollingOptions.blsVerify,
+      agent: this,
+    });
+
+    const path = [utf8ToBytes('request_status'), requestId];
+    const maybeBuf = lookupResultToBuffer(
+      certificate.lookup_path([...path, utf8ToBytes('status')]),
+    );
+    const status = maybeBuf ? new TextDecoder().decode(maybeBuf) : undefined;
+
+    switch (status) {
+      case RequestStatusResponseStatus.Replied:
+        return {
+          reply: lookupResultToBuffer(certificate.lookup_path([...path, 'reply']))!,
+          certificate,
+          rawCertificate,
+          requestDetails,
+          callResponse: response,
+        };
+      case RequestStatusResponseStatus.Rejected: {
+        const error = readCertifiedReject(certificate, path, requestId);
+        error.callContext = {
+          canisterId: effectiveCanisterId,
+          methodName,
+          httpDetails,
+        };
+        throw RejectError.fromCode(error);
+      }
+      default: {
+        const unexpectedErrorCode = new UnexpectedErrorCode(
+          `Unexpected request status in v4 sync response: "${status}"`,
+        );
+        unexpectedErrorCode.callContext = {
+          canisterId: effectiveCanisterId,
+          methodName,
+          httpDetails,
+        };
+        throw UnknownError.fromCode(unexpectedErrorCode);
+      }
+    }
+  }
+
+  #handleV2Rejection(
+    body: v2ResponseBody,
+    requestId: RequestId,
+    effectiveCanisterId: Principal,
+    methodName: string,
+    httpDetails: HttpDetailsResponse,
+  ): never {
+    const { reject_code, reject_message, error_code } = body;
+    const errorCode = new UncertifiedRejectUpdateErrorCode(
+      requestId,
+      reject_code,
+      reject_message,
+      error_code,
+    );
+    errorCode.callContext = {
+      canisterId: effectiveCanisterId,
+      methodName,
+      httpDetails,
+    };
+    throw RejectError.fromCode(errorCode);
   }
 
   async #requestAndRetryQuery(args: {
@@ -911,19 +1089,6 @@ export class HttpAgent implements Agent {
       };
     };
 
-    const getSubnetNodeKeys = async (): Promise<SubnetNodeKeys> => {
-      const cachedSubnetNodeKeys = this.#subnetKeys.get(ecid.toString());
-      if (cachedSubnetNodeKeys) {
-        return cachedSubnetNodeKeys;
-      }
-      await this.fetchSubnetKeys(ecid.toString());
-      const subnetNodeKeys = this.#subnetKeys.get(ecid.toString());
-      if (!subnetNodeKeys) {
-        throw TrustError.fromCode(new MissingSignatureErrorCode());
-      }
-      return subnetNodeKeys;
-    };
-
     try {
       if (!this.#verifyQuerySignatures) {
         // Skip verification if the user has disabled it
@@ -933,7 +1098,7 @@ export class HttpAgent implements Agent {
       // Make query and fetch subnet keys in parallel
       const [queryWithDetails, subnetNodeKeys] = await Promise.all([
         makeQuery(),
-        getSubnetNodeKeys(),
+        this.fetchSubnetKeys(ecid),
       ]);
 
       try {
@@ -941,8 +1106,8 @@ export class HttpAgent implements Agent {
       } catch {
         // In case the node signatures have changed, refresh the subnet keys and try again
         this.log.warn('Query response verification failed. Retrying with fresh subnet keys.');
-        this.#subnetKeys.delete(ecid.toString());
-        const updatedSubnetNodeKeys = await getSubnetNodeKeys();
+        await this.#subnetNodeKeyExpirableStore.delete(ecid.toString());
+        const updatedSubnetNodeKeys = await this.fetchSubnetKeys(ecid);
         return this.#verifyQueryResponse(queryWithDetails, updatedSubnetNodeKeys);
       }
     } catch (error) {
@@ -1424,7 +1589,7 @@ export class HttpAgent implements Agent {
     const effectiveCanisterId: Principal = Principal.from(canisterId);
 
     // Return cached result if available within the TTL.
-    const cached = this.#subnetKeys.get(effectiveCanisterId.toText());
+    const cached = await this.#subnetNodeKeyExpirableStore.get(effectiveCanisterId.toText());
     if (cached) {
       return cached;
     }
@@ -1473,7 +1638,7 @@ export class HttpAgent implements Agent {
 
     const subnetId = getSubnetIdFromCertificate(canisterCertificate.cert, rootKey);
     const nodeKeys = lookupNodeKeysFromCertificate(canisterCertificate.cert, subnetId);
-    this.#subnetKeys.set(effectiveCanisterId.toText(), nodeKeys);
+    await this.#subnetNodeKeyExpirableStore.set(effectiveCanisterId.toText(), nodeKeys);
 
     return nodeKeys;
   }

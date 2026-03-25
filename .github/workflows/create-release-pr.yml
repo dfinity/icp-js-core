@@ -1,0 +1,65 @@
+name: create_release_pr
+
+on:
+  workflow_dispatch:
+    inputs:
+      beta_release:
+        description: 'Create a beta release'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  create_release_pr:
+    name: create_release_pr
+    runs-on: ubuntu-latest
+    environment: Release
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub App Token
+        uses: actions/create-github-app-token@v3
+        id: generate_token
+        with:
+          app-id: ${{ vars.PR_AUTOMATION_BOT_PUBLIC_APP_ID }}
+          private-key: ${{ secrets.PR_AUTOMATION_BOT_PUBLIC_PRIVATE_KEY }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: dfinity/ci-tools/actions/setup-python@main
+
+      - name: Setup Commitizen
+        uses: dfinity/ci-tools/actions/setup-commitizen@main
+
+      - name: Setup PNPM
+        uses: dfinity/ci-tools/actions/setup-pnpm@main
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Bump version
+        id: bump_version
+        uses: dfinity/ci-tools/actions/bump-version@main
+        with:
+          prerelease: ${{ inputs.beta_release == true && 'beta' || '' }}
+
+      - name: Print Version
+        run: echo "Bumping to version ${{ steps.bump_version.outputs.version }}"
+
+      - name: Create Pull Request
+        uses: dfinity/ci-tools/actions/create-pr@main
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          branch_name: 'release/v${{ steps.bump_version.outputs.version }}'
+          pull_request_title: 'chore: release v${{ steps.bump_version.outputs.version }}'
+          pull_request_body: |
+            After merging this PR, tag the merge commit with:
+            ```shell
+            git tag v${{ steps.bump_version.outputs.version }}
+            git push origin v${{ steps.bump_version.outputs.version }}
+            ```
+          commit_message: 'chore: release v${{ steps.bump_version.outputs.version }}'

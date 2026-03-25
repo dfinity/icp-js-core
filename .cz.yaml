@@ -1,0 +1,7 @@
+---
+commitizen:
+  name: cz_conventional_commits
+  tag_format: v$version
+  version: 5.2.0
+  version_files:
+  - packages/core/package.json:version

@@ -40,7 +40,35 @@ export interface CallContext extends PollingCallContext {
   httpDetails: HttpDetailsResponse;
 }
 
-abstract class ErrorCode {
+/**
+ * Controls the level of detail included in error messages.
+ * - `Normal` (default): includes error message, call context, and HTTP details, but omits large binary fields (arg, certificate, nonce).
+ * - `Verbose`: same as Normal, but includes hex-encoded binary fields.
+ *
+ * To enable verbose mode: `ErrorCode.verbosity = ErrorVerbosity.Verbose`
+ */
+export enum ErrorVerbosity {
+  Normal = 'normal',
+  Verbose = 'verbose',
+}
+
+const VERBOSE_ONLY_KEYS = new Set(['arg', 'certificate', 'nonce']);
+
+function bytesReplacer(verbosity: ErrorVerbosity): (key: string, value: unknown) => unknown {
+  return (key: string, value: unknown): unknown => {
+    if (value instanceof Uint8Array) {
+      if (verbosity === ErrorVerbosity.Normal && VERBOSE_ONLY_KEYS.has(key)) {
+        return `<${value.length} bytes, set ErrorCode.verbosity = ErrorVerbosity.Verbose to display>`;
+      }
+      return `hex(${value.length}):${bytesToHex(value)}`;
+    }
+    return value;
+  };
+}
+
+export abstract class ErrorCode {
+  static verbosity: ErrorVerbosity = ErrorVerbosity.Normal;
+
   public requestContext?: RequestContext;
   public callContext?: CallContext | PollingCallContext;
 
@@ -64,7 +92,7 @@ abstract class ErrorCode {
         `  Canister ID: ${this.callContext.canisterId.toText()}\n` +
         `  Method name: ${this.callContext.methodName}`;
       if ('httpDetails' in this.callContext) {
-        errorMessage += `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, null, 2)}`;
+        errorMessage += `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, bytesReplacer(ErrorCode.verbosity), 2)}`;
       }
     }
     return errorMessage;
@@ -634,6 +662,19 @@ export class IngressExpiryInvalidErrorCode extends ErrorCode {
   }
 }
 
+export class MissingFetchErrorCode extends ErrorCode {
+  public name = 'MissingFetchErrorCode';
+
+  constructor() {
+    super();
+    Object.setPrototypeOf(this, MissingFetchErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return 'No fetch implementation available. Provide a `fetch` function in HttpAgentOptions or ensure `globalThis.fetch` is defined.';
+  }
+}
+
 export class CreateHttpAgentErrorCode extends ErrorCode {
   public name = 'CreateHttpAgentErrorCode';
 
@@ -758,7 +799,7 @@ export class HttpErrorCode extends ErrorCode {
     let errorMessage =
       'HTTP request failed:\n' +
       `  Status: ${this.status} (${this.statusText})\n` +
-      `  Headers: ${JSON.stringify(this.headers)}\n`;
+      `  Headers: ${JSON.stringify(this.headers, bytesReplacer(ErrorCode.verbosity))}\n`;
     if (this.bodyText) {
       errorMessage += `  Body: ${this.bodyText}\n`;
     }
@@ -878,7 +919,7 @@ function formatUnknownError(error: unknown): string {
     return error.stack ?? error.message;
   }
   try {
-    return JSON.stringify(error);
+    return JSON.stringify(error, bytesReplacer(ErrorCode.verbosity));
   } catch {
     return String(error);
   }
