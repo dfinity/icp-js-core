@@ -198,6 +198,8 @@ export interface Agent {
    * Create the request for the read state call.
    * `readState` uses this internally.
    * Useful to avoid signing the same request multiple times.
+   * @param options The options for this call.
+   * @param identity The Identity to use. If not specified, uses the instance identity.
    */
   createReadStateRequest?(
     options: ReadStateOptions,
@@ -210,7 +212,7 @@ export interface Agent {
    * but the certificate might contain less information than requested.
    * @param effectiveCanisterId A Canister ID related to this call.
    * @param options The options for this call.
-   * @param identity Identity for the call. If not specified, uses the instance identity.
+   * @param identity The Identity to use. If not specified, uses the instance identity.
    * @param request The request to send in case it has already been created.
    */
   readState(
@@ -227,6 +229,7 @@ export interface Agent {
    * @param canisterId The canister to call.
    * @param fields The call options (method name, arg, effective canister ID, optional nonce).
    * @param pollingOptions Optional polling configuration.
+   * @param identity The Identity to use. If not specified, uses the instance identity.
    * @returns The certified result including the certificate, reply bytes, and raw certificate bytes.
    */
   update(
@@ -251,7 +254,7 @@ export interface Agent {
    * @param canisterId The Principal of the Canister to send the query to. Sending a query to
    *     the management canister is not supported (as it has no meaning from an agent).
    * @param options Options to use to create and send the query.
-   * @param identity Sender principal to use when sending the query.
+   * @param identity The Identity to use. If not specified, uses the instance identity.
    * @returns The response from the replica. The Promise will only reject when the communication
    *     failed. If the query itself failed but no protocol errors happened, the response will
    *     be of type QueryResponseRejected.
