@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Feat
+
+- **agent**: allow passing identity into all canister requests exposed by `HttpAgent`
+
 ## v5.2.0 (2026-03-24)
 
 ## v5.2.0-beta.0 (2026-03-23)

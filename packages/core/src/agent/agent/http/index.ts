@@ -490,23 +490,12 @@ export class HttpAgent implements Agent {
    * Makes a call to a canister method.
    * @param canisterId - The ID of the canister to call. Can be a Principal or a string.
    * @param options - Options for the call.
-   * @param options.methodName - The name of the method to call.
-   * @param options.arg - The argument to pass to the method, as a Uint8Array.
-   * @param options.effectiveCanisterId - (Optional) The effective canister ID, if different from the target canister ID.
-   * @param options.callSync - (Optional) Whether to use synchronous call mode. Defaults to true.
-   * @param options.nonce - (Optional) A unique nonce for the request. If provided, it will override any nonce set by transforms.
    * @param identity - (Optional) The identity to use for the call. If not provided, the agent's current identity will be used.
    * @returns A promise that resolves to the response of the call, including the request ID and response details.
    */
   public async call(
     canisterId: Principal | string,
-    options: {
-      methodName: string;
-      arg: Uint8Array;
-      effectiveCanisterId?: Principal | string;
-      callSync?: boolean;
-      nonce?: Uint8Array | Nonce;
-    },
+    options: CallOptions,
     identity?: Identity | Promise<Identity>,
   ): Promise<SubmitResponse> {
     const callSync = options.callSync ?? true;
@@ -673,9 +662,10 @@ export class HttpAgent implements Agent {
     canisterId: Principal | string,
     fields: CallOptions,
     pollingOptions: PollingOptions = {},
+    identity?: Identity | Promise<Identity>,
   ): Promise<UpdateResult> {
-    const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
-    const { requestId, response, requestDetails } = await this.call(canisterId, fields);
+    const effectiveCanisterId = Principal.from(fields.effectiveCanisterId ?? canisterId);
+    const { requestId, response, requestDetails } = await this.call(canisterId, fields, identity);
     const { body, ...httpDetails } = response;
 
     if (isV4ResponseBody(body)) {
@@ -701,6 +691,7 @@ export class HttpAgent implements Agent {
         effectiveCanisterId,
         requestId,
         pollingOptions,
+        identity,
       );
       return { ...pollResult, requestDetails, callResponse: response };
     }
@@ -1021,9 +1012,7 @@ export class HttpAgent implements Agent {
     identity?: Identity | Promise<Identity>,
   ): Promise<ApiQueryResponse> {
     const backoff = this.#backoffStrategy();
-    const ecid = fields.effectiveCanisterId
-      ? Principal.from(fields.effectiveCanisterId)
-      : Principal.from(canisterId);
+    const ecid = Principal.from(fields.effectiveCanisterId ?? canisterId);
     await this.#asyncGuard(ecid);
 
     this.log.print(`ecid ${ecid.toString()}`);
@@ -1240,7 +1229,7 @@ export class HttpAgent implements Agent {
   public async readState(
     canisterId: Principal | string,
     fields: ReadStateOptions,
-    _identity?: Identity | Promise<Identity>,
+    identity?: Identity | Promise<Identity>,
     // eslint-disable-next-line
     request?: any,
   ): Promise<ReadStateResponse> {
@@ -1269,10 +1258,6 @@ export class HttpAgent implements Agent {
       requestId = getRequestId(fields);
 
       // Always create a fresh request with the current identity
-      const identity = await this.#identity;
-      if (!identity) {
-        throw ExternalError.fromCode(new IdentityInvalidErrorCode());
-      }
       transformedRequest = await this.createReadStateRequest(fields, identity);
     }
 
@@ -1290,6 +1275,7 @@ export class HttpAgent implements Agent {
   public async readSubnetState(
     subnetId: Principal | string,
     options: ReadStateOptions,
+    identity?: Identity | Promise<Identity>,
   ): Promise<ReadStateResponse> {
     await this.#rootKeyGuard();
     const subnet = Principal.from(subnetId);
@@ -1297,7 +1283,7 @@ export class HttpAgent implements Agent {
     const url = new URL(`/api/v3/subnet/${subnet.toString()}/read_state`, this.host);
     const transformedRequest: ReadStateRequest = await this.createReadStateRequest(
       options,
-      this.#identity ?? undefined,
+      identity,
     );
 
     return await this.#readStateInner(url, { subnetId: subnet }, transformedRequest);
