@@ -1,5 +1,10 @@
 import type { Principal } from '#principal';
-import type { HttpDetailsResponse, NodeSignature, ReplicaRejectCode } from './agent/api.ts';
+import type {
+  HttpDetailsResponse,
+  NodeSignature,
+  ReplicaRejectCode,
+  SubmitResponse,
+} from './agent/api.ts';
 import type { RequestId } from './request_id.ts';
 import type { RequestStatusResponseStatus } from './agent/http/index.ts';
 import type { Expiry } from './agent/http/expiry.ts';
@@ -766,6 +771,30 @@ export class UnexpectedErrorCode extends ErrorCode {
 
   public toErrorMessage(): string {
     return `Unexpected error: ${formatUnknownError(this.error)}`;
+  }
+}
+
+export class UnexpectedV4StatusErrorCode extends ErrorCode {
+  public name = 'UnexpectedV4StatusErrorCode';
+
+  constructor(
+    public readonly status: string | undefined,
+    public readonly requestId: RequestId,
+    public readonly response: SubmitResponse['response'],
+    public readonly rawCertificate: Uint8Array,
+  ) {
+    super();
+    Object.setPrototypeOf(this, UnexpectedV4StatusErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    const replacer = (_k: string, v: unknown) =>
+      v instanceof Uint8Array ? `hex(${v.length}):${bytesToHex(v)}` : v;
+    return (
+      `Unexpected request status in v4 sync response: "${this.status}"\n` +
+      `  Request ID (hex): ${bytesToHex(this.requestId)}\n` +
+      `  Response: ${JSON.stringify(this.response, replacer, 2)}`
+    );
   }
 }
 
