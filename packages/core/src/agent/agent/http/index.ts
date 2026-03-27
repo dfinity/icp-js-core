@@ -20,6 +20,7 @@ import {
   TrustError,
   UncertifiedRejectUpdateErrorCode,
   UnexpectedErrorCode,
+  UnexpectedV4StatusErrorCode,
   UnknownError,
   HttpErrorCode,
   HttpV4ApiNotSupportedErrorCode,
@@ -747,15 +748,18 @@ export class HttpAgent implements Agent {
         throw RejectError.fromCode(error);
       }
       default: {
-        const unexpectedErrorCode = new UnexpectedErrorCode(
-          `Unexpected request status in v4 sync response: "${status}"`,
+        const errorCode = new UnexpectedV4StatusErrorCode(
+          status,
+          requestId,
+          response,
+          rawCertificate,
         );
-        unexpectedErrorCode.callContext = {
+        errorCode.callContext = {
           canisterId: effectiveCanisterId,
           methodName,
           httpDetails,
         };
-        throw UnknownError.fromCode(unexpectedErrorCode);
+        throw UnknownError.fromCode(errorCode);
       }
     }
   }
