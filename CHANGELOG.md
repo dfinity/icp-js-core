@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fix
+
+- audit issue (#1331)
+
 ## v5.2.0 (2026-03-24)
 
 ## v5.2.0-beta.0 (2026-03-23)
