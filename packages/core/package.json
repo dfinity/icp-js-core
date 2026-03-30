@@ -93,7 +93,7 @@
   },
   "dependencies": {
     "@dfinity/cbor": "^0.2.2",
-    "@noble/curves": "^1.9.2",
+    "@noble/curves": "^1.9.7",
     "@noble/hashes": "^1.8.0",
     "@scure/bip32": "^1.7.0",
     "@scure/bip39": "^1.6.0",
