@@ -1,10 +1,15 @@
 # Changelog
 
-## [Unreleased]
+## Unreleased
 
 ### Feat
 
 - **agent**: allow passing identity into all canister requests exposed by `HttpAgent`
+
+### Fix
+
+- **core**: break circular dependency between http agent and polling (#1334)
+- audit issue (#1331)
 
 ## v5.2.0 (2026-03-24)
 

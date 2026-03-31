@@ -1,6 +1,6 @@
 import type { Certificate } from '../certificate.ts';
 import type { Principal } from '#principal';
-import type { RequestStatusResponseStatus } from '../agent/http/index.ts';
+import type { RequestStatusResponseStatus } from '../agent/http/types.ts';
 import type { RequestId } from '../request_id.ts';
 
 export type PollStrategy = (
