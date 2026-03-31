@@ -102,6 +102,25 @@ export interface ReadStateRequest extends Record<string, any> {
 
 export type ReadRequest = QueryRequest | ReadStateRequest;
 
+/**
+ * Possible values for the request status in the IC state tree.
+ * @see https://internetcomputer.org/docs/references/ic-interface-spec#state-tree-request-status
+ */
+export enum RequestStatusResponseStatus {
+  /** The call has made it past the endpoint into the IC's state. */
+  Received = 'received',
+  /** The initial effect of the call has happened or will happen. */
+  Processing = 'processing',
+  /** The call completed successfully; the reply is available at `/request_status/<id>/reply`. */
+  Replied = 'replied',
+  /** The call failed; reject code and message are available at `/request_status/<id>/reject_code` and `/request_status/<id>/reject_message`. */
+  Rejected = 'rejected',
+  /** The request status path is absent from the state tree, the request is unknown to the IC (never received or pruned after expiry). */
+  Unknown = 'unknown',
+  /** The IC has pruned the response data but remembers the request to prevent replay attacks. */
+  Done = 'done',
+}
+
 // A Nonce that can be used for calls.
 export type Nonce = Uint8Array & { __nonce__: void };
 
