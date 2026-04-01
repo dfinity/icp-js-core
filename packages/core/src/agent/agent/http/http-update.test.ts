@@ -345,22 +345,24 @@ describe('HttpAgent.update', () => {
 
     // Reproduces: boundary node returns a v4 sync response (200 OK + certificate body)
     // but the certificate tree does not contain a request_status entry for the requestId.
-    it('throws UnknownError with UnexpectedV4StatusErrorCode when v4 certificate has no request_status entry', async () => {
+    // The agent should fall back to polling via read state requests.
+    it('falls back to polling when v4 certificate has no request_status entry for the requestId', async () => {
       const agent = createAgentWithV4Response();
-      absentStatusRequestIds.add(requestId);
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      try {
-        await agent.update(canisterId, callFields);
-        fail('Expected update to throw');
-      } catch (error) {
-        expect(error).toBeInstanceOf(UnknownError);
-        expect((error as UnknownError).code).toBeInstanceOf(UnexpectedV4StatusErrorCode);
-        const code = (error as UnknownError).code as UnexpectedV4StatusErrorCode;
-        expect(code.status).toBeUndefined();
-        expect(code.response).toBeDefined();
-        expect(code.rawCertificate).toBeInstanceOf(Uint8Array);
-      }
-      expect(agent.readState).not.toHaveBeenCalled();
+      // The v4 certificate will return absent for the request ID.
+      absentStatusRequestIds.add(requestId);
+      const origReadState = agent.readState as jest.Mock;
+      origReadState.mockImplementation(async (...args: unknown[]) => {
+        // Polling gets a fresh certificate where the request is now present
+        absentStatusRequestIds.delete(requestId);
+        return { certificate: new Uint8Array([0]) };
+      });
+
+      const result = await agent.update(canisterId, callFields);
+
+      expect(result.reply).toEqual(new Uint8Array([42]));
+      expect(agent.readState).toHaveBeenCalled();
     });
 
     it('throws RejectError with reject details for v4 rejected response', async () => {

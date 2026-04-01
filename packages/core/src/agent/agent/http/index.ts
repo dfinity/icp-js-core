@@ -92,7 +92,7 @@ import {
 } from '../../polling/backoff.ts';
 import { decodeTime } from '../../utils/leb.ts';
 import { pollForResponse, type PollingOptions } from '../../polling/index.ts';
-import { concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
 
@@ -746,6 +746,20 @@ export class HttpAgent implements Agent {
           httpDetails,
         };
         throw RejectError.fromCode(error);
+      }
+      case undefined: {
+        // The certificate does not contain an entry for our request ID status.
+        // Fall back to polling via read state requests.
+        this.log.warn(
+          `v4 sync response certificate does not contain request ID ${bytesToHex(requestId)} status. Falling back to polling.`,
+        );
+        const pollResult = await pollForResponse(
+          this,
+          effectiveCanisterId,
+          requestId,
+          pollingOptions,
+        );
+        return { ...pollResult, requestDetails, callResponse: response };
       }
       default: {
         const errorCode = new UnexpectedV4StatusErrorCode(
