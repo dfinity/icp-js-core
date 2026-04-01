@@ -4,6 +4,7 @@
 
 ### Fix
 
+- **core**: handle missing request ID in v4 sync response certificate (#1330)
 - **core**: break circular dependency between http agent and polling (#1334)
 - audit issue (#1331)
 
