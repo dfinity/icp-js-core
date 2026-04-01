@@ -3,7 +3,7 @@ import { HttpAgent } from '../index.ts';
 import type { CallOptions, SubmitResponse } from '../index.ts';
 import type { RequestId } from '../../request_id.ts';
 import type { LookupPathResultFound, LookupPathStatus } from '../../certificate.ts';
-import { ExternalError, RejectError, UnknownError } from '../../errors.ts';
+import { ExternalError, RejectError, UnknownError, UnexpectedV4StatusErrorCode } from '../../errors.ts';
 import type { Expiry } from './transforms.ts';
 import { type CallRequest, SubmitRequestType } from './types.ts';
 
@@ -13,6 +13,8 @@ const textDecoder = new TextDecoder();
 // Map a requestId key to a queue of statuses to emit across polls
 const statusesByRequestKey = new Map<RequestId, string[]>();
 const replyByRequestKey = new Map<RequestId, Uint8Array>();
+// Set of requestIds for which the certificate should have no status entry (simulates absent status in v4 cert)
+const absentStatusRequestIds = new Set<RequestId>();
 const rejectByRequestKey = new Map<
   RequestId,
   { reject_code: number; reject_message: string; error_code?: string }
@@ -34,6 +36,9 @@ jest.mock('../../certificate.ts', () => {
                 : textDecoder.decode(lastPathElement);
 
             if (lastPathElementStr === 'status') {
+              if (absentStatusRequestIds.has(requestIdBytes)) {
+                return { status: 'Absent' as LookupPathStatus.Absent };
+              }
               const q = statusesByRequestKey.get(requestIdBytes) ?? [];
               const current = q.length > 0 ? q.shift()! : 'replied';
               statusesByRequestKey.set(requestIdBytes, q);
@@ -137,6 +142,7 @@ describe('HttpAgent.update', () => {
     statusesByRequestKey.clear();
     replyByRequestKey.clear();
     rejectByRequestKey.clear();
+    absentStatusRequestIds.clear();
   });
 
   describe('202 fallback to polling', () => {
@@ -320,13 +326,43 @@ describe('HttpAgent.update', () => {
       await expect(agent.update(canisterId, callFields)).rejects.toThrow(ExternalError);
     });
 
-    it('throws UnknownError immediately without polling for unexpected v4 status', async () => {
+    it('throws UnknownError with UnexpectedV4StatusErrorCode for unexpected v4 status', async () => {
       const agent = createAgentWithV4Response();
       statusesByRequestKey.set(requestId, ['processing']);
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      await expect(agent.update(canisterId, callFields)).rejects.toThrow(UnknownError);
+      try {
+        await agent.update(canisterId, callFields);
+        fail('Expected update to throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(UnknownError);
+        expect((error as UnknownError).code).toBeInstanceOf(UnexpectedV4StatusErrorCode);
+        const code = (error as UnknownError).code as UnexpectedV4StatusErrorCode;
+        expect(code.status).toBe('processing');
+      }
       expect(agent.readState).not.toHaveBeenCalled();
+    });
+
+    // Reproduces: boundary node returns a v4 sync response (200 OK + certificate body)
+    // but the certificate tree does not contain a request_status entry for the requestId.
+    // The agent should fall back to polling via read state requests.
+    it('falls back to polling when v4 certificate has no request_status entry for the requestId', async () => {
+      const agent = createAgentWithV4Response();
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      // The v4 certificate will return absent for the request ID.
+      absentStatusRequestIds.add(requestId);
+      const origReadState = agent.readState as jest.Mock;
+      origReadState.mockImplementation(async (...args: unknown[]) => {
+        // Polling gets a fresh certificate where the request is now present
+        absentStatusRequestIds.delete(requestId);
+        return { certificate: new Uint8Array([0]) };
+      });
+
+      const result = await agent.update(canisterId, callFields);
+
+      expect(result.reply).toEqual(new Uint8Array([42]));
+      expect(agent.readState).toHaveBeenCalled();
     });
 
     it('throws RejectError with reject details for v4 rejected response', async () => {

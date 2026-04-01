@@ -20,6 +20,7 @@ import {
   TrustError,
   UncertifiedRejectUpdateErrorCode,
   UnexpectedErrorCode,
+  UnexpectedV4StatusErrorCode,
   UnknownError,
   HttpErrorCode,
   HttpV4ApiNotSupportedErrorCode,
@@ -91,7 +92,7 @@ import {
 } from '../../polling/backoff.ts';
 import { decodeTime } from '../../utils/leb.ts';
 import { pollForResponse, type PollingOptions } from '../../polling/index.ts';
-import { concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
 
@@ -746,16 +747,33 @@ export class HttpAgent implements Agent {
         };
         throw RejectError.fromCode(error);
       }
-      default: {
-        const unexpectedErrorCode = new UnexpectedErrorCode(
-          `Unexpected request status in v4 sync response: "${status}"`,
+      case undefined: {
+        // The certificate does not contain an entry for our request ID status.
+        // Fall back to polling via read state requests.
+        this.log.warn(
+          `v4 sync response certificate does not contain request ID ${bytesToHex(requestId)} status. Falling back to polling.`,
         );
-        unexpectedErrorCode.callContext = {
+        const pollResult = await pollForResponse(
+          this,
+          effectiveCanisterId,
+          requestId,
+          pollingOptions,
+        );
+        return { ...pollResult, requestDetails, callResponse: response };
+      }
+      default: {
+        const errorCode = new UnexpectedV4StatusErrorCode(
+          status,
+          requestId,
+          response,
+          rawCertificate,
+        );
+        errorCode.callContext = {
           canisterId: effectiveCanisterId,
           methodName,
           httpDetails,
         };
-        throw UnknownError.fromCode(unexpectedErrorCode);
+        throw UnknownError.fromCode(errorCode);
       }
     }
   }
