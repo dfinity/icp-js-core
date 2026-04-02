@@ -2,6 +2,10 @@
 
 ## v5.2.1 (2026-04-01)
 
+### Feat
+
+- **agent**: allow passing identity into all canister requests exposed by `HttpAgent`
+
 ### Fix
 
 - **core**: handle missing request ID in v4 sync response certificate (#1330)
