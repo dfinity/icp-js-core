@@ -11,10 +11,10 @@ jobs:
     env:
       CI_JOB_NUMBER: 1
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@main
+        uses: dfinity/ci-tools/actions/setup-pnpm@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
 
       - uses: andresz1/size-limit-action@94bc357df29c36c8f8d50ea497c3e225c3c95d1d # v1.8.0
         with:
