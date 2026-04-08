@@ -7,7 +7,7 @@ on:
 
 jobs:
   generate_changelog:
-    uses: dfinity/ci-tools/.github/workflows/generate-changelog.yaml@main
+    uses: dfinity/ci-tools/.github/workflows/generate-changelog.yaml@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
     with:
       token_app_id: ${{ vars.PR_AUTOMATION_BOT_PUBLIC_APP_ID }}
       environment: Release
