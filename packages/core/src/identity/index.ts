@@ -19,6 +19,10 @@
  *
  * The `PartialIdentity` is not typically used directly, but is used by the `DelegationIdentity` and `WebAuthnIdentity` classes.
  *
+ * ### AttributesIdentity
+ *
+ * The `AttributesIdentity` is an Identity decorator that injects `sender_info` into the request content. It wraps any other identity and adds signed attributes before the inner identity signs the request.
+ *
  * ### Secp256k1KeyIdentity
  *
  * See [@icp-sdk/core/identity/secp256k1](https://js.icp.build/core/latest/libs/identity-secp256k1/api/) for more information.
@@ -35,5 +39,6 @@ export * from './identity/ed25519.ts';
 export * from './identity/ecdsa.ts';
 export * from './identity/delegation.ts';
 export * from './identity/partial.ts';
+export * from './identity/attributes.ts';
 export { WebAuthnIdentity } from './identity/webauthn.ts';
 export { wrapDER, unwrapDER, DER_COSE_OID, ED25519_OID } from '#agent';
