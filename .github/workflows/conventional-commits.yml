@@ -11,7 +11,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: dfinity/conventional-pr-title-action@v4.0.0
+      - uses: dfinity/conventional-pr-title-action@41fbb167fd524835beda2b81882b7c75b1061dbc # v4.0.0
         with:
           success-state: Title follows the specification.
           failure-state: Title does not follow the specification.

@@ -4,10 +4,14 @@
 
 ### Feat
 
-- **agent**: allow passing identity into all canister requests exposed by `HttpAgent`
+- **agent**: allow passing identity into all canister requests exposed by `HttpAgent` (#1286)
+- **identity**: add AttributesIdentity for sender_info support (#1338)
+
+## v5.2.1 (2026-04-01)
 
 ### Fix
 
+- **core**: handle missing request ID in v4 sync response certificate (#1330)
 - **core**: break circular dependency between http agent and polling (#1334)
 - audit issue (#1331)
 
