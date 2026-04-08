@@ -18,32 +18,32 @@ jobs:
       contents: write
     steps:
       - name: Create GitHub App Token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3
         id: generate_token
         with:
           app-id: ${{ vars.PR_AUTOMATION_BOT_PUBLIC_APP_ID }}
           private-key: ${{ secrets.PR_AUTOMATION_BOT_PUBLIC_PRIVATE_KEY }}
 
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: dfinity/ci-tools/actions/setup-python@main
+        uses: dfinity/ci-tools/actions/setup-python@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
 
       - name: Setup Commitizen
-        uses: dfinity/ci-tools/actions/setup-commitizen@main
+        uses: dfinity/ci-tools/actions/setup-commitizen@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@main
+        uses: dfinity/ci-tools/actions/setup-pnpm@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
 
       - name: Build packages
         run: pnpm build
 
       - name: Bump version
         id: bump_version
-        uses: dfinity/ci-tools/actions/bump-version@main
+        uses: dfinity/ci-tools/actions/bump-version@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
         with:
           prerelease: ${{ inputs.beta_release == true && 'beta' || '' }}
 
@@ -51,7 +51,7 @@ jobs:
         run: echo "Bumping to version ${{ steps.bump_version.outputs.version }}"
 
       - name: Create Pull Request
-        uses: dfinity/ci-tools/actions/create-pr@main
+        uses: dfinity/ci-tools/actions/create-pr@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
         with:
           token: ${{ steps.generate_token.outputs.token }}
           branch_name: 'release/v${{ steps.bump_version.outputs.version }}'

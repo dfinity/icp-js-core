@@ -20,7 +20,7 @@ jobs:
     environment: Release
     steps:
       - name: Create GitHub App Token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3
         id: generate_token
         with:
           app-id: ${{ vars.PR_AUTOMATION_BOT_PUBLIC_APP_ID }}
@@ -29,14 +29,14 @@ jobs:
           repositories: icp-js-sdk-docs
 
       - name: Checkout source at ref
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@main
+        uses: dfinity/ci-tools/actions/setup-pnpm@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
 
-      - uses: dfinity/ci-tools/actions/extract-version@main
+      - uses: dfinity/ci-tools/actions/extract-version@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
         id: extract-version
         with:
           file: 'packages/core/package.json'
@@ -60,13 +60,13 @@ jobs:
         run: pnpm build
 
       - name: Checkout icp-pages branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: icp-pages
           path: icp-pages
 
       - name: Assemble docs
-        uses: dfinity/ci-tools/actions/assemble-docs@main
+        uses: dfinity/ci-tools/actions/assemble-docs@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
         with:
           assets_dir: 'docs/dist/${{ steps.ver.outputs.major_minor_version }}'
           version: ${{ steps.ver.outputs.major_minor_version }}
@@ -75,7 +75,7 @@ jobs:
           version_in_title: ${{ steps.ver.outputs.major_minor_patch_version }}
 
       - name: Assemble docs
-        uses: dfinity/ci-tools/actions/assemble-docs@main
+        uses: dfinity/ci-tools/actions/assemble-docs@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
         with:
           assets_dir: 'docs/dist/latest'
           version: 'latest'
@@ -83,7 +83,7 @@ jobs:
           version_label: 'Latest (${{ steps.ver.outputs.major_minor_patch_version }})'
 
       - name: Submit Documentation
-        uses: dfinity/ci-tools/actions/submit-docs@main
+        uses: dfinity/ci-tools/actions/submit-docs@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
         with:
           destination_repo: 'dfinity/icp-js-sdk-docs'
           token: ${{ steps.generate_token.outputs.token }}
