@@ -641,6 +641,7 @@ export class HttpAgent implements Agent {
    * @param canisterId The canister to call.
    * @param fields The call options (method name, arg, effective canister ID, optional nonce).
    * @param pollingOptions Optional polling configuration.
+   * @param identity - (Optional) The identity to use. If not provided, the agent's current identity will be used.
    * @returns The certified result including the certificate, reply bytes, and raw certificate bytes.
    */
   public async update(
