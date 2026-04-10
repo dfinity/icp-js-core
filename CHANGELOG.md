@@ -5,6 +5,7 @@
 ### Feat
 
 - **identity**: add AttributesIdentity for sender_info support (#1338)
+- **agent**: add optional `onRequestAccepted` callback when making update calls (#1345)
 
 ## v5.2.1 (2026-04-01)
 
