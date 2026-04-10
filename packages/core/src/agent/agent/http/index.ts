@@ -51,6 +51,7 @@ import {
   type v4ResponseBody,
   isV4ResponseBody,
   isV2ResponseBody,
+  UpdateOptions,
 } from '../api.ts';
 import { Expiry, httpHeadersTransform, makeNonceTransform } from './transforms.ts';
 import {
@@ -656,7 +657,7 @@ export class HttpAgent implements Agent {
    */
   public async update(
     canisterId: Principal | string,
-    fields: CallOptions,
+    fields: UpdateOptions,
     pollingOptions: PollingOptions = {},
   ): Promise<UpdateResult> {
     const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
@@ -681,6 +682,7 @@ export class HttpAgent implements Agent {
     }
 
     if (response.status === HTTP_STATUS_ACCEPTED) {
+      fields.onRequestAccepted?.();
       const pollResult = await pollForResponse(
         this,
         effectiveCanisterId,

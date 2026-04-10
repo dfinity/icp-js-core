@@ -123,6 +123,14 @@ export interface CallOptions {
   nonce?: Uint8Array;
 }
 
+export interface UpdateOptions extends CallOptions {
+  /**
+   * An optional callback that will be invoked once the request is accepted by the IC.
+   * Using this requires `callSync` to be set to false.
+   */
+  onRequestAccepted?: () => void;
+}
+
 export interface ReadStateResponse {
   certificate: Uint8Array;
 }
