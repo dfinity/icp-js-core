@@ -6,6 +6,7 @@ import type { LookupPathResultFound, LookupPathStatus } from '../../certificate.
 import { ExternalError, RejectError, UnknownError, UnexpectedV4StatusErrorCode } from '../../errors.ts';
 import type { Expiry } from './transforms.ts';
 import { type CallRequest, SubmitRequestType } from './types.ts';
+import { ECDSAKeyIdentity } from '../../../identity';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -197,7 +198,7 @@ describe('HttpAgent.update', () => {
 
       await agent.update(canisterId, callFields);
 
-      expect(agent.call).toHaveBeenCalledWith(canisterId, callFields);
+      expect(agent.call).toHaveBeenCalledWith(canisterId, callFields, undefined);
     });
 
     it('throws RejectError with reject details when polling encounters a rejection', async () => {
@@ -236,7 +237,7 @@ describe('HttpAgent.update', () => {
 
       await agent.update(canisterId, fieldsWithEcid);
 
-      expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithEcid);
+      expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithEcid, undefined);
     });
 
     it('accepts canisterId as a string', async () => {
@@ -246,7 +247,7 @@ describe('HttpAgent.update', () => {
       const result = await agent.update(canisterId.toText(), callFields);
 
       expect(result.reply).toEqual(new Uint8Array([42]));
-      expect(agent.call).toHaveBeenCalledWith(canisterId.toText(), callFields);
+      expect(agent.call).toHaveBeenCalledWith(canisterId.toText(), callFields, undefined);
     });
 
     it('passes nonce through to agent.call', async () => {
@@ -257,7 +258,17 @@ describe('HttpAgent.update', () => {
       const fieldsWithNonce = { ...callFields, nonce };
       await agent.update(canisterId, fieldsWithNonce);
 
-      expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithNonce);
+      expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithNonce, undefined);
+    });
+
+    it('passes identity through to agent.call', async () => {
+      const agent = createAgentWithCallMock();
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      const identity = await ECDSAKeyIdentity.generate();
+      await agent.update(canisterId, callFields, undefined, identity);
+
+      expect(agent.call).toHaveBeenCalledWith(canisterId, callFields, identity);
     });
 
     it('includes callResponse in the result', async () => {
