@@ -47,11 +47,11 @@ import {
   type ReadStateResponse,
   type SubmitResponse,
   type CallOptions,
+  type UpdateOptions,
   type v2ResponseBody,
   type v4ResponseBody,
   isV4ResponseBody,
   isV2ResponseBody,
-  UpdateOptions,
 } from '../api.ts';
 import { Expiry, httpHeadersTransform, makeNonceTransform } from './transforms.ts';
 import {
