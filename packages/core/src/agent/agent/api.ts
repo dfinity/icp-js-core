@@ -131,7 +131,11 @@ export interface CallOptions {
 export interface UpdateOptions extends CallOptions {
   /**
    * An optional callback that will be invoked once the request is accepted by the IC.
-   * Using this requires `callSync` to be set to false.
+   *
+   * If `callSync` is set to false, the callback will be invoked once the request has been accepted
+   * by a single node. If `callSync` is set to true, the IC will first try to process the request
+   * synchronously, but if the synchronous request timeout is exceeded, the IC will reply
+   * indicating the request was accepted, at which point the callback will be invoked.
    */
   onRequestAccepted?: () => void;
 }
