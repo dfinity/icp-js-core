@@ -46,6 +46,7 @@ import {
   type ReadStateOptions,
   type ReadStateResponse,
   type SubmitResponse,
+  type CallOptions,
   type v2ResponseBody,
   type v4ResponseBody,
   isV4ResponseBody,
