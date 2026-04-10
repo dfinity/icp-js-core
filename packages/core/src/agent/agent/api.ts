@@ -118,9 +118,26 @@ export interface CallOptions {
   effectiveCanisterId: Principal | string;
 
   /**
+   * Whether to use synchronous call mode. Defaults to true.
+   */
+  callSync?: boolean;
+
+  /**
    * An optional nonce to use for the call, used to prevent replay attacks.
    */
   nonce?: Uint8Array;
+}
+
+export interface UpdateOptions extends CallOptions {
+  /**
+   * An optional callback that will be invoked once the request is accepted by the IC.
+   *
+   * If `callSync` is set to false, the callback will be invoked once the request has been accepted
+   * by a single node. If `callSync` is set to true, the IC will first try to process the request
+   * synchronously, but if the synchronous request timeout is exceeded, the IC will reply
+   * indicating the request was accepted, at which point the callback will be invoked.
+   */
+  onRequestAccepted?: () => void;
 }
 
 export interface ReadStateResponse {
