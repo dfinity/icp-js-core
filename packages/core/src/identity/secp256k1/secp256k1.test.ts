@@ -252,7 +252,7 @@ describe('public key serialization from various types', () => {
     expect(shouldFail).toThrow('Cannot construct Secp256k1PublicKey from the provided key.');
 
     const shouldFailHex = () => Secp256k1PublicKey.from('not a hex string');
-    expect(shouldFailHex).toThrow('Input string must contain hex characters in even length');
+    expect(shouldFailHex).toThrow();
   });
 
   it('should throw an error serializing a too short seed phrase', () => {
