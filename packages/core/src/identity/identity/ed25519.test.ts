@@ -184,6 +184,6 @@ describe('public key serialization from various types', () => {
     expect(shouldFail).toThrow('Cannot construct Ed25519PublicKey from the provided key.');
 
     const shouldFailHex = () => Ed25519PublicKey.from('not a hex string');
-    expect(shouldFailHex).toThrow();
+    expect(shouldFailHex).toThrow(/hex/i);
   });
 });
