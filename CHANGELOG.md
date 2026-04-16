@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v5.3.0 (2026-04-16)
 
 ### Feat
 
