@@ -4,6 +4,7 @@
 
 ### Feat
 
+- **agent**: allow passing identity into all canister requests exposed by `HttpAgent` (#1286)
 - **identity**: add AttributesIdentity for sender_info support (#1338)
 
 ## v5.2.1 (2026-04-01)
