@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## v5.3.1 (2026-04-23)
+
+### Refactor
+
+- **agent**: bump `@dfinity/cbor` dependency to fix out of bounds error
+
+## v5.3.0 (2026-04-16)
 
 ### Feat
 

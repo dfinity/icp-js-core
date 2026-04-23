@@ -10,3 +10,5 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 minimumReleaseAge: 10080 # ignore dependency updates released less than 7 days ago
+minimumReleaseAgeExclude:
+  - "@dfinity/cbor"
