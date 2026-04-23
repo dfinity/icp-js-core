@@ -47,6 +47,7 @@ import {
   type ReadStateResponse,
   type SubmitResponse,
   type CallOptions,
+  type UpdateOptions,
   type v2ResponseBody,
   type v4ResponseBody,
   isV4ResponseBody,
@@ -475,23 +476,12 @@ export class HttpAgent implements Agent {
    * Makes a call to a canister method.
    * @param canisterId - The ID of the canister to call. Can be a Principal or a string.
    * @param options - Options for the call.
-   * @param options.methodName - The name of the method to call.
-   * @param options.arg - The argument to pass to the method, as a Uint8Array.
-   * @param options.effectiveCanisterId - (Optional) The effective canister ID, if different from the target canister ID.
-   * @param options.callSync - (Optional) Whether to use synchronous call mode. Defaults to true.
-   * @param options.nonce - (Optional) A unique nonce for the request. If provided, it will override any nonce set by transforms.
    * @param identity - (Optional) The identity to use for the call. If not provided, the agent's current identity will be used.
    * @returns A promise that resolves to the response of the call, including the request ID and response details.
    */
   public async call(
     canisterId: Principal | string,
-    options: {
-      methodName: string;
-      arg: Uint8Array;
-      effectiveCanisterId?: Principal | string;
-      callSync?: boolean;
-      nonce?: Uint8Array | Nonce;
-    },
+    options: CallOptions,
     identity?: Identity | Promise<Identity>,
   ): Promise<SubmitResponse> {
     const callSync = options.callSync ?? true;
@@ -656,7 +646,7 @@ export class HttpAgent implements Agent {
    */
   public async update(
     canisterId: Principal | string,
-    fields: CallOptions,
+    fields: UpdateOptions,
     pollingOptions: PollingOptions = {},
   ): Promise<UpdateResult> {
     const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
@@ -673,6 +663,7 @@ export class HttpAgent implements Agent {
         httpDetails,
         requestDetails,
         pollingOptions,
+        fields.onPollingStarted,
       );
     }
 
@@ -681,6 +672,7 @@ export class HttpAgent implements Agent {
     }
 
     if (response.status === HTTP_STATUS_ACCEPTED) {
+      fields.onPollingStarted?.();
       const pollResult = await pollForResponse(
         this,
         effectiveCanisterId,
@@ -710,6 +702,7 @@ export class HttpAgent implements Agent {
     httpDetails: HttpDetailsResponse,
     requestDetails: UpdateResult['requestDetails'],
     pollingOptions: PollingOptions,
+    onPollingStarted?: () => void,
   ): Promise<UpdateResult> {
     if (this.rootKey == null) {
       throw ExternalError.fromCode(new MissingRootKeyErrorCode());
@@ -753,6 +746,7 @@ export class HttpAgent implements Agent {
         this.log.warn(
           `v4 sync response certificate does not contain request ID ${bytesToHex(requestId)} status. Falling back to polling.`,
         );
+        onPollingStarted?.();
         const pollResult = await pollForResponse(
           this,
           effectiveCanisterId,

@@ -1,6 +1,6 @@
 import { Principal } from '#principal';
-import { HttpAgent } from '../index.ts';
-import type { CallOptions, SubmitResponse } from '../index.ts';
+import { HttpAgent, type UpdateOptions } from '../index.ts';
+import type { SubmitResponse } from '../index.ts';
 import type { RequestId } from '../../request_id.ts';
 import type { LookupPathResultFound, LookupPathStatus } from '../../certificate.ts';
 import { ExternalError, RejectError, UnknownError, UnexpectedV4StatusErrorCode } from '../../errors.ts';
@@ -99,7 +99,7 @@ const mockRequestDetails: CallRequest = {
   ingress_expiry: { toHash: () => new Uint8Array() } as unknown as Expiry,
 };
 
-const callFields: CallOptions = {
+const updateFields: UpdateOptions = {
   methodName: 'test_method',
   arg: new Uint8Array([1]),
   effectiveCanisterId: canisterId,
@@ -151,7 +151,7 @@ describe('HttpAgent.update', () => {
       const expectedReply = new Uint8Array([42]);
       replyByRequestKey.set(requestId, expectedReply);
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.reply).toEqual(expectedReply);
     });
@@ -160,7 +160,7 @@ describe('HttpAgent.update', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.rawCertificate).toEqual(new Uint8Array([0]));
     });
@@ -170,7 +170,7 @@ describe('HttpAgent.update', () => {
       const expectedReply = new Uint8Array([42]);
       replyByRequestKey.set(requestId, expectedReply);
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.certificate).toBeDefined();
       expect(typeof result.certificate.lookup_path).toBe('function');
@@ -186,7 +186,7 @@ describe('HttpAgent.update', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.requestDetails).toEqual(mockRequestDetails);
     });
@@ -195,9 +195,9 @@ describe('HttpAgent.update', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      await agent.update(canisterId, callFields);
+      await agent.update(canisterId, updateFields);
 
-      expect(agent.call).toHaveBeenCalledWith(canisterId, callFields);
+      expect(agent.call).toHaveBeenCalledWith(canisterId, updateFields);
     });
 
     it('throws RejectError with reject details when polling encounters a rejection', async () => {
@@ -210,7 +210,7 @@ describe('HttpAgent.update', () => {
       });
 
       try {
-        await agent.update(canisterId, callFields);
+        await agent.update(canisterId, updateFields);
         fail('Expected update to throw');
       } catch (error) {
         expect(error).toBeInstanceOf(RejectError);
@@ -243,10 +243,10 @@ describe('HttpAgent.update', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.update(canisterId.toText(), callFields);
+      const result = await agent.update(canisterId.toText(), updateFields);
 
       expect(result.reply).toEqual(new Uint8Array([42]));
-      expect(agent.call).toHaveBeenCalledWith(canisterId.toText(), callFields);
+      expect(agent.call).toHaveBeenCalledWith(canisterId.toText(), updateFields);
     });
 
     it('passes nonce through to agent.call', async () => {
@@ -254,7 +254,7 @@ describe('HttpAgent.update', () => {
       replyByRequestKey.set(requestId, new Uint8Array([42]));
       const nonce = new Uint8Array([99, 88, 77]);
 
-      const fieldsWithNonce = { ...callFields, nonce };
+      const fieldsWithNonce = { ...updateFields, nonce };
       await agent.update(canisterId, fieldsWithNonce);
 
       expect(agent.call).toHaveBeenCalledWith(canisterId, fieldsWithNonce);
@@ -264,7 +264,7 @@ describe('HttpAgent.update', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.callResponse).toEqual({
         ok: true,
@@ -279,27 +279,27 @@ describe('HttpAgent.update', () => {
       const agent = createAgentWithCallMock();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.reply).toEqual(new Uint8Array([42]));
       expect(agent.readState).toHaveBeenCalled();
     });
   });
 
-  describe('v4 sync response handling', () => {
-    function createAgentWithV4Response(overrides: { certificate?: Uint8Array } = {}): HttpAgent {
-      return createAgentWithCallMock({
-        status: 200,
-        statusText: 'OK',
-        body: { certificate: overrides.certificate ?? new Uint8Array([0]) },
-      });
-    }
+  function createAgentWithV4Response(overrides: { certificate?: Uint8Array } = {}): HttpAgent {
+    return createAgentWithCallMock({
+      status: 200,
+      statusText: 'OK',
+      body: { certificate: overrides.certificate ?? new Uint8Array([0]) },
+    });
+  }
 
+  describe('v4 sync response handling', () => {
     it('uses v4 sync response without polling when reply is available', async () => {
       const agent = createAgentWithV4Response();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.reply).toEqual(new Uint8Array([42]));
       expect(result.certificate).toBeDefined();
@@ -313,7 +313,7 @@ describe('HttpAgent.update', () => {
       const agent = createAgentWithV4Response({ certificate: certBytes });
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.rawCertificate).toEqual(certBytes);
     });
@@ -323,7 +323,7 @@ describe('HttpAgent.update', () => {
       Object.defineProperty(agent, 'rootKey', { value: null, writable: true });
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-      await expect(agent.update(canisterId, callFields)).rejects.toThrow(ExternalError);
+      await expect(agent.update(canisterId, updateFields)).rejects.toThrow(ExternalError);
     });
 
     it('throws UnknownError with UnexpectedV4StatusErrorCode for unexpected v4 status', async () => {
@@ -332,7 +332,7 @@ describe('HttpAgent.update', () => {
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
       try {
-        await agent.update(canisterId, callFields);
+        await agent.update(canisterId, updateFields);
         fail('Expected update to throw');
       } catch (error) {
         expect(error).toBeInstanceOf(UnknownError);
@@ -359,7 +359,7 @@ describe('HttpAgent.update', () => {
         return { certificate: new Uint8Array([0]) };
       });
 
-      const result = await agent.update(canisterId, callFields);
+      const result = await agent.update(canisterId, updateFields);
 
       expect(result.reply).toEqual(new Uint8Array([42]));
       expect(agent.readState).toHaveBeenCalled();
@@ -375,7 +375,7 @@ describe('HttpAgent.update', () => {
       });
 
       try {
-        await agent.update(canisterId, callFields);
+        await agent.update(canisterId, updateFields);
         fail('Expected update to throw');
       } catch (error) {
         expect(error).toBeInstanceOf(RejectError);
@@ -399,7 +399,7 @@ describe('HttpAgent.update', () => {
         body: null,
       });
 
-      await expect(agent.update(canisterId, callFields)).rejects.toThrow(UnknownError);
+      await expect(agent.update(canisterId, updateFields)).rejects.toThrow(UnknownError);
       expect(agent.readState).not.toHaveBeenCalled();
     });
 
@@ -411,7 +411,7 @@ describe('HttpAgent.update', () => {
         body: null,
       });
 
-      await expect(agent.update(canisterId, callFields)).rejects.toThrow(UnknownError);
+      await expect(agent.update(canisterId, updateFields)).rejects.toThrow(UnknownError);
       expect(agent.readState).not.toHaveBeenCalled();
     });
   });
@@ -430,7 +430,7 @@ describe('HttpAgent.update', () => {
       });
 
       try {
-        await agent.update(canisterId, callFields);
+        await agent.update(canisterId, updateFields);
         fail('Expected update to throw');
       } catch (error) {
         expect(error).toBeInstanceOf(RejectError);
@@ -444,4 +444,75 @@ describe('HttpAgent.update', () => {
       expect(agent.readState).not.toHaveBeenCalled();
     });
   });
+
+  describe("onPollingStarted callback", () => {
+    it('invoked upon receiving HTTP response status 202 (ACCEPTED)', async () => {
+      const agent = createAgentWithCallMock();
+      let callbackInvoked = false;
+      await agent.update(canisterId, {
+        ...updateFields,
+        onPollingStarted: () => (callbackInvoked = true),
+      });
+      expect(callbackInvoked).toBe(true);
+    });
+
+    it('invoked when v4 certificate has no request_status entry for the requestId', async () => {
+      const agent = createAgentWithV4Response();
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      // The v4 certificate will return absent for the request ID.
+      absentStatusRequestIds.add(requestId);
+      const origReadState = agent.readState as jest.Mock;
+      origReadState.mockImplementation(async (...args: unknown[]) => {
+        // Polling gets a fresh certificate where the request is now present
+        absentStatusRequestIds.delete(requestId);
+        return { certificate: new Uint8Array([0]) };
+      });
+
+      let callbackInvoked = false;
+      await agent.update(canisterId, {
+        ...updateFields,
+        onPollingStarted: () => (callbackInvoked = true),
+      });
+      expect(callbackInvoked).toBe(true);
+    });
+
+    it("not invoked if v4 sync response contains reply", async () => {
+      const agent = createAgentWithV4Response();
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      let callbackInvoked = false;
+      await agent.update(canisterId, {
+        ...updateFields,
+        callSync: true,
+        onPollingStarted: () => (callbackInvoked = true),
+      });
+      expect(callbackInvoked).toBe(false);
+    });
+
+    it('not invoked if request is rejected', async () => {
+      const agent = createAgentWithCallMock({
+        ok: false,
+        status: 200,
+        statusText: 'OK',
+        body: {
+          reject_code: 5,
+          reject_message: 'canister error',
+          error_code: 'IC0503',
+        },
+      });
+
+      let callbackInvoked = false;
+      try {
+        await agent.update(canisterId, {
+          ...updateFields,
+          callSync: true,
+          onPollingStarted: () => (callbackInvoked = true),
+        });
+        fail('Expected update to throw');
+      } catch {
+        expect(callbackInvoked).toBe(false);
+      }
+    });
+  })
 });
