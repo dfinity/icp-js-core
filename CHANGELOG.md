@@ -4,7 +4,7 @@
 
 ### Feat
 
-- **agent**: add optional `onPollingStarted` callback when making update calls (#1345)
+- add optional `onPollingStarted` callback when making update calls (#1345)
 
 ## v5.3.1 (2026-04-23)
 
