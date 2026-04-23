@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## v5.3.1 (2026-04-23)
 
 ### Refactor
