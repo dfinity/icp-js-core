@@ -445,10 +445,10 @@ describe('HttpAgent.update', () => {
     });
   });
 
-  it('invokes onRequestAccepted callback', async () => {
+  it('invokes onPollingStarted callback', async () => {
     const agent = createAgentWithCallMock();
     let callbackInvoked = false;
-    await agent.update(canisterId, { ...updateFields, callSync: false, onRequestAccepted: () => callbackInvoked = true });
+    await agent.update(canisterId, { ...updateFields, callSync: false, onPollingStarted: () => callbackInvoked = true });
     expect(callbackInvoked).toBe(true);
   });
 });

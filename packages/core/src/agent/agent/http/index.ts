@@ -663,6 +663,7 @@ export class HttpAgent implements Agent {
         httpDetails,
         requestDetails,
         pollingOptions,
+        fields.onPollingStarted,
       );
     }
 
@@ -671,7 +672,7 @@ export class HttpAgent implements Agent {
     }
 
     if (response.status === HTTP_STATUS_ACCEPTED) {
-      fields.onRequestAccepted?.();
+      fields.onPollingStarted?.();
       const pollResult = await pollForResponse(
         this,
         effectiveCanisterId,
@@ -701,6 +702,7 @@ export class HttpAgent implements Agent {
     httpDetails: HttpDetailsResponse,
     requestDetails: UpdateResult['requestDetails'],
     pollingOptions: PollingOptions,
+    onPollingStarted?: () => void,
   ): Promise<UpdateResult> {
     if (this.rootKey == null) {
       throw ExternalError.fromCode(new MissingRootKeyErrorCode());
@@ -744,6 +746,7 @@ export class HttpAgent implements Agent {
         this.log.warn(
           `v4 sync response certificate does not contain request ID ${bytesToHex(requestId)} status. Falling back to polling.`,
         );
+        onPollingStarted?.();
         const pollResult = await pollForResponse(
           this,
           effectiveCanisterId,
