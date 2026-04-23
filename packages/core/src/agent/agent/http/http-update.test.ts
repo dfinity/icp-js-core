@@ -286,15 +286,15 @@ describe('HttpAgent.update', () => {
     });
   });
 
-  describe('v4 sync response handling', () => {
-    function createAgentWithV4Response(overrides: { certificate?: Uint8Array } = {}): HttpAgent {
-      return createAgentWithCallMock({
-        status: 200,
-        statusText: 'OK',
-        body: { certificate: overrides.certificate ?? new Uint8Array([0]) },
-      });
-    }
+  function createAgentWithV4Response(overrides: { certificate?: Uint8Array } = {}): HttpAgent {
+    return createAgentWithCallMock({
+      status: 200,
+      statusText: 'OK',
+      body: { certificate: overrides.certificate ?? new Uint8Array([0]) },
+    });
+  }
 
+  describe('v4 sync response handling', () => {
     it('uses v4 sync response without polling when reply is available', async () => {
       const agent = createAgentWithV4Response();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
@@ -445,10 +445,74 @@ describe('HttpAgent.update', () => {
     });
   });
 
-  it('invokes onPollingStarted callback', async () => {
-    const agent = createAgentWithCallMock();
-    let callbackInvoked = false;
-    await agent.update(canisterId, { ...updateFields, callSync: false, onPollingStarted: () => callbackInvoked = true });
-    expect(callbackInvoked).toBe(true);
-  });
+  describe("onPollingStarted callback", () => {
+    it('invoked upon receiving HTTP response status 202 (ACCEPTED)', async () => {
+      const agent = createAgentWithCallMock();
+      let callbackInvoked = false;
+      await agent.update(canisterId, {
+        ...updateFields,
+        onPollingStarted: () => (callbackInvoked = true),
+      });
+      expect(callbackInvoked).toBe(true);
+    });
+
+    it('invoked when v4 certificate has no request_status entry for the requestId', async () => {
+      const agent = createAgentWithV4Response();
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      // The v4 certificate will return absent for the request ID.
+      absentStatusRequestIds.add(requestId);
+      const origReadState = agent.readState as jest.Mock;
+      origReadState.mockImplementation(async (...args: unknown[]) => {
+        // Polling gets a fresh certificate where the request is now present
+        absentStatusRequestIds.delete(requestId);
+        return { certificate: new Uint8Array([0]) };
+      });
+
+      let callbackInvoked = false;
+      await agent.update(canisterId, {
+        ...updateFields,
+        onPollingStarted: () => (callbackInvoked = true),
+      });
+      expect(callbackInvoked).toBe(true);
+    });
+
+    it("not invoked if v4 sync response contains reply", async () => {
+      const agent = createAgentWithV4Response();
+      replyByRequestKey.set(requestId, new Uint8Array([42]));
+
+      let callbackInvoked = false;
+      await agent.update(canisterId, {
+        ...updateFields,
+        callSync: true,
+        onPollingStarted: () => (callbackInvoked = true),
+      });
+      expect(callbackInvoked).toBe(false);
+    });
+
+    it('not invoked if request is rejected', async () => {
+      const agent = createAgentWithCallMock({
+        ok: false,
+        status: 200,
+        statusText: 'OK',
+        body: {
+          reject_code: 5,
+          reject_message: 'canister error',
+          error_code: 'IC0503',
+        },
+      });
+
+      let callbackInvoked = false;
+      try {
+        await agent.update(canisterId, {
+          ...updateFields,
+          callSync: true,
+          onPollingStarted: () => (callbackInvoked = true),
+        });
+        fail('Expected update to throw');
+      } catch {
+        expect(callbackInvoked).toBe(false);
+      }
+    });
+  })
 });
