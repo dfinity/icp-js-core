@@ -18,18 +18,26 @@ function extractFrontmatter(content) {
   return match[0];
 }
 
+function resolveApiPath(submodulePath) {
+  const nested = join(submodulePath, 'api', 'index.md');
+  if (existsSync(nested)) return nested;
+  const flat = join(submodulePath, 'api.md');
+  if (existsSync(flat)) return flat;
+  return null;
+}
+
 function processSubmodule(submodulePath) {
   const submoduleName = basename(submodulePath);
-  const apiIndexPath = join(submodulePath, 'api', 'index.md');
+  const apiPath = resolveApiPath(submodulePath);
 
-  if (!existsSync(apiIndexPath)) {
-    console.log(`Skipping ${submoduleName}: no api/index.md found`);
+  if (!apiPath) {
+    console.log(`Skipping ${submoduleName}: no api index found`);
     return;
   }
 
-  console.log(`Processing ${apiIndexPath}`);
+  console.log(`Processing ${apiPath}`);
 
-  const content = readFileSync(apiIndexPath, 'utf-8');
+  const content = readFileSync(apiPath, 'utf-8');
   const splitIndex = content.indexOf(SPLIT_MARKER);
 
   if (splitIndex === -1) {
@@ -42,22 +50,18 @@ function processSubmodule(submodulePath) {
   const firstPart = content.slice(0, splitIndex).trimEnd();
   const secondPart = content.slice(splitIndex + SPLIT_MARKER.length).trimStart();
 
-  // New index.md: first part with title changed to capitalized submodule name
-  // Goes to <submodule>/index.md
   const newIndex = firstPart.replace(
     FRONTMATTER_TITLE,
     `${FRONTMATTER_TITLE_KEY}: ${capitalize(submoduleName)}`,
   );
 
-  // Old index.md: original frontmatter + second part (API reference)
-  // Stays at <submodule>/api/index.md
   const oldIndex = `${frontmatter}\n\n${secondPart}`;
 
   writeFileSync(join(submodulePath, 'index.md'), newIndex + '\n');
-  writeFileSync(apiIndexPath, oldIndex);
+  writeFileSync(apiPath, oldIndex);
 
   console.log(`  Created ${submoduleName}/index.md`);
-  console.log(`  Updated ${submoduleName}/api/index.md`);
+  console.log(`  Updated ${basename(apiPath)}`);
 }
 
 function main() {
