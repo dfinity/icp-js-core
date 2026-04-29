@@ -1,4 +1,4 @@
-import type { Identity, HttpAgentRequest } from '#agent';
+import { Endpoint, type Identity, type HttpAgentRequest } from '#agent';
 import type { Principal } from '#principal';
 
 /**
@@ -34,7 +34,11 @@ export interface AttributesIdentityOptions {
  *
  * Because `sender_info` is part of the request content, it is included in the
  * representation-independent hash (`requestIdOf`) and covered by the sender's
- * signature.
+ * signature for `call` and `query` endpoints.
+ *
+ * The IC does not hash `sender_info` for `read_state` requests, so the
+ * decorator skips injection for that endpoint to avoid signature verification
+ * failures on update-call polls.
  *
  * @example
  * ```ts
@@ -69,6 +73,9 @@ export class AttributesIdentity implements Identity {
   }
 
   transformRequest(request: HttpAgentRequest): Promise<unknown> {
+    if (request.endpoint === Endpoint.ReadState) {
+      return this.#inner.transformRequest(request);
+    }
     return this.#inner.transformRequest({
       ...request,
       body: {
