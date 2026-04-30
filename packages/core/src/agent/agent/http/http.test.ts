@@ -118,6 +118,53 @@ test('call', async () => {
   expect(callParams.headers['Content-Type']).toEqual('application/cbor');
 });
 
+test('call requestId matches the post-transform body content hash', async () => {
+  // Regression test for #1355: when an Identity decorator injects extra fields
+  // into the request body (e.g. AttributesIdentity adds `sender_info`), the
+  // returned requestId must hash the post-transform content so it matches the
+  // key the IC uses when storing the call result.
+  const mockFetch: jest.Mock = jest.fn(() =>
+    Promise.resolve(new Response(null, { status: 200 })),
+  );
+
+  const baseIdentity = createIdentity(0);
+  const extraField = new Uint8Array([42, 43, 44]);
+
+  // A minimal Identity decorator that injects an extra field into the body
+  // before the inner identity computes requestIdOf and signs.
+  const decorated: SignIdentity = {
+    getPrincipal: () => baseIdentity.getPrincipal(),
+    getPublicKey: () => baseIdentity.getPublicKey(),
+    sign: (blob: Uint8Array) => baseIdentity.sign(blob),
+    transformRequest: (req: any) =>
+      baseIdentity.transformRequest({
+        ...req,
+        body: { ...req.body, sender_info: extraField },
+      }),
+  } as SignIdentity;
+
+  const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
+  const httpAgent = new HttpAgent({
+    fetch: mockFetch,
+    host: 'http://127.0.0.1',
+    identity: decorated,
+  });
+
+  const { requestId } = await httpAgent.call(canisterId, {
+    methodName: 'greet',
+    arg: new Uint8Array([]),
+  });
+
+  const callParams = mockFetch.mock.calls[0][1];
+  const requestBody = cbor.decode<Envelope<CallRequest>>(callParams.body);
+
+  // The returned requestId must equal the hash of the body content that the IC
+  // will see and key results under.
+  expect(bytesToHex(requestId)).toEqual(bytesToHex(requestIdOf(requestBody.content)));
+  // Sanity: the injected field is present in the signed content.
+  expect((requestBody.content as any).sender_info).toBeDefined();
+});
+
 test.todo('query');
 
 test('queries with the same content should have the same signature', async () => {

@@ -555,9 +555,11 @@ export class HttpAgent implements Agent {
     // Apply transform for identity.
     transformedRequest = (await id.transformRequest(transformedRequest)) as HttpAgentSubmitRequest;
 
+    // Compute the request ID from the post-transform content so it matches the
+    // hash the IC computes (e.g. when an Identity injects `sender_info`).
+    const requestId = requestIdOf(transformedRequest.body.content ?? submit);
     const body = cbor.encode(transformedRequest.body) as Uint8Array<ArrayBuffer>;
     const backoff = this.#backoffStrategy();
-    const requestId = requestIdOf(submit);
     try {
       // Attempt v4 sync call
       const requestSync = () => {
@@ -1047,8 +1049,6 @@ export class HttpAgent implements Agent {
       ingress_expiry: ingressExpiry,
     };
 
-    const requestId = requestIdOf(request);
-
     transformedRequest = await this._transform({
       request: {
         method: 'POST',
@@ -1064,6 +1064,9 @@ export class HttpAgent implements Agent {
     // Apply transform for identity.
     transformedRequest = (await id.transformRequest(transformedRequest)) as HttpAgentRequest;
 
+    // Compute the request ID from the post-transform content so it matches the
+    // hash the IC computes (e.g. when an Identity injects `sender_info`).
+    const requestId = requestIdOf(transformedRequest.body.content ?? request);
     const body = cbor.encode(transformedRequest.body) as Uint8Array<ArrayBuffer>;
 
     const args = {
