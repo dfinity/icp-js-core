@@ -3,7 +3,12 @@ import { requestIdOf } from '#agent';
 import { DelegationChain, DelegationIdentity } from './delegation.ts';
 import { Ed25519KeyIdentity } from './ed25519.ts';
 import { AttributesIdentity } from './attributes.ts';
-import { Endpoint, type HttpAgentSubmitRequest } from '../../agent/agent/http/types.ts';
+import {
+  Endpoint,
+  ReadRequestType,
+  type HttpAgentReadStateRequest,
+  type HttpAgentSubmitRequest,
+} from '../../agent/agent/http/types.ts';
 import { Expiry } from '../../agent/agent/http/expiry.ts';
 
 function createIdentity(seed: number): Ed25519KeyIdentity {
@@ -26,6 +31,19 @@ function makeCallRequest(): HttpAgentSubmitRequest {
   };
 }
 
+function makeReadStateRequest(): HttpAgentReadStateRequest {
+  return {
+    endpoint: Endpoint.ReadState,
+    request: {},
+    body: {
+      request_type: ReadRequestType.ReadState,
+      paths: [[new Uint8Array([1, 2, 3])]],
+      sender: Principal.anonymous(),
+      ingress_expiry: Expiry.fromDeltaInMilliseconds(300000),
+    },
+  };
+}
+
 describe('AttributesIdentity', () => {
   const attributes = {
     data: new Uint8Array([1, 2, 3]),
@@ -40,7 +58,7 @@ describe('AttributesIdentity', () => {
     expect(identity.getPrincipal().toText()).toEqual(inner.getPrincipal().toText());
   });
 
-  it('should include sender_info in the transformed request body', async () => {
+  it('should include sender_info in the transformed request body for call endpoint', async () => {
     const inner = createIdentity(0);
     const identity = new AttributesIdentity({ inner, attributes, signer });
 
@@ -57,7 +75,7 @@ describe('AttributesIdentity', () => {
     });
   });
 
-  it('should include sender_info in the request ID hash', async () => {
+  it('should include sender_info in the request ID hash for call endpoint', async () => {
     const inner = createIdentity(0);
     const identity = new AttributesIdentity({ inner, attributes, signer });
 
@@ -71,6 +89,32 @@ describe('AttributesIdentity', () => {
     const requestIdWithout = requestIdOf(request.body);
 
     expect(requestIdWith).not.toEqual(requestIdWithout);
+  });
+
+  it('should NOT inject sender_info for read_state endpoint', async () => {
+    const inner = createIdentity(0);
+    const identity = new AttributesIdentity({ inner, attributes, signer });
+
+    const request = makeReadStateRequest();
+    const result = (await identity.transformRequest(request)) as {
+      body: { content: Record<string, unknown> };
+    };
+
+    expect(result.body.content).not.toHaveProperty('sender_info');
+  });
+
+  it('should produce read_state request hash matching the un-decorated body', async () => {
+    const inner = createIdentity(0);
+    const identity = new AttributesIdentity({ inner, attributes, signer });
+
+    const request = makeReadStateRequest();
+    const decorated = (await identity.transformRequest(request)) as {
+      body: { content: Record<string, unknown> };
+    };
+
+    // The IC computes its hash over the original body (without sender_info).
+    // The decorated content must hash identically, otherwise sender_sig won't verify.
+    expect(requestIdOf(decorated.body.content)).toEqual(requestIdOf(request.body));
   });
 
   it('should work with DelegationIdentity as inner', async () => {
