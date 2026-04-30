@@ -6,6 +6,10 @@
 
 - add optional `onPollingStarted` callback when making update calls (#1345)
 
+### Fix
+
+- **identity**: skip sender_info injection for read_state requests (#1356)
+
 ## v5.3.1 (2026-04-23)
 
 ### Refactor
