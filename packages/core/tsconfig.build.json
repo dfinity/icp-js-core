@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "./src",
+    "outDir": "./lib/esm",
+    "paths": {
+      "#agent": ["./src/agent/index.ts"],
+      "#candid": ["./src/candid/index.ts"],
+      "#identity": ["./src/identity/index.ts"],
+      "#principal": ["./src/principal/index.ts"]
+    }
+  },
+  "include": ["./src/**/*.ts"],
+  "exclude": ["./src/**/*.test.ts"]
+}

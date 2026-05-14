@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./lib/test-types",
+    "tsBuildInfoFile": "./lib/test-types/.tsbuildinfo",
+    "types": ["jest", "node"]
+  },
+  "include": ["./src/**/*.ts"],
+  "exclude": []
+}

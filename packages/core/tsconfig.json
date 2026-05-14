@@ -1,17 +1,7 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "composite": true,
-    "baseUrl": "./src",
-    "rootDir": "./src",
-    "outDir": "./lib/esm",
-    "paths": {
-      "#agent": ["agent/index.ts"],
-      "#candid": ["candid/index.ts"],
-      "#identity": ["identity/index.ts"],
-      "#principal": ["principal/index.ts"]
-    }
-  },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["./src/**/*.test.ts"]
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.build.json" },
+    { "path": "./tsconfig.test.json" }
+  ]
 }
