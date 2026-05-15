@@ -196,7 +196,7 @@ export async function pollForResponse(
     case RequestStatusResponseStatus.Processing: {
       // Execute the polling strategy, then retry.
       const strategy = options.strategy ?? defaultStrategy();
-      await strategy(target.canisterId ?? target.subnetId, requestId, status, target);
+      await strategy(target, requestId, status);
 
       return pollForResponse(agent, target, requestId, {
         ...options,

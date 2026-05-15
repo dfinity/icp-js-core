@@ -1,4 +1,3 @@
-import type { Principal } from '#principal';
 import type { RequestStatusResponseStatus } from '../agent/http/types.ts';
 import type { RequestId } from '../request_id.ts';
 import { ProtocolError, TimeoutWaitingForResponseErrorCode } from '../errors.ts';
@@ -41,12 +40,11 @@ export function once(): Predicate<boolean> {
  */
 export function conditionalDelay(condition: Predicate<boolean>, timeInMsec: number): PollStrategy {
   return async (
-    canisterId: Principal,
+    target: TargetPrincipal,
     requestId: RequestId,
     status: RequestStatusResponseStatus,
-    target: TargetPrincipal,
   ) => {
-    if (await condition(canisterId, requestId, status, target)) {
+    if (await condition(target, requestId, status)) {
       return new Promise(resolve => setTimeout(resolve, timeInMsec));
     }
   };
@@ -59,10 +57,9 @@ export function conditionalDelay(condition: Predicate<boolean>, timeInMsec: numb
 export function maxAttempts(count: number): PollStrategy {
   let attempts = count;
   return async (
-    _canisterId: Principal,
+    _target: TargetPrincipal,
     requestId: RequestId,
     status: RequestStatusResponseStatus,
-    _target: TargetPrincipal,
   ) => {
     if (--attempts <= 0) {
       throw ProtocolError.fromCode(
@@ -91,10 +88,9 @@ export function throttle(throttleInMsec: number): PollStrategy {
 export function timeout(timeInMsec: number): PollStrategy {
   const end = Date.now() + timeInMsec;
   return async (
-    _canisterId: Principal,
+    _target: TargetPrincipal,
     requestId: RequestId,
     status: RequestStatusResponseStatus,
-    _target: TargetPrincipal,
   ) => {
     if (Date.now() > end) {
       throw ProtocolError.fromCode(
@@ -133,13 +129,12 @@ export function backoff(startingThrottleInMsec: number, backoffFactor: number): 
  */
 export function chain(...strategies: PollStrategy[]): PollStrategy {
   return async (
-    canisterId: Principal,
+    target: TargetPrincipal,
     requestId: RequestId,
     status: RequestStatusResponseStatus,
-    target: TargetPrincipal,
   ) => {
     for (const a of strategies) {
-      await a(canisterId, requestId, status, target);
+      await a(target, requestId, status);
     }
   };
 }
