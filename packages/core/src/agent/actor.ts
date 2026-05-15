@@ -50,7 +50,7 @@ export interface CallConfig {
   effectiveTarget?: TargetPrincipal;
 
   /**
-   * @deprecated Use {@link effectiveTarget} instead.
+   * @deprecated Use {@link CallConfig.effectiveTarget} instead.
    */
   effectiveCanisterId?: Principal;
 

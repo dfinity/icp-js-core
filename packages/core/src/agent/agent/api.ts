@@ -95,6 +95,11 @@ export interface QueryFields {
    * Overrides canister or subnet id for path to fetch. This is used for management canister calls.
    */
   effectiveTarget?: InputTargetPrincipal;
+
+  /**
+   * @deprecated Use {@link QueryFields.effectiveTarget}
+   */
+  effectiveCanisterId?: Principal | string;
 }
 
 /**
@@ -116,6 +121,11 @@ export interface CallOptions {
    * @see https://internetcomputer.org/docs/current/references/ic-interface-spec/#http-effective-canister-id
    */
   effectiveTarget?: InputTargetPrincipal;
+
+  /**
+   * @deprecated Use {@link CallOptions.effectiveTarget} instead.
+   */
+  effectiveCanisterId?: Principal | string;
 
   /**
    * Whether to use synchronous call mode. Defaults to true.

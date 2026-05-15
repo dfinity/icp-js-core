@@ -493,7 +493,11 @@ export class HttpAgent implements Agent {
       throw ExternalError.fromCode(new IdentityInvalidErrorCode());
     }
     const canister = Principal.from(canisterId);
-    const target = options.effectiveTarget ? inputToTarget(options.effectiveTarget) : { canisterId: canister };
+    const target = options.effectiveTarget
+      ? inputToTarget(options.effectiveTarget)
+      : options.effectiveCanisterId
+        ? { canisterId: Principal.from(options.effectiveCanisterId) }
+        : { canisterId: canister };
     await this.#asyncGuard(target);
 
     const sender = id.getPrincipal();
@@ -669,7 +673,11 @@ export class HttpAgent implements Agent {
     pollingOptions: PollingOptions = {},
   ): Promise<UpdateResult> {
     const canister = Principal.from(canisterId);
-    const target = fields.effectiveTarget ? inputToTarget(fields.effectiveTarget) : { canisterId: canister };
+    const target = fields.effectiveTarget
+      ? inputToTarget(fields.effectiveTarget)
+      : fields.effectiveCanisterId
+        ? { canisterId: Principal.from(fields.effectiveCanisterId) }
+        : { canisterId: canister };
     const { requestId, response, requestDetails } = await this.call(canisterId, fields);
     const { body, ...httpDetails } = response;
 
@@ -1047,7 +1055,11 @@ export class HttpAgent implements Agent {
   ): Promise<ApiQueryResponse> {
     const backoff = this.#backoffStrategy();
     const canister = Principal.from(canisterId);
-    const target = fields.effectiveTarget ? inputToTarget(fields.effectiveTarget) : { canisterId: canister };
+    const target = fields.effectiveTarget
+      ? inputToTarget(fields.effectiveTarget)
+      : fields.effectiveCanisterId
+        ? { canisterId: Principal.from(fields.effectiveCanisterId) }
+        : { canisterId: canister };
     const targetKey = getTargetKey(target);
 
     await this.#asyncGuard(target);
