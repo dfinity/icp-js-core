@@ -635,8 +635,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@icp-sdk/core@5.2.0':
-    resolution: {integrity: sha512-HIEzaUO3MpQDoVYJ9IqN0rA3Gb9PR28//XOQFBCpSTJc+wv2URKumSslYfnDEaHIvmK92Bn817EuTnBa1XOR6A==}
+  '@icp-sdk/core@5.4.0':
+    resolution: {integrity: sha512-yedhCkHIhCxI65W8id99Mi8fUgSyqKSTbD57AphquNcFV2/3Rjykng0/6H08mHswKydDcv6Y0+e8aPdrznewCw==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -3557,7 +3557,7 @@ snapshots:
 
   '@dfinity/pic@0.18.0':
     dependencies:
-      '@icp-sdk/core': 5.2.0
+      '@icp-sdk/core': 5.4.0
       bip39: 3.1.0
       json-with-bigint: 3.4.4
 
@@ -3741,7 +3741,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@icp-sdk/core@5.2.0':
+  '@icp-sdk/core@5.4.0':
     dependencies:
       '@dfinity/cbor': 0.2.3
       '@noble/curves': 1.9.7

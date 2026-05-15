@@ -92,9 +92,9 @@ export interface QueryFields {
   arg: Uint8Array;
 
   /**
-   * Overrides canister id for path to fetch. This is used for management canister calls.
+   * Overrides canister or subnet id for path to fetch. This is used for management canister calls.
    */
-  effectiveCanisterId?: Principal;
+  effectiveTarget?: InputTargetPrincipal;
 }
 
 /**
@@ -112,10 +112,10 @@ export interface CallOptions {
   arg: Uint8Array;
 
   /**
-   * An effective canister ID, used for routing. Usually the canister ID, except for management canister calls.
+   * An effective canister or subnet ID, used for routing. Usually the canister ID, except for management canister calls.
    * @see https://internetcomputer.org/docs/current/references/ic-interface-spec/#http-effective-canister-id
    */
-  effectiveCanisterId: Principal | string;
+  effectiveTarget?: InputTargetPrincipal;
 
   /**
    * Whether to use synchronous call mode. Defaults to true.
@@ -200,6 +200,10 @@ export interface UpdateResult extends PollForResponseResult {
   callResponse: SubmitResponse['response'];
 }
 
+export type InputTargetPrincipal =
+  | { canisterId: Principal | string }
+  | { subnetId: Principal | string };
+
 /**
  * An Agent able to make calls and queries to a Replica.
  */
@@ -230,6 +234,22 @@ export interface Agent {
    */
   readState(
     effectiveCanisterId: Principal | string,
+    options: ReadStateOptions,
+    identity?: Identity,
+    request?: unknown,
+  ): Promise<ReadStateResponse>;
+
+  /**
+   * Send a read subnet state query to the replica. This includes a list of paths to return,
+   * and will return a Certificate. This will only reject on communication errors,
+   * but the certificate might contain less information than requested.
+   * @param effectiveSubnetId A Subnet ID related to this call.
+   * @param options The options for this call.
+   * @param identity Identity for the call. If not specified, uses the instance identity.
+   * @param request The request to send in case it has already been created.
+   */
+  readSubnetState(
+    effectiveSubnetId: Principal | string,
     options: ReadStateOptions,
     identity?: Identity,
     request?: unknown,

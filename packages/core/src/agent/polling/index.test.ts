@@ -128,11 +128,11 @@ describe('pollForResponse strategy lifecycle', () => {
     replyByRequestKey.set(requestIdB, new Uint8Array([99]));
 
     // First call
-    const responseA = await pollForResponse(mockAgent, canisterId, requestIdA);
+    const responseA = await pollForResponse(mockAgent, { canisterId }, requestIdA);
     expect(responseA.reply).toEqual(new Uint8Array([42]));
 
     // Second independent call
-    const responseB = await pollForResponse(mockAgent, canisterId, requestIdB);
+    const responseB = await pollForResponse(mockAgent, { canisterId }, requestIdB);
     expect(responseB.reply).toEqual(new Uint8Array([99]));
 
     // Assert that defaultStrategy has been instantiated once per request (not per retry)
@@ -171,7 +171,7 @@ describe('pollForResponse', () => {
 
     replyByRequestKey.set(requestId, new Uint8Array([1, 2, 3, 4, 5]));
 
-    const result = await pollForResponse(agentWithCustomCert, canisterId, requestId);
+    const result = await pollForResponse(agentWithCustomCert, { canisterId }, requestId);
 
     expect(result.reply).toEqual(new Uint8Array([1, 2, 3, 4, 5]));
     expect(result.rawCertificate).toEqual(rawCertBytes);
@@ -191,7 +191,7 @@ describe('pollForResponse', () => {
     statusesByRequestKey.set(requestId, ['processing', 'replied']);
     replyByRequestKey.set(requestId, new Uint8Array([42]));
 
-    const result = await pollForResponse(agentWithChangingCert, canisterId, requestId);
+    const result = await pollForResponse(agentWithChangingCert, { canisterId }, requestId);
 
     expect(callCount).toBe(2);
     expect(result.rawCertificate).toEqual(new Uint8Array([2]));
@@ -207,7 +207,7 @@ describe('pollForResponse', () => {
       error_code: 'IC0503',
     });
 
-    const error = await pollForResponse(mockAgent, canisterId, requestId).catch(e => e);
+    const error = await pollForResponse(mockAgent, { canisterId }, requestId).catch(e => e);
 
     expect(error).toBeInstanceOf(RejectError);
     expect(error.code.rejectCode).toBe(4);
@@ -240,8 +240,8 @@ describe('pollForResponse', () => {
     replyByRequestKey.set(requestId, new Uint8Array([42]));
 
     const ErrorClass = errors[expectedError as keyof typeof errors] as {
-      new (...args: unknown[]): Error;
+      new(...args: unknown[]): Error;
     };
-    await expect(pollForResponse(agent, canisterId, requestId)).rejects.toThrow(ErrorClass);
+    await expect(pollForResponse(agent, { canisterId }, requestId)).rejects.toThrow(ErrorClass);
   });
 });

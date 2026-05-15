@@ -9,7 +9,7 @@ import type { RequestId } from './request_id.ts';
 import type { RequestStatusResponseStatus } from './agent/http/types.ts';
 import type { Expiry } from './agent/http/expiry.ts';
 import type { HttpHeaderField } from './agent/http/types.ts';
-import type { LookupPathStatus, LookupSubtreeStatus } from './certificate.ts';
+import type { LookupPathStatus, LookupSubtreeStatus, TargetPrincipal } from './certificate.ts';
 import { bytesToHex } from '@noble/hashes/utils';
 
 export enum ErrorKindEnum {
@@ -36,6 +36,7 @@ export interface RequestContext {
 export interface PollingCallContext {
   canisterId: Principal;
   methodName: string;
+  effectiveTarget: TargetPrincipal;
 }
 
 /**
@@ -77,7 +78,7 @@ export abstract class ErrorCode {
   public requestContext?: RequestContext;
   public callContext?: CallContext | PollingCallContext;
 
-  constructor(public readonly isCertified: boolean = false) {}
+  constructor(public readonly isCertified: boolean = false) { }
 
   public abstract toErrorMessage(): string;
 
@@ -940,6 +941,19 @@ export class EmptyCookieErrorCode extends ErrorCode {
 
   public toErrorMessage(): string {
     return `Cookie '${this.expectedCookieName}' is empty`;
+  }
+}
+
+export class EffectiveSubnetIdAsyncErrorCode extends ErrorCode {
+  public name = 'EffectiveSubnetIdAsyncErrorCode';
+
+  constructor() {
+    super();
+    Object.setPrototypeOf(this, EffectiveSubnetIdAsyncErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return 'Setting `effectiveSubnetId` is not allowed in `useSync = false` calls';
   }
 }
 

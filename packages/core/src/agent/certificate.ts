@@ -152,20 +152,21 @@ function isBufferGreaterThan(a: Uint8Array, b: Uint8Array): boolean {
 
 type VerifyFunc = (pk: Uint8Array, sig: Uint8Array, msg: Uint8Array) => Promise<boolean> | boolean;
 
-export type CertificatePrincipal =
+export type TargetPrincipal =
   | {
-      /**
-       * The effective canister ID of the request when verifying a response, or
-       * the signing canister ID when verifying a certified variable.
-       */
-      canisterId: Principal;
-    }
+    /**
+     * The effective canister ID of the request when verifying a response, or
+     * the signing canister ID when verifying a certified variable.
+     */
+    canisterId: Principal;
+  }
   | {
-      /**
-       * The subnet ID when verifying a certificate from a subnet.
-       */
-      subnetId: Principal;
-    };
+    /**
+     * The effective subnet ID of the request when verifying a response, or
+     * the subnet ID when verifying a certificate from a subnet.
+     */
+    subnetId: Principal;
+  };
 
 export interface CreateCertificateOptions {
   /**
@@ -180,7 +181,7 @@ export interface CreateCertificateOptions {
   /**
    * The principal for which the certificate is being verified.
    */
-  principal: CertificatePrincipal;
+  principal: TargetPrincipal;
   /**
    * BLS Verification strategy. Default strategy uses bls12_381 from `@noble/curves`
    */
@@ -243,7 +244,7 @@ export class Certificate {
   private constructor(
     certificate: Uint8Array,
     private _rootKey: Uint8Array,
-    private _principal: CertificatePrincipal,
+    private _principal: TargetPrincipal,
     private _blsVerify: VerifyFunc,
     private _maxAgeInMinutes: number = DEFAULT_CERTIFICATE_MAX_AGE_IN_MINUTES,
     disableTimeVerification: boolean = false,
@@ -425,13 +426,13 @@ export class Certificate {
   }
 }
 
-function isSubnetPrincipal<T extends CertificatePrincipal>(
+function isSubnetPrincipal<T extends TargetPrincipal>(
   principal: T,
 ): principal is T & { subnetId: Principal } {
   return 'subnetId' in principal;
 }
 
-function isCanisterPrincipal<T extends CertificatePrincipal>(
+function isCanisterPrincipal<T extends TargetPrincipal>(
   principal: T,
 ): principal is T & { canisterId: Principal } {
   return 'canisterId' in principal;

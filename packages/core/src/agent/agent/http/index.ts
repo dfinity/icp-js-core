@@ -31,6 +31,7 @@ import {
   CertificateOutdatedErrorCode,
   CertificateNotAuthorizedErrorCode,
   UNREACHABLE_ERROR,
+  EffectiveSubnetIdAsyncErrorCode,
 } from '../../errors.ts';
 import { AnonymousIdentity, type Identity } from '../../auth.ts';
 import * as cbor from '../../cbor.ts';
@@ -41,6 +42,7 @@ import {
   type ApiQueryResponse,
   type UpdateResult,
   type HttpDetailsResponse,
+  type InputTargetPrincipal,
   type QueryFields,
   type QueryResponse,
   type ReadStateOptions,
@@ -79,6 +81,7 @@ import {
   lookup_path,
   lookupResultToBuffer,
   LookupPathStatus,
+  type TargetPrincipal,
 } from '../../certificate.ts';
 import { readCertifiedReject } from '../../utils/certificateReject.ts';
 import { ed25519 } from '@noble/curves/ed25519';
@@ -490,10 +493,8 @@ export class HttpAgent implements Agent {
       throw ExternalError.fromCode(new IdentityInvalidErrorCode());
     }
     const canister = Principal.from(canisterId);
-    const ecid = options.effectiveCanisterId
-      ? Principal.from(options.effectiveCanisterId)
-      : canister;
-    await this.#asyncGuard(ecid);
+    const target = options.effectiveTarget ? inputToTarget(options.effectiveTarget) : { canisterId: canister };
+    await this.#asyncGuard(target);
 
     const sender = id.getPrincipal();
 
@@ -561,28 +562,44 @@ export class HttpAgent implements Agent {
     const body = cbor.encode(transformedRequest.body) as Uint8Array<ArrayBuffer>;
     const backoff = this.#backoffStrategy();
     try {
-      // Attempt v4 sync call
-      const requestSync = () => {
-        const url = new URL(`/api/v4/canister/${ecid.toText()}/call`, this.host);
-        this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
-        return this.#fetch(url, {
-          ...this.#callOptions,
-          ...transformedRequest.request,
-          body,
-        });
-      };
+      let requestFn: () => Promise<Response>;
+      if ('canisterId' in target) {
+        // Attempt v4 sync call
+        const requestSync = () => {
+          const url = new URL(`/api/v4/canister/${target.canisterId.toText()}/call`, this.host);
+          this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
+          return this.#fetch(url, {
+            ...this.#callOptions,
+            ...transformedRequest.request,
+            body,
+          });
+        };
 
-      const requestAsync = () => {
-        const url = new URL(`/api/v2/canister/${ecid.toText()}/call`, this.host);
-        this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
-        return this.#fetch(url, {
-          ...this.#callOptions,
-          ...transformedRequest.request,
-          body,
-        });
-      };
+        const requestAsync = () => {
+          const url = new URL(`/api/v2/canister/${target.canisterId.toText()}/call`, this.host);
+          this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
+          return this.#fetch(url, {
+            ...this.#callOptions,
+            ...transformedRequest.request,
+            body,
+          });
+        };
 
-      const requestFn = callSync ? requestSync : requestAsync;
+        requestFn = callSync ? requestSync : requestAsync;
+      } else {
+        if (!callSync) {
+          throw InputError.fromCode(new EffectiveSubnetIdAsyncErrorCode());
+        }
+        requestFn = () => {
+          const url = new URL(`/api/v4/subnet/${target.subnetId.toText()}/call`, this.host);
+          this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
+          return this.#fetch(url, {
+            ...this.#callOptions,
+            ...transformedRequest.request,
+            body,
+          });
+        }
+      }
       const { responseBodyBytes, ...response } = await this.#requestAndRetry({
         requestFn,
         backoff,
@@ -651,7 +668,8 @@ export class HttpAgent implements Agent {
     fields: UpdateOptions,
     pollingOptions: PollingOptions = {},
   ): Promise<UpdateResult> {
-    const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
+    const canister = Principal.from(canisterId);
+    const target = fields.effectiveTarget ? inputToTarget(fields.effectiveTarget) : { canisterId: canister };
     const { requestId, response, requestDetails } = await this.call(canisterId, fields);
     const { body, ...httpDetails } = response;
 
@@ -660,7 +678,8 @@ export class HttpAgent implements Agent {
         body,
         response,
         requestId,
-        effectiveCanisterId,
+        canister,
+        target,
         fields.methodName,
         httpDetails,
         requestDetails,
@@ -670,14 +689,14 @@ export class HttpAgent implements Agent {
     }
 
     if (isV2ResponseBody(body)) {
-      this.#handleV2Rejection(body, requestId, effectiveCanisterId, fields.methodName, httpDetails);
+      this.#handleV2Rejection(body, requestId, canister, target, fields.methodName, httpDetails);
     }
 
     if (response.status === HTTP_STATUS_ACCEPTED) {
       fields.onPollingStarted?.();
       const pollResult = await pollForResponse(
         this,
-        effectiveCanisterId,
+        target,
         requestId,
         pollingOptions,
       );
@@ -688,7 +707,8 @@ export class HttpAgent implements Agent {
       `Unexpected response from call: status ${response.status} with unrecognized body`,
     );
     unexpectedErrorCode.callContext = {
-      canisterId: effectiveCanisterId,
+      canisterId: canister,
+      effectiveTarget: target,
       methodName: fields.methodName,
       httpDetails,
     };
@@ -699,7 +719,8 @@ export class HttpAgent implements Agent {
     body: v4ResponseBody,
     response: SubmitResponse['response'],
     requestId: RequestId,
-    effectiveCanisterId: Principal,
+    canisterId: Principal,
+    effectiveTarget: TargetPrincipal,
     methodName: string,
     httpDetails: HttpDetailsResponse,
     requestDetails: UpdateResult['requestDetails'],
@@ -713,7 +734,7 @@ export class HttpAgent implements Agent {
     const certificate = await Certificate.create({
       certificate: rawCertificate,
       rootKey: this.rootKey,
-      principal: { canisterId: effectiveCanisterId },
+      principal: effectiveTarget,
       blsVerify: pollingOptions.blsVerify,
       agent: this,
     });
@@ -736,7 +757,8 @@ export class HttpAgent implements Agent {
       case RequestStatusResponseStatus.Rejected: {
         const error = readCertifiedReject(certificate, path, requestId);
         error.callContext = {
-          canisterId: effectiveCanisterId,
+          canisterId,
+          effectiveTarget,
           methodName,
           httpDetails,
         };
@@ -751,7 +773,7 @@ export class HttpAgent implements Agent {
         onPollingStarted?.();
         const pollResult = await pollForResponse(
           this,
-          effectiveCanisterId,
+          effectiveTarget,
           requestId,
           pollingOptions,
         );
@@ -765,7 +787,8 @@ export class HttpAgent implements Agent {
           rawCertificate,
         );
         errorCode.callContext = {
-          canisterId: effectiveCanisterId,
+          canisterId,
+          effectiveTarget,
           methodName,
           httpDetails,
         };
@@ -777,7 +800,8 @@ export class HttpAgent implements Agent {
   #handleV2Rejection(
     body: v2ResponseBody,
     requestId: RequestId,
-    effectiveCanisterId: Principal,
+    canisterId: Principal,
+    target: TargetPrincipal,
     methodName: string,
     httpDetails: HttpDetailsResponse,
   ): never {
@@ -789,26 +813,29 @@ export class HttpAgent implements Agent {
       error_code,
     );
     errorCode.callContext = {
-      canisterId: effectiveCanisterId,
+      canisterId,
       methodName,
       httpDetails,
+      effectiveTarget: target,
     };
     throw RejectError.fromCode(errorCode);
   }
 
   async #requestAndRetryQuery(args: {
-    ecid: Principal;
+    target: TargetPrincipal;
     transformedRequest: HttpAgentRequest;
     body: Uint8Array<ArrayBuffer>;
     requestId: RequestId;
     backoff: BackoffStrategy;
     tries: number;
   }): Promise<ApiQueryResponse> {
-    const { ecid, transformedRequest, body, requestId, backoff, tries } = args;
+    const { target, transformedRequest, body, requestId, backoff, tries } = args;
 
     const delay = tries === 0 ? 0 : backoff.next();
 
-    const url = new URL(`/api/v3/canister/${ecid.toString()}/query`, this.host);
+    const url = 'canisterId' in target
+      ? new URL(`/api/v3/canister/${target.canisterId.toString()}/query`, this.host)
+      : new URL(`/api/v3/subnet/${target.subnetId.toString()}/query`, this.host);
 
     this.log.print(`fetching "${url.pathname}" with tries:`, {
       tries,
@@ -843,8 +870,8 @@ export class HttpAgent implements Agent {
       if (tries < this.#retryTimes) {
         this.log.warn(
           `Caught exception while attempting to make query:\n` +
-            `  ${error}\n` +
-            `  Retrying query.`,
+          `  ${error}\n` +
+          `  Retrying query.`,
         );
         return await this.#requestAndRetryQuery({ ...args, tries: tries + 1 });
       }
@@ -911,7 +938,7 @@ export class HttpAgent implements Agent {
           requestId,
           signatureTimestampMs,
         });
-        await this.syncTime(ecid);
+        await this.#syncTimeWithTarget(target);
         return await this.#requestAndRetryQuery({ ...args, tries: tries + 1 });
       }
       throw TrustError.fromCode(
@@ -971,8 +998,8 @@ export class HttpAgent implements Agent {
       if (tries < this.#retryTimes) {
         this.log.warn(
           `Caught exception while attempting to make request:\n` +
-            `  ${error}\n` +
-            `  Retrying request.`,
+          `  ${error}\n` +
+          `  Retrying request.`,
         );
         // Delay the request by the configured backoff strategy
         return await this.#requestAndRetry({ requestFn, backoff, tries: tries + 1 });
@@ -1019,12 +1046,16 @@ export class HttpAgent implements Agent {
     identity?: Identity | Promise<Identity>,
   ): Promise<ApiQueryResponse> {
     const backoff = this.#backoffStrategy();
-    const ecid = fields.effectiveCanisterId
-      ? Principal.from(fields.effectiveCanisterId)
-      : Principal.from(canisterId);
-    await this.#asyncGuard(ecid);
+    const canister = Principal.from(canisterId);
+    const target = fields.effectiveTarget ? inputToTarget(fields.effectiveTarget) : { canisterId: canister };
+    const targetKey = getTargetKey(target);
 
-    this.log.print(`ecid ${ecid.toString()}`);
+    await this.#asyncGuard(target);
+    if ('canisterId' in target) {
+      this.log.print(`ecid ${target.canisterId.toString()}`);
+    } else {
+      this.log.print(`esid ${target.subnetId.toString()}`);
+    }
     this.log.print(`canisterId ${canisterId.toString()}`);
 
     let transformedRequest: HttpAgentRequest | undefined;
@@ -1033,7 +1064,6 @@ export class HttpAgent implements Agent {
       throw ExternalError.fromCode(new IdentityInvalidErrorCode());
     }
 
-    const canister = Principal.from(canisterId);
     const sender = id.getPrincipal();
     const ingressExpiry = calculateIngressExpiry(
       this.#maxIngressExpiryInMinutes,
@@ -1071,7 +1101,7 @@ export class HttpAgent implements Agent {
 
     const args = {
       canister: canister.toText(),
-      ecid,
+      target,
       transformedRequest,
       body,
       requestId,
@@ -1097,7 +1127,7 @@ export class HttpAgent implements Agent {
       // Make query and fetch subnet keys in parallel
       const [queryWithDetails, subnetNodeKeys] = await Promise.all([
         makeQuery(),
-        this.fetchSubnetKeys(ecid),
+        this.fetchSubnetKeys(target),
       ]);
 
       try {
@@ -1105,8 +1135,8 @@ export class HttpAgent implements Agent {
       } catch {
         // In case the node signatures have changed, refresh the subnet keys and try again
         this.log.warn('Query response verification failed. Retrying with fresh subnet keys.');
-        await this.#subnetNodeKeyExpirableStore.delete(ecid.toString());
-        const updatedSubnetNodeKeys = await this.fetchSubnetKeys(ecid);
+        await this.#subnetNodeKeyExpirableStore.delete(targetKey);
+        const updatedSubnetNodeKeys = await this.fetchSubnetKeys(target);
         return this.#verifyQueryResponse(queryWithDetails, updatedSubnetNodeKeys);
       }
     } catch (error) {
@@ -1115,7 +1145,7 @@ export class HttpAgent implements Agent {
         if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
           // if there is an ingress expiry error and the time has not been synced yet,
           // sync time with the network and try again
-          await this.syncTime(ecid);
+          await this.#syncTimeWithTarget(target);
           return this.query(canisterId, fields, identity);
         }
         // override the error code to include the request details
@@ -1236,6 +1266,16 @@ export class HttpAgent implements Agent {
     return id.transformRequest(transformedRequest);
   }
 
+  #getRequestId(options: ReadStateOptions): RequestId | undefined {
+    for (const path of options.paths) {
+      const [pathName, value] = path;
+      const request_status = new TextEncoder().encode('request_status');
+      if (uint8Equals(pathName, request_status)) {
+        return value as RequestId;
+      }
+    }
+  }
+
   public async readState(
     canisterId: Principal | string,
     fields: ReadStateOptions,
@@ -1246,16 +1286,6 @@ export class HttpAgent implements Agent {
     await this.#rootKeyGuard();
     const canister = Principal.from(canisterId);
 
-    function getRequestId(options: ReadStateOptions): RequestId | undefined {
-      for (const path of options.paths) {
-        const [pathName, value] = path;
-        const request_status = new TextEncoder().encode('request_status');
-        if (uint8Equals(pathName, request_status)) {
-          return value as RequestId;
-        }
-      }
-    }
-
     let transformedRequest: ReadStateRequest;
     let requestId: RequestId | undefined;
 
@@ -1265,7 +1295,7 @@ export class HttpAgent implements Agent {
       transformedRequest = request;
     } else {
       // This is fields, we need to create a request
-      requestId = getRequestId(fields);
+      requestId = this.#getRequestId(fields);
 
       // Always create a fresh request with the current identity
       const identity = await this.#identity;
@@ -1280,26 +1310,38 @@ export class HttpAgent implements Agent {
     return await this.#readStateInner(url, { canisterId: canister }, transformedRequest, requestId);
   }
 
-  /**
-   * Reads the state of a subnet from the `/api/v3/subnet/{subnetId}/read_state` endpoint.
-   * @param subnetId The ID of the subnet to read the state of. If you have a canister ID, you can use {@link HttpAgent.getSubnetIdFromCanister | getSubnetIdFromCanister} to get the subnet ID.
-   * @param options The options for the read state request.
-   * @returns The response from the read state request.
-   */
   public async readSubnetState(
     subnetId: Principal | string,
-    options: ReadStateOptions,
+    fields: ReadStateOptions,
+    _identity?: Identity,
+    // eslint-disable-next-line
+    request?: any,
   ): Promise<ReadStateResponse> {
     await this.#rootKeyGuard();
     const subnet = Principal.from(subnetId);
 
     const url = new URL(`/api/v3/subnet/${subnet.toString()}/read_state`, this.host);
-    const transformedRequest: ReadStateRequest = await this.createReadStateRequest(
-      options,
-      this.#identity ?? undefined,
-    );
 
-    return await this.#readStateInner(url, { subnetId: subnet }, transformedRequest);
+    let transformedRequest: ReadStateRequest;
+    let requestId: RequestId | undefined;
+
+    // If a pre-signed request is provided, use it
+    if (request) {
+      // This is a pre-signed request
+      transformedRequest = request;
+    } else {
+      // This is fields, we need to create a request
+      requestId = this.#getRequestId(fields);
+
+      // Always create a fresh request with the current identity
+      const identity = await this.#identity;
+      if (!identity) {
+        throw ExternalError.fromCode(new IdentityInvalidErrorCode());
+      }
+      transformedRequest = await this.createReadStateRequest(fields, identity);
+    }
+
+    return await this.#readStateInner(url, { subnetId: subnet }, transformedRequest, requestId);
   }
 
   async #readStateInner(
@@ -1500,6 +1542,13 @@ export class HttpAgent implements Agent {
     }
   }
 
+  #syncTimeWithTarget(target?: TargetPrincipal): Promise<void> {
+    if (target && 'subnetId' in target) {
+      return this.syncTimeWithSubnet(target.subnetId);
+    }
+    return this.syncTime(target?.canisterId);
+  }
+
   #setTimeDiffMsecs(callTime: number, replicaTimes: Array<number | undefined>): void {
     const maxReplicaTime = replicaTimes.reduce<number>((max, current) => {
       return typeof current === 'number' && current > max ? current : max;
@@ -1518,8 +1567,8 @@ export class HttpAgent implements Agent {
   public async status(): Promise<JsonObject> {
     const headers: Record<string, string> = this.#credentials
       ? {
-          Authorization: `Basic ${btoa(this.#credentials)}`,
-        }
+        Authorization: `Basic ${btoa(this.#credentials)}`,
+      }
       : {};
 
     const url = new URL(`/api/v2/status`, this.host);
@@ -1551,8 +1600,8 @@ export class HttpAgent implements Agent {
     });
   }
 
-  async #asyncGuard(canisterIdOverride?: Principal): Promise<void> {
-    await Promise.all([this.#rootKeyGuard(), this.#syncTimeGuard(canisterIdOverride)]);
+  async #asyncGuard(targetOverride?: TargetPrincipal): Promise<void> {
+    await Promise.all([this.#rootKeyGuard(), this.#syncTimeGuard(targetOverride)]);
   }
 
   async #rootKeyGuard(): Promise<void> {
@@ -1570,9 +1619,9 @@ export class HttpAgent implements Agent {
     }
   }
 
-  async #syncTimeGuard(canisterIdOverride?: Principal): Promise<void> {
+  async #syncTimeGuard(targetOverride?: TargetPrincipal): Promise<void> {
     if (this.#shouldSyncTime && !this.hasSyncedTime()) {
-      await this.syncTime(canisterIdOverride);
+      await this.#syncTimeWithTarget(targetOverride);
     }
   }
 
@@ -1584,11 +1633,16 @@ export class HttpAgent implements Agent {
     this.#identity = Promise.resolve(identity);
   }
 
-  public async fetchSubnetKeys(canisterId: Principal | string): Promise<SubnetNodeKeys> {
-    const effectiveCanisterId: Principal = Principal.from(canisterId);
+  public async fetchSubnetKeys(effectiveTarget: InputTargetPrincipal): Promise<SubnetNodeKeys> {
+    if (typeof effectiveTarget === 'string' || effectiveTarget instanceof Principal) {
+      // compatibility with v5
+      effectiveTarget = { canisterId: Principal.from(effectiveTarget) };
+    }
+    const target = inputToTarget(effectiveTarget);
+    const targetKey = getTargetKey(target);
 
     // Return cached result if available within the TTL.
-    const cached = await this.#subnetNodeKeyExpirableStore.get(effectiveCanisterId.toText());
+    const cached = await this.#subnetNodeKeyExpirableStore.get(targetKey);
     if (cached) {
       return cached;
     }
@@ -1596,48 +1650,53 @@ export class HttpAgent implements Agent {
     // Deduplicate parallel requests for the same canister so that concurrent
     // query calls share a single read_state round-trip instead of each
     // issuing their own.
-    const inflight = this.#subnetKeysFetching.get(effectiveCanisterId.toText());
+    const inflight = this.#subnetKeysFetching.get(targetKey);
     if (inflight) {
       return inflight;
     }
-    const fetchPromise = this.#doFetchSubnetKeys(effectiveCanisterId).finally(() => {
-      this.#subnetKeysFetching.delete(effectiveCanisterId.toText());
+    const fetchPromise = this.#doFetchSubnetKeys(target).finally(() => {
+      this.#subnetKeysFetching.delete(targetKey);
     });
-    this.#subnetKeysFetching.set(effectiveCanisterId.toText(), fetchPromise);
+    this.#subnetKeysFetching.set(targetKey, fetchPromise);
     return fetchPromise;
   }
 
-  async #doFetchSubnetKeys(effectiveCanisterId: Principal): Promise<SubnetNodeKeys> {
-    await this.#asyncGuard(effectiveCanisterId);
+  async #doFetchSubnetKeys(target: TargetPrincipal): Promise<SubnetNodeKeys> {
+    await this.#asyncGuard(target);
 
     const rootKey = this.rootKey!;
 
-    const canisterReadState = await this.readState(effectiveCanisterId, {
-      paths: [[utf8ToBytes('subnet')]],
-    });
+    const canisterReadState = 'canisterId' in target
+      ? await this.readState(target.canisterId, {
+        paths: [[utf8ToBytes('subnet')]],
+      })
+      : await this.readSubnetState(target.subnetId, {
+        paths: [[utf8ToBytes('subnet')]],
+      });
     const canisterCertificate = await Certificate.create({
       certificate: canisterReadState.certificate,
       rootKey,
-      principal: { canisterId: effectiveCanisterId },
+      principal: target,
       agent: this,
     });
-    if (!canisterCertificate.cert.delegation) {
+    const targetKey = getTargetKey(target);
+    if ('canisterId' in target && !canisterCertificate.cert.delegation) {
       const subnetId = Principal.selfAuthenticating(rootKey);
       const canisterInRange = check_canister_ranges({
-        canisterId: effectiveCanisterId,
+        canisterId: target.canisterId,
         subnetId,
         tree: canisterCertificate.cert.tree,
       });
       if (!canisterInRange) {
         throw TrustError.fromCode(
-          new CertificateNotAuthorizedErrorCode(effectiveCanisterId, subnetId),
+          new CertificateNotAuthorizedErrorCode(target.canisterId, subnetId),
         );
       }
     }
 
     const subnetId = getSubnetIdFromCertificate(canisterCertificate.cert, rootKey);
     const nodeKeys = lookupNodeKeysFromCertificate(canisterCertificate.cert, subnetId);
-    await this.#subnetNodeKeyExpirableStore.set(effectiveCanisterId.toText(), nodeKeys);
+    await this.#subnetNodeKeyExpirableStore.set(targetKey, nodeKeys);
 
     return nodeKeys;
   }
@@ -1650,7 +1709,7 @@ export class HttpAgent implements Agent {
    */
   public async getSubnetIdFromCanister(canisterId: Principal | string): Promise<Principal> {
     const effectiveCanisterId = Principal.from(canisterId);
-    await this.#asyncGuard(effectiveCanisterId);
+    await this.#asyncGuard({ canisterId: effectiveCanisterId });
 
     const canisterReadState = await this.readState(effectiveCanisterId, {
       paths: [[utf8ToBytes('time')]],
@@ -1696,6 +1755,19 @@ export class HttpAgent implements Agent {
   public hasSyncedTime(): boolean {
     return this.#hasSyncedTime;
   }
+}
+
+function inputToTarget(target: InputTargetPrincipal): TargetPrincipal {
+  if ('canisterId' in target) {
+    return { canisterId: Principal.from(target.canisterId) };
+  }
+  return { subnetId: Principal.from(target.subnetId) };
+}
+
+function getTargetKey(target: TargetPrincipal): string {
+  return 'canisterId' in target
+    ? `canister:${target.canisterId.toText()}`
+    : `subnet:${target.subnetId.toText()}`;
 }
 
 /**

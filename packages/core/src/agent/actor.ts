@@ -13,7 +13,7 @@ import {
 import { IDL } from '#candid';
 import { type PollingOptions, DEFAULT_POLLING_OPTIONS } from './polling/index.ts';
 import { Principal } from '#principal';
-import type { Certificate, CreateCertificateOptions } from './certificate.ts';
+import type { Certificate, CreateCertificateOptions, TargetPrincipal } from './certificate.ts';
 import { HttpAgent } from './agent/http/index.ts';
 
 /**
@@ -45,7 +45,12 @@ export interface CallConfig {
   canisterId?: string | Principal;
 
   /**
-   * The effective canister ID.
+   * The effective canister or subnet ID.
+   */
+  effectiveTarget?: TargetPrincipal;
+
+  /**
+   * @deprecated Use {@link effectiveTarget} instead.
    */
   effectiveCanisterId?: Principal;
 
@@ -58,7 +63,7 @@ export interface CallConfig {
 /**
  * Configuration that can be passed to customize the Actor behavior.
  */
-export interface ActorConfig extends Pick<CallConfig, 'agent' | 'effectiveCanisterId'> {
+export interface ActorConfig extends Pick<CallConfig, 'agent' | 'effectiveTarget' | 'effectiveCanisterId'> {
   /**
    * The Canister ID of this Actor. This is required for an Actor.
    */
@@ -147,15 +152,15 @@ export type FunctionWithArgsAndReturn<Args extends unknown[] = unknown[], Ret = 
 // Update all entries of T with the extra information from ActorMethodWithInfo
 export type ActorMethodMappedWithHttpDetails<T> = {
   [K in keyof T]: T[K] extends FunctionWithArgsAndReturn<infer Args, infer Ret>
-    ? ActorMethodWithHttpDetails<Args, Ret>
-    : never;
+  ? ActorMethodWithHttpDetails<Args, Ret>
+  : never;
 };
 
 // Update all entries of T with the extra information from ActorMethodWithInfo
 export type ActorMethodMappedExtended<T> = {
   [K in keyof T]: T[K] extends FunctionWithArgsAndReturn<infer Args, infer Ret>
-    ? ActorMethodExtended<Args, Ret>
-    : never;
+  ? ActorMethodExtended<Args, Ret>
+  : never;
 };
 
 /**
@@ -401,11 +406,24 @@ function _createActorMethod(
       const agent = options.agent || actor[metadataSymbol].config.agent || new HttpAgent();
       const cid = Principal.from(options.canisterId || actor[metadataSymbol].config.canisterId);
       const arg = IDL.encode(func.argTypes, args);
+      // Overrides determined in order:
+      // - immediate configuration options override actor config
+      //  - the immediate config's target field overrides the deprecated ecid field
+      // - then, the actor config has a chance to set it
+      //  - the actor config's target field overrides the deprecated ecid field
+      // - then, the fallback is to set the receiving canister ID as the effective target
+      const target = options.effectiveTarget
+        ?? (options.effectiveCanisterId
+          ? { canisterId: options.effectiveCanisterId }
+          : (actor[metadataSymbol].config.effectiveTarget
+            ?? (actor[metadataSymbol].config.effectiveCanisterId
+              ? { canisterId: actor[metadataSymbol].config.effectiveCanisterId }
+              : { canisterId: cid })));
 
       const result = await agent.query(cid, {
         methodName,
         arg,
-        effectiveCanisterId: options.effectiveCanisterId,
+        effectiveTarget: target,
       });
       const httpDetails = {
         ...result.httpDetails,
@@ -423,6 +441,7 @@ function _createActorMethod(
           );
           uncertifiedRejectErrorCode.callContext = {
             canisterId: cid,
+            effectiveTarget: target,
             methodName,
             httpDetails,
           };
@@ -432,9 +451,9 @@ function _createActorMethod(
         case QueryResponseStatus.Replied:
           return func.annotations.includes(ACTOR_METHOD_WITH_HTTP_DETAILS)
             ? {
-                httpDetails,
-                result: decodeReturnValue(func.retTypes, result.reply.arg),
-              }
+              httpDetails,
+              result: decodeReturnValue(func.retTypes, result.reply.arg),
+            }
             : decodeReturnValue(func.retTypes, result.reply.arg);
       }
     };
@@ -451,13 +470,16 @@ function _createActorMethod(
 
       const agent = options.agent || actor[metadataSymbol].config.agent || HttpAgent.createSync();
 
-      const { canisterId, effectiveCanisterId, pollingOptions } = {
+      const { canisterId, effectiveTarget, effectiveCanisterId, pollingOptions } = {
         ...DEFAULT_ACTOR_CONFIG,
         ...actor[metadataSymbol].config,
         ...options,
       };
+      const target = effectiveTarget
+        ?? (effectiveCanisterId
+          ? { canisterId: effectiveCanisterId }
+          : { canisterId: Principal.from(canisterId) });
       const cid = Principal.from(canisterId);
-      const ecid = effectiveCanisterId !== undefined ? Principal.from(effectiveCanisterId) : cid;
       const arg = IDL.encode(func.argTypes, args);
 
       let reply: Uint8Array;
@@ -471,7 +493,7 @@ function _createActorMethod(
           {
             methodName,
             arg,
-            effectiveCanisterId: ecid,
+            effectiveTarget: target,
             nonce: options.nonce,
           },
           { ...pollingOptions, blsVerify },
@@ -518,7 +540,7 @@ function _createActorMethod(
   const handler = (...args: unknown[]) => caller({}, ...args);
   handler.withOptions =
     (options: CallConfig) =>
-    (...args: unknown[]) =>
-      caller(options, ...args);
+      (...args: unknown[]) =>
+        caller(options, ...args);
   return handler as ActorMethod;
 }

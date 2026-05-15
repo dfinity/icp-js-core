@@ -563,12 +563,16 @@ describe('makeActor', () => {
 
     const mockCallAndPoll = jest
       .spyOn(httpAgent, 'update')
-      .mockImplementation(async (_cid, fields) => {
+      .mockImplementation(async (cid, fields) => {
         // Capture what effectiveCanisterId was passed
         const cert = await certificateCreateMock({
           certificate: new Uint8Array([1, 2, 3]),
           rootKey: new Uint8Array(),
-          principal: { canisterId: Principal.from(fields.effectiveCanisterId) },
+          principal: fields.effectiveTarget
+            ? ('canisterId' in fields.effectiveTarget
+              ? { canisterId: Principal.from(fields.effectiveTarget.canisterId) }
+              : { subnetId: Principal.from(fields.effectiveTarget.subnetId) })
+            : { canisterId: Principal.from(cid) },
         });
         return {
           certificate: cert as unknown as certificateImport.Certificate,
@@ -581,7 +585,7 @@ describe('makeActor', () => {
 
     const actor = Actor.createActor(actorInterface, {
       canisterId,
-      effectiveCanisterId,
+      effectiveTarget: { canisterId: effectiveCanisterId },
       agent: httpAgent,
     });
 
@@ -650,7 +654,9 @@ describe('makeActor', () => {
     // Actor should pass canisterId as effectiveCanisterId when none is explicitly provided
     expect(mockCallAndPoll).toHaveBeenCalledTimes(1);
     const fields = mockCallAndPoll.mock.calls[0][1];
-    expect(Principal.from(fields.effectiveCanisterId).toText()).toBe(canisterId.toText());
+    expect(fields.effectiveTarget).toHaveProperty('canisterId');
+    const target = fields.effectiveTarget as { canisterId: Principal | string };
+    expect(Principal.from(target.canisterId).toText()).toBe(canisterId.toText());
 
     mockCallAndPoll.mockRestore();
   });
@@ -702,7 +708,9 @@ describe('makeActor', () => {
     // Assert effectiveCanisterId from withOptions is passed through
     expect(mockCallAndPoll).toHaveBeenCalledTimes(1);
     const fields = mockCallAndPoll.mock.calls[0][1];
-    expect(Principal.from(fields.effectiveCanisterId).toText()).toBe(effectiveCanisterId.toText());
+    expect(fields.effectiveTarget).toHaveProperty('canisterId');
+    const target = fields.effectiveTarget as { canisterId: Principal | string };
+    expect(Principal.from(target.canisterId).toText()).toBe(effectiveCanisterId.toText());
 
     mockCallAndPoll.mockRestore();
   });

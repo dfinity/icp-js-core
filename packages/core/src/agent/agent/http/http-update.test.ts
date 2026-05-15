@@ -102,7 +102,7 @@ const mockRequestDetails: CallRequest = {
 const updateFields: UpdateOptions = {
   methodName: 'test_method',
   arg: new Uint8Array([1]),
-  effectiveCanisterId: canisterId,
+  effectiveTarget: { canisterId },
 };
 
 function createAgentWithCallMock(

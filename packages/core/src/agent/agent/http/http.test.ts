@@ -1445,9 +1445,9 @@ describe('subnetNodeKeyExpirableStore option', () => {
     });
 
     const canisterId = Principal.fromText('bkyz2-fmaaa-aaaaa-qaaaq-cai');
-    const result = await agent.fetchSubnetKeys(canisterId);
+    const result = await agent.fetchSubnetKeys({ canisterId });
 
-    expect(customSubnetNodeKeyExpirableStore.get).toHaveBeenCalledWith(canisterId.toText());
+    expect(customSubnetNodeKeyExpirableStore.get).toHaveBeenCalledWith(`canister:${canisterId.toText()}`);
     expect(result).toBe(cachedNodeKeys);
     // No network call should be made when the store returns a cached value
     expect(mockFetch).not.toHaveBeenCalled();

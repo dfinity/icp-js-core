@@ -55,7 +55,6 @@
   },
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
-  "pnpm": {},
   "size-limit": [
     {
       "name": "@icp-sdk/core",

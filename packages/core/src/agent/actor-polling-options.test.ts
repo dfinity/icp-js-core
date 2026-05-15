@@ -108,11 +108,15 @@ describe('Actor default polling options are not reused across calls', () => {
       readState: async () => ({ certificate: new Uint8Array([0]) }),
       async update(canisterId: Principal | string, fields: CallOptions, options?: PollingOptions) {
         const { pollForResponse } = await import('./polling/index.ts');
-        const effectiveCanisterId = Principal.from(fields.effectiveCanisterId);
+        const effectiveTarget = fields.effectiveTarget
+          ? ('canisterId' in fields.effectiveTarget
+            ? { canisterId: Principal.from(fields.effectiveTarget.canisterId) }
+            : { subnetId: Principal.from(fields.effectiveTarget.subnetId) })
+          : { canisterId: Principal.from(canisterId) };
         const { requestId, response, requestDetails } = await fakeAgent.call(canisterId, fields);
         const pollResult = await pollForResponse(
           fakeAgent,
-          effectiveCanisterId,
+          effectiveTarget,
           requestId,
           options,
         );
