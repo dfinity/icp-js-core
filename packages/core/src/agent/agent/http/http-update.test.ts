@@ -353,7 +353,7 @@ describe('HttpAgent.update', () => {
       // The v4 certificate will return absent for the request ID.
       absentStatusRequestIds.add(requestId);
       const origReadState = agent.readState as jest.Mock;
-      origReadState.mockImplementation(async (...args: unknown[]) => {
+      origReadState.mockImplementation(async (..._args: unknown[]) => {
         // Polling gets a fresh certificate where the request is now present
         absentStatusRequestIds.delete(requestId);
         return { certificate: new Uint8Array([0]) };
@@ -463,7 +463,7 @@ describe('HttpAgent.update', () => {
       // The v4 certificate will return absent for the request ID.
       absentStatusRequestIds.add(requestId);
       const origReadState = agent.readState as jest.Mock;
-      origReadState.mockImplementation(async (...args: unknown[]) => {
+      origReadState.mockImplementation(async (..._args: unknown[]) => {
         // Polling gets a fresh certificate where the request is now present
         absentStatusRequestIds.delete(requestId);
         return { certificate: new Uint8Array([0]) };

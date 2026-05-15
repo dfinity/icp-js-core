@@ -4,7 +4,7 @@
  */
 import * as IDL from './idl.ts';
 import { Principal } from '#principal';
-import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 import { idlLabelToId } from './utils/hash.ts';
 
 function testEncode(typ: IDL.Type, val: any, hex: string, _str: string) {

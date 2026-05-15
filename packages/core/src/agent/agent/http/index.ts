@@ -84,7 +84,7 @@ import {
   type TargetPrincipal,
 } from '../../certificate.ts';
 import { readCertifiedReject } from '../../utils/certificateReject.ts';
-import { ed25519 } from '@noble/curves/ed25519';
+import { ed25519 } from '@noble/curves/ed25519.js';
 import type { ExpirableStore } from '../../utils/expirableStore.ts';
 import { createExpirableStore } from '../../utils/createExpirableStore.ts';
 import { Ed25519PublicKey } from '../../public_key.ts';
@@ -96,7 +96,7 @@ import {
 } from '../../polling/backoff.ts';
 import { decodeTime } from '../../utils/leb.ts';
 import { pollForResponse, type PollingOptions } from '../../polling/index.ts';
-import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
 

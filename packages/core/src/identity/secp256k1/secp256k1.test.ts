@@ -1,9 +1,9 @@
 import type { DerEncodedPublicKey, PublicKey } from '#agent';
 import { randomBytes } from 'crypto';
-import { sha256 } from '@noble/hashes/sha2';
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { Secp256k1KeyIdentity, Secp256k1PublicKey } from './secp256k1.ts';
-import { hexToBytes, bytesToHex } from '@noble/curves/abstract/utils';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
 // DER KEY SECP256K1 PREFIX = 3056301006072a8648ce3d020106052b8104000a03420004
 // These test vectors contain the hex encoding of the corresponding raw and DER versions
@@ -82,7 +82,7 @@ describe('Secp256k1PublicKey Tests', () => {
       Secp256k1PublicKey.fromDer(
         fromHex(
           '3056301006072a8648ce3d020106052b8104000a0342000401ec030acd7d1199f73ae3469329c114944e0693c89502f850bcc6bad397a5956767c79b410c29ac6f587eec84878020fdb54ba002a79b02aa153fe47b6ffd33' +
-            '1b42211ce',
+          '1b42211ce',
         ) as DerEncodedPublicKey,
       );
     }).toThrow('DER payload mismatch: Expected length 65 actual length 70');

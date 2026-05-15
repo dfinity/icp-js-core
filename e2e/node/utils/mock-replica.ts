@@ -33,7 +33,7 @@ import { vi } from 'vitest';
 import { createReplyTree, createRootSubnetTree, createSubnetTree } from './tree.ts';
 import type { KeyPair } from './identity.ts';
 import { randomKeyPair, signBls, randomIdentity } from './identity.ts';
-import { concatBytes, toBytes } from '@noble/hashes/utils';
+import { utf8ToBytes, concatBytes } from '@noble/hashes/utils.js';
 
 const NANOSECONDS_TO_MSECS = 1_000_000;
 
@@ -496,7 +496,7 @@ export async function prepareV3QueryResponse({
   sender = Principal.from(sender);
   ingressExpiryInMinutes = ingressExpiryInMinutes ?? 5;
   timeDiffMsecs = timeDiffMsecs ?? 0;
-  const coercedReply = reply ? toBytes(reply) : new Uint8Array();
+  const coercedReply = reply ? (typeof reply === 'string' ? utf8ToBytes(reply) : reply) : new Uint8Array();
   date = date ?? new Date();
 
   const ingressExpiry = calculateIngressExpiry(ingressExpiryInMinutes, timeDiffMsecs);

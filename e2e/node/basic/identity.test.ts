@@ -44,7 +44,7 @@ async function createSecp256k1IdentityActor(
   idl: IDL.InterfaceFactory,
   seed?: number,
 ): Promise<any> {
-  let seed1: Uint8Array | undefined;
+  let seed1: Uint8Array<ArrayBuffer> | undefined;
   if (seed) {
     seed1 = new Uint8Array(new Array(32).fill(0));
     seed1[0] = seed;

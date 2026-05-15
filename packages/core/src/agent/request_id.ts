@@ -2,8 +2,8 @@ import { lebEncode, compare } from '#candid';
 import type { Principal } from '#principal';
 import { HashValueErrorCode, InputError } from './errors.ts';
 import { uint8FromBufLike } from './utils/buffer.ts';
-import { concatBytes } from '@noble/hashes/utils';
-import { sha256 } from '@noble/hashes/sha2';
+import { concatBytes } from '@noble/hashes/utils.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 
 export type RequestId = Uint8Array & { __requestId__: void };
 

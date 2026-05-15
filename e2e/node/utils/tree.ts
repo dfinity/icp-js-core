@@ -13,7 +13,7 @@ import type {
 import { NodeType, RequestStatusResponseStatus, Cbor } from '@icp-sdk/core/agent';
 import { lebEncode } from '@icp-sdk/core/candid';
 import type { Ed25519KeyIdentity } from '@icp-sdk/core/identity';
-import { hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
+import { hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 
 /**
  * Creates an empty hash tree.
@@ -156,9 +156,9 @@ export function createSubnetTree({
   // prettier-ignore
   let subnetTree: HashTree = labeled(
     'subnet',
-      labeled(subnetId,
-        subnetSubtree,
-      ),
+    labeled(subnetId,
+      subnetSubtree,
+    ),
   );
   if (canisterRanges.length > 0) {
     // On mainnet, canister ranges should always be present for delegated subnets.

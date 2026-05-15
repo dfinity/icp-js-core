@@ -10,7 +10,7 @@ import type { RequestStatusResponseStatus } from './agent/http/types.ts';
 import type { Expiry } from './agent/http/expiry.ts';
 import type { HttpHeaderField } from './agent/http/types.ts';
 import type { LookupPathStatus, LookupSubtreeStatus, TargetPrincipal } from './certificate.ts';
-import { bytesToHex } from '@noble/hashes/utils';
+import { bytesToHex } from '@noble/hashes/utils.js';
 
 export enum ErrorKindEnum {
   Trust = 'Trust',

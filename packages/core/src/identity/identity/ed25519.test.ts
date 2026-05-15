@@ -1,6 +1,6 @@
 import type { DerEncodedPublicKey, PublicKey } from '#agent';
 import { Ed25519KeyIdentity, Ed25519PublicKey } from './ed25519.ts';
-import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
 const testVectors: Array<[string, string]> = [
   [
@@ -50,7 +50,7 @@ describe('Ed25519PublicKey Tests', () => {
       Ed25519PublicKey.fromDer(
         hexToBytes(
           '302A300506032B6570032100B3997656BA51FF6DA37B61D8D549EC8071726' +
-            '6ECF48FB5DA52B654412634844C00',
+          '6ECF48FB5DA52B654412634844C00',
         ) as DerEncodedPublicKey,
       );
     }).toThrow();
@@ -123,7 +123,7 @@ describe('Ed25519KeyIdentity tests', () => {
   });
 
   it('should warn if the key is an Uint8Array consisting of all zeroes', () => {
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
 
     const baseKey = new Uint8Array(new Array(32).fill(0));
     Ed25519KeyIdentity.generate(baseKey);

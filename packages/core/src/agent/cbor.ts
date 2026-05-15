@@ -22,7 +22,7 @@ function hasCborValueMethod(value: unknown): value is ToCborValue {
  * the {@link ToCborValue.toCborValue} method will be called to get the value to encode.
  * @param value The value to encode
  */
-export function encode(value: unknown): Uint8Array {
+export function encode(value: unknown): Uint8Array<ArrayBuffer> {
   try {
     return cbor.encodeWithSelfDescribedTag(value, value => {
       if (Principal.isPrincipal(value)) {
@@ -38,7 +38,7 @@ export function encode(value: unknown): Uint8Array {
       }
 
       return value;
-    });
+    }) as Uint8Array<ArrayBuffer>;
   } catch (error) {
     throw InputError.fromCode(new CborEncodeErrorCode(error, value));
   }

@@ -1,10 +1,8 @@
 {
   "extends": ["../../tsconfig.json", "@tsconfig/node22/tsconfig.json"],
   "compilerOptions": {
-    "baseUrl": ".",
     "rootDir": ".",
-    "module": "preserve",
-    "moduleResolution": "bundler",
+    "moduleResolution": "NodeNext",
     "noEmit": true
   },
   "include": [
@@ -15,5 +13,5 @@
     "setup-pic.ts"
   ],
   "exclude": [".dfx", "lib", "node_modules"],
-  "references": [{ "path": "../../packages/core" }]
+  "references": [{ "path": "../../packages/core/tsconfig.build.json" }]
 }

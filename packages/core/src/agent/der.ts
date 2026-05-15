@@ -162,7 +162,7 @@ export function wrapDER(payload: Uint8Array, oid: Uint8Array): Uint8Array {
  * @param oid The DER encoded (and SEQUENCE wrapped!) expected OID
  * @returns The unwrapped payload
  */
-export const unwrapDER = (derEncoded: Uint8Array, oid: Uint8Array): Uint8Array => {
+export const unwrapDER = (derEncoded: Uint8Array, oid: Uint8Array): Uint8Array<ArrayBuffer> => {
   let offset = 0;
   const expect = (n: number, msg: string) => {
     if (buf[offset++] !== n) {

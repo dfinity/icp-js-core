@@ -93,14 +93,16 @@
   },
   "dependencies": {
     "@dfinity/cbor": "^0.2.3",
-    "@noble/curves": "^1.9.7",
-    "@noble/hashes": "^1.8.0",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
     "@scure/bip32": "^1.7.0",
     "@scure/bip39": "^1.6.0",
     "asn1js": "^3.0.7"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",
+    "jsdom": "^21.1.0",
+    "@types/jsdom": "^21.1.0",
     "tsc-alias": "^1.8.16"
   }
 }

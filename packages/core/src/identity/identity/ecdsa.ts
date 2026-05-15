@@ -21,6 +21,8 @@ export interface DerCryptoKey extends CryptoKey {
   toDer: () => DerEncodedPublicKey;
 }
 
+// eslint-disable-next-line
+declare var global: typeof globalThis;
 /**
  * Utility method to ensure that a subtleCrypto implementation is provided or is available in the global context
  * @param subtleCrypto SubtleCrypto implementation

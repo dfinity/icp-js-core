@@ -1,7 +1,7 @@
 import { Principal } from '#principal';
 import * as cbor from '../cbor.ts';
 import { decodeLeb128 } from '../utils/leb.ts';
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import type { DerEncodedPublicKey } from '../auth.ts';
 import {
   type Cert,

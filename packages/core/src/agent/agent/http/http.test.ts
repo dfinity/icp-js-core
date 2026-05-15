@@ -19,7 +19,7 @@ import {
   HttpFetchErrorCode,
   IdentityInvalidErrorCode,
 } from '../../errors.ts';
-import { utf8ToBytes, bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { utf8ToBytes, bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 
 const { window } = new JSDOM(`<!DOCTYPE html><p>Hello world</p>`);
 window.fetch = global.fetch;
@@ -525,8 +525,8 @@ describe('makeNonce', () => {
       jest.spyOn(Math, 'random').mockImplementation(() => 0.5);
       jest
         .spyOn(global.crypto, 'getRandomValues')
-        .mockImplementation((array: ArrayBufferView | null) => {
-          const view = new Uint8Array(array!.buffer, array!.byteOffset, array!.byteLength);
+        .mockImplementation((array: ArrayBufferView<ArrayBuffer>) => {
+          const view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
           for (let i = 0; i < view.length; i++) {
             view[i] = Math.floor(Math.random() * 256);
           }
