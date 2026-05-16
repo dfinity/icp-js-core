@@ -66,9 +66,9 @@ export type DecodeStrategy = 'cbor' | 'hex' | 'leb128' | 'utf-8' | 'raw';
  */
 export class CustomPath implements CustomPath {
   public key: string;
-  public path: Uint8Array[] | string;
+  public path: Uint8Array[] | Uint8Array | string;
   public decodeStrategy: DecodeStrategy;
-  constructor(key: string, path: Uint8Array[] | string, decodeStrategy: DecodeStrategy) {
+  constructor(key: string, path: Uint8Array[] | Uint8Array | string, decodeStrategy: DecodeStrategy) {
     this.key = key;
     this.path = path;
     this.decodeStrategy = decodeStrategy;

@@ -20,7 +20,7 @@ const importActor = async (mockUpdatePolling?: () => void) => {
   jest.dontMock('./polling');
   mockUpdatePolling?.();
 
-  return await import('./actor.js');
+  return await import('./actor.ts');
 };
 
 const originalDateNowFn = global.Date.now;

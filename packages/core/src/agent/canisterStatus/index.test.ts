@@ -129,7 +129,7 @@ describe('Canister Status utility', () => {
     const statusEncoded = await getStatus([
       {
         key: 'candid',
-        path: [utf8ToBytes('candid:service')],
+        path: utf8ToBytes('candid:service'),
         decodeStrategy: 'hex',
       },
     ]);

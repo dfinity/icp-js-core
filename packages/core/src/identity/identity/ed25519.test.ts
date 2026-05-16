@@ -90,7 +90,7 @@ describe('Ed25519KeyIdentity tests', () => {
       const shortArray = new Uint8Array(secretKey).subarray(1, 32);
       Ed25519KeyIdentity.fromSecretKey(Uint8Array.from(shortArray).subarray(1, 32));
     };
-    expect(shouldFail).toThrow('private key of length 32 expected, got 30'); // this error comes from @noble/curves
+    expect(shouldFail).toThrow('"secretKey" expected Uint8Array of length 32, got length=30'); // this error comes from @noble/curves
   });
 
   test('can encode and decode to/from JSON', async () => {
