@@ -237,29 +237,13 @@ export interface Agent {
    * Send a read state query to the replica. This includes a list of paths to return,
    * and will return a Certificate. This will only reject on communication errors,
    * but the certificate might contain less information than requested.
-   * @param effectiveCanisterId A Canister ID related to this call.
+   * @param effectiveTarget A Canister ID or Subnet ID related to this call.
    * @param options The options for this call.
    * @param identity Identity for the call. If not specified, uses the instance identity.
    * @param request The request to send in case it has already been created.
    */
   readState(
-    effectiveCanisterId: Principal | string,
-    options: ReadStateOptions,
-    identity?: Identity,
-    request?: unknown,
-  ): Promise<ReadStateResponse>;
-
-  /**
-   * Send a read subnet state query to the replica. This includes a list of paths to return,
-   * and will return a Certificate. This will only reject on communication errors,
-   * but the certificate might contain less information than requested.
-   * @param effectiveSubnetId A Subnet ID related to this call.
-   * @param options The options for this call.
-   * @param identity Identity for the call. If not specified, uses the instance identity.
-   * @param request The request to send in case it has already been created.
-   */
-  readSubnetState(
-    effectiveSubnetId: Principal | string,
+    effectiveTarget: InputTargetPrincipal,
     options: ReadStateOptions,
     identity?: Identity,
     request?: unknown,

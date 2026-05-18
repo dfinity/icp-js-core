@@ -207,8 +207,8 @@ test('queries with the same content should have the same signature', async () =>
 
   const paths = [[utf8ToBytes('request_status'), requestId, utf8ToBytes('reply')]];
 
-  const response1 = await httpAgent.readState(canisterId, { paths });
-  const response2 = await httpAgent.readState(canisterId, { paths });
+  const response1 = await httpAgent.readState({ canisterId }, { paths });
+  const response2 = await httpAgent.readState({ canisterId }, { paths });
 
   const response3 = await httpAgent.query(canisterId, { arg, methodName });
   const response4 = await httpAgent.query(canisterId, { methodName, arg });
@@ -239,7 +239,7 @@ test('readState should not call transformers if request is passed', async () => 
     );
   });
 
-  const canisterIdent = '2chl6-4hpzw-vqaaa-aaaaa-c';
+  const canisterId = '2chl6-4hpzw-vqaaa-aaaaa-c';
   const nonce = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]) as Nonce;
 
   const principal = Principal.anonymous();
@@ -260,7 +260,7 @@ test('readState should not call transformers if request is passed', async () => 
   const requestId = requestIdOf({
     request_type: SubmitRequestType.Call,
     nonce,
-    canister_id: Principal.fromText(canisterIdent).toString(),
+    canister_id: Principal.fromText(canisterId).toString(),
     method_name: methodName,
     arg,
     sender: principal,
@@ -270,7 +270,7 @@ test('readState should not call transformers if request is passed', async () => 
 
   const request = await httpAgent.createReadStateRequest({ paths });
   expect(transformMock).toHaveBeenCalledTimes(1);
-  await httpAgent.readState(canisterIdent, { paths }, undefined, request);
+  await httpAgent.readState({ canisterId }, { paths }, undefined, request);
   expect(transformMock).toHaveBeenCalledTimes(1);
 });
 
@@ -457,7 +457,7 @@ describe('invalidate identity', () => {
     // Test readState
     try {
       const path = utf8ToBytes('request_status');
-      await agent.readState(canisterId, {
+      await agent.readState({ canisterId }, {
         paths: [[path]],
       });
     } catch (error) {
@@ -1370,7 +1370,7 @@ describe('error logs for bad signature', () => {
     try {
       const requestId = new Uint8Array(32) as RequestId;
       const path = new TextEncoder().encode('request_status');
-      await agent.readState(canisterId, { paths: [[path, requestId]] });
+      await agent.readState({ canisterId }, { paths: [[path, requestId]] });
     } catch (error) {
       expect(error).toBeInstanceOf(AgentError);
       expect((error as AgentError).cause.code).toBeInstanceOf(HttpErrorCode);

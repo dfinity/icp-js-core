@@ -1289,14 +1289,18 @@ export class HttpAgent implements Agent {
   }
 
   public async readState(
-    canisterId: Principal | string,
+    effectiveTarget: InputTargetPrincipal,
     fields: ReadStateOptions,
     _identity?: Identity | Promise<Identity>,
     // eslint-disable-next-line
     request?: any,
   ): Promise<ReadStateResponse> {
+    if (typeof effectiveTarget === 'string' || effectiveTarget instanceof Principal) {
+      // compatibility with v5
+      effectiveTarget = { canisterId: Principal.from(effectiveTarget) };
+    }
     await this.#rootKeyGuard();
-    const canister = Principal.from(canisterId);
+    const target = inputToTarget(effectiveTarget);
 
     let transformedRequest: ReadStateRequest;
     let requestId: RequestId | undefined;
@@ -1317,48 +1321,27 @@ export class HttpAgent implements Agent {
       transformedRequest = await this.createReadStateRequest(fields, identity);
     }
 
-    const url = new URL(`/api/v3/canister/${canister.toString()}/read_state`, this.host);
+    const url = 'canisterId' in target
+      ? new URL(`/api/v3/canister/${target.canisterId.toString()}/read_state`, this.host)
+      : new URL(`/api/v3/subnet/${target.subnetId.toString()}/read_state`, this.host);
 
-    return await this.#readStateInner(url, { canisterId: canister }, transformedRequest, requestId);
+    return await this.#readStateInner(url, target, transformedRequest, requestId);
   }
 
-  public async readSubnetState(
+  // eslint-disable-next-line
+  /** 
+   * @deprecated Use `readState`
+   */
+  readSubnetState(
     subnetId: Principal | string,
-    fields: ReadStateOptions,
-    _identity?: Identity,
-    // eslint-disable-next-line
-    request?: any,
+    options: ReadStateOptions,
   ): Promise<ReadStateResponse> {
-    await this.#rootKeyGuard();
-    const subnet = Principal.from(subnetId);
-
-    const url = new URL(`/api/v3/subnet/${subnet.toString()}/read_state`, this.host);
-
-    let transformedRequest: ReadStateRequest;
-    let requestId: RequestId | undefined;
-
-    // If a pre-signed request is provided, use it
-    if (request) {
-      // This is a pre-signed request
-      transformedRequest = request;
-    } else {
-      // This is fields, we need to create a request
-      requestId = this.#getRequestId(fields);
-
-      // Always create a fresh request with the current identity
-      const identity = await this.#identity;
-      if (!identity) {
-        throw ExternalError.fromCode(new IdentityInvalidErrorCode());
-      }
-      transformedRequest = await this.createReadStateRequest(fields, identity);
-    }
-
-    return await this.#readStateInner(url, { subnetId: subnet }, transformedRequest, requestId);
+    return this.readState({ subnetId: Principal.from(subnetId) }, options);
   }
 
   async #readStateInner(
     url: URL,
-    principal: { canisterId: Principal } | { subnetId: Principal },
+    principal: TargetPrincipal,
     transformedRequest: ReadStateRequest,
     requestId?: RequestId,
   ): Promise<ReadStateResponse> {
@@ -1678,13 +1661,9 @@ export class HttpAgent implements Agent {
 
     const rootKey = this.rootKey!;
 
-    const canisterReadState = 'canisterId' in target
-      ? await this.readState(target.canisterId, {
-        paths: [[utf8ToBytes('subnet')]],
-      })
-      : await this.readSubnetState(target.subnetId, {
-        paths: [[utf8ToBytes('subnet')]],
-      });
+    const canisterReadState = await this.readState(target, {
+      paths: [[utf8ToBytes('subnet')]],
+    });
     const canisterCertificate = await Certificate.create({
       certificate: canisterReadState.certificate,
       rootKey,
@@ -1723,7 +1702,7 @@ export class HttpAgent implements Agent {
     const effectiveCanisterId = Principal.from(canisterId);
     await this.#asyncGuard({ canisterId: effectiveCanisterId });
 
-    const canisterReadState = await this.readState(effectiveCanisterId, {
+    const canisterReadState = await this.readState({ canisterId: effectiveCanisterId }, {
       paths: [[utf8ToBytes('time')]],
     });
     const canisterCertificate = await Certificate.create({

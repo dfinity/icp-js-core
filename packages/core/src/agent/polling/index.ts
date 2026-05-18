@@ -148,18 +148,10 @@ export async function pollForResponse(
       agent,
       pollingOptions: options,
     });
-    if (target.canisterId) {
-      state = await agent.readState(target.canisterId, { paths: [path] }, undefined, currentRequest);
-    } else {
-      state = await agent.readSubnetState(target.subnetId, { paths: [path] }, undefined, currentRequest);
-    }
+    state = await agent.readState(target, { paths: [path] }, undefined, currentRequest);
   } else {
     // If preSignReadStateRequest is false, we use the default strategy and sign the request each time
-    if (target.canisterId) {
-      state = await agent.readState(target.canisterId, { paths: [path] });
-    } else {
-      state = await agent.readSubnetState(target.subnetId, { paths: [path] });
-    }
+    state = await agent.readState(target, { paths: [path] });
   }
 
   if (agent.rootKey == null) {

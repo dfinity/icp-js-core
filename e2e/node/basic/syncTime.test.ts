@@ -319,7 +319,7 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const response = await agent.readState(canisterId, {
+      const response = await agent.readState({ canisterId }, {
         paths: [[new TextEncoder().encode('time')]],
       });
 
@@ -365,7 +365,7 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const response = await agent.readSubnetState(subnetId, {
+      const response = await agent.readState({ subnetId }, {
         paths: [[new TextEncoder().encode('time')]],
       });
 

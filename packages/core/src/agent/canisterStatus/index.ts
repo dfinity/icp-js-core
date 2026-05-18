@@ -96,7 +96,7 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
 
         const rootKey = agent.rootKey;
 
-        const response = await agent.readState(canisterId, {
+        const response = await agent.readState({ canisterId }, {
           paths: [encodedPath],
         });
 
