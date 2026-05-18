@@ -203,7 +203,7 @@ export interface CreateCertificateOptions {
 
   /**
    * The agent used to sync time with the IC network, if the certificate fails the freshness check.
-   * If the agent does not implement the {@link HttpAgent.getTimeDiffMsecs}, {@link HttpAgent.hasSyncedTime}, {@link HttpAgent.syncTime} and {@link HttpAgent.syncTimeWithSubnet} methods,
+   * If the agent does not implement the {@link HttpAgent.getTimeDiffMsecs}, {@link HttpAgent.hasSyncedTime}, and {@link HttpAgent.syncTime} methods,
    * time will not be synced in case of a freshness check failure.
    * @default undefined
    */
@@ -214,7 +214,7 @@ export class Certificate {
   public cert: Cert;
   #disableTimeVerification: boolean = false;
   #agent:
-    | Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime' | 'syncTimeWithSubnet'>
+    | Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime'>
     | undefined = undefined;
 
   /**
@@ -257,12 +257,11 @@ export class Certificate {
       agent &&
       'getTimeDiffMsecs' in agent &&
       'hasSyncedTime' in agent &&
-      'syncTime' in agent &&
-      'syncTimeWithSubnet' in agent
+      'syncTime' in agent
     ) {
       this.#agent = agent as Pick<
         HttpAgent,
-        'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime' | 'syncTimeWithSubnet'
+        'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime'
       >;
     }
   }
@@ -419,9 +418,9 @@ export class Certificate {
     }
 
     if (isCanisterPrincipal(this._principal)) {
-      await this.#agent.syncTime(this._principal.canisterId);
+      await this.#agent.syncTime({ canisterId: this._principal.canisterId });
     } else {
-      await this.#agent.syncTimeWithSubnet(this._principal.subnetId);
+      await this.#agent.syncTime({ subnetId: this._principal.subnetId });
     }
   }
 }

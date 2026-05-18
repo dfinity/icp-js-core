@@ -30,7 +30,6 @@ import {
   MalformedLookupFoundValueErrorCode,
   CertificateOutdatedErrorCode,
   CertificateNotAuthorizedErrorCode,
-  UNREACHABLE_ERROR,
   EffectiveSubnetIdAsyncErrorCode,
 } from '../../errors.ts';
 import { AnonymousIdentity, type Identity } from '../../auth.ts';
@@ -641,7 +640,7 @@ export class HttpAgent implements Agent {
         if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
           // if there is an ingress expiry error and the time has not been synced yet,
           // sync time with the network and try again
-          await this.syncTime(canister);
+          await this.syncTime(target);
           return this.call(canister, options, identity);
         }
         // override the error code to include the request details
@@ -946,7 +945,7 @@ export class HttpAgent implements Agent {
           requestId,
           signatureTimestampMs,
         });
-        await this.#syncTimeWithTarget(target);
+        await this.syncTime(target);
         return await this.#requestAndRetryQuery({ ...args, tries: tries + 1 });
       }
       throw TrustError.fromCode(
@@ -1157,7 +1156,7 @@ export class HttpAgent implements Agent {
         if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
           // if there is an ingress expiry error and the time has not been synced yet,
           // sync time with the network and try again
-          await this.#syncTimeWithTarget(target);
+          await this.syncTime(target);
           return this.query(canisterId, fields, identity);
         }
         // override the error code to include the request details
@@ -1341,7 +1340,7 @@ export class HttpAgent implements Agent {
 
   async #readStateInner(
     url: URL,
-    principal: TargetPrincipal,
+    target: TargetPrincipal,
     transformedRequest: ReadStateRequest,
     requestId?: RequestId,
   ): Promise<ReadStateResponse> {
@@ -1367,14 +1366,8 @@ export class HttpAgent implements Agent {
         if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
           // if there is an ingress expiry error and the time has not been synced yet,
           // sync time with the network and try again
-          if ('canisterId' in principal) {
-            await this.syncTime(principal.canisterId);
-          } else if ('subnetId' in principal) {
-            await this.syncTimeWithSubnet(principal.subnetId);
-          } else {
-            throw UNREACHABLE_ERROR;
-          }
-          return await this.#readStateInner(url, principal, transformedRequest, requestId);
+          await this.syncTime(target);
+          return await this.#readStateInner(url, target, transformedRequest, requestId);
         }
         // override the error code to include the request details
         error.code.requestContext = {
@@ -1430,22 +1423,26 @@ export class HttpAgent implements Agent {
 
   /**
    * Allows agent to sync its time with the network. Can be called during initialization or mid-lifecycle if the device's clock has drifted away from the network time. This is necessary to set the Expiry for a request
-   * @param {Principal} canisterIdOverride - Pass a canister ID if you need to sync the time with a particular subnet. Uses the ICP ledger canister by default.
+   * @param {TargetPrincipal} targetOverride - Pass a canister or subnet ID if you need to sync the time with a particular subnet. Uses the ICP ledger canister by default.
    */
-  public async syncTime(canisterIdOverride?: Principal): Promise<void> {
+  public async syncTime(targetOverride?: TargetPrincipal): Promise<void> {
+    if (targetOverride && (typeof targetOverride === 'string' || targetOverride instanceof Principal)) {
+      // compatibility with v5
+      targetOverride = { canisterId: Principal.from(targetOverride) };
+    }
     this.#syncTimePromise =
       this.#syncTimePromise ??
       (async () => {
         await this.#rootKeyGuard();
         const callTime = Date.now();
         try {
-          if (!canisterIdOverride) {
+          if (!targetOverride) {
             this.log.print(
-              'Syncing time with the IC. No canisterId provided, so falling back to ryjl3-tyaaa-aaaaa-aaaba-cai',
+              'Syncing time with the IC. No target provided, so falling back to ryjl3-tyaaa-aaaaa-aaaba-cai',
             );
           }
           // Fall back with canisterId of the ICP Ledger
-          const canisterId = canisterIdOverride ?? Principal.from('ryjl3-tyaaa-aaaaa-aaaba-cai');
+          const target = targetOverride ?? { canisterId: Principal.from('ryjl3-tyaaa-aaaaa-aaaba-cai') };
 
           const anonymousAgent = HttpAgent.createSync({
             identity: new AnonymousIdentity(),
@@ -1460,12 +1457,19 @@ export class HttpAgent implements Agent {
             Array(3)
               .fill(null)
               .map(async () => {
-                const status = await canisterStatusRequest({
-                  canisterId,
-                  agent: anonymousAgent,
-                  paths: ['time'],
-                  disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
-                });
+                const status = 'canisterId' in target
+                  ? await canisterStatusRequest({
+                    canisterId: target.canisterId,
+                    agent: anonymousAgent,
+                    paths: ['time'],
+                    disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
+                  })
+                  : await subnetStatusRequest({
+                    subnetId: target.subnetId,
+                    agent: anonymousAgent,
+                    paths: ['time'],
+                    disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
+                  });
 
                 const date = status.get('time');
                 if (date instanceof Date) {
@@ -1491,57 +1495,12 @@ export class HttpAgent implements Agent {
     });
   }
 
+  // eslint-disable-next-line
   /**
-   * Allows agent to sync its time with the network.
-   * @param {Principal} subnetId - Pass the subnet ID you need to sync the time with.
+   * @deprecated Use {@link syncTime}
    */
-  public async syncTimeWithSubnet(subnetId: Principal): Promise<void> {
-    await this.#rootKeyGuard();
-    const callTime = Date.now();
-
-    try {
-      const anonymousAgent = HttpAgent.createSync({
-        identity: new AnonymousIdentity(),
-        host: this.host.toString(),
-        fetch: this.#fetch,
-        retryTimes: 0,
-        rootKey: this.rootKey ?? undefined,
-        shouldSyncTime: false,
-      });
-
-      const replicaTimes = await Promise.all(
-        Array(3)
-          .fill(null)
-          .map(async () => {
-            const status = await subnetStatusRequest({
-              subnetId,
-              agent: anonymousAgent,
-              paths: ['time'],
-              disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
-            });
-
-            const date = status.get('time');
-            if (date instanceof Date) {
-              return date.getTime();
-            }
-          }, []),
-      );
-
-      this.#setTimeDiffMsecs(callTime, replicaTimes);
-    } catch (error) {
-      const syncTimeError =
-        error instanceof AgentError ? error : UnknownError.fromCode(new UnexpectedErrorCode(error));
-      this.log.error('Caught exception while attempting to sync time with subnet', syncTimeError);
-
-      throw syncTimeError;
-    }
-  }
-
-  #syncTimeWithTarget(target?: TargetPrincipal): Promise<void> {
-    if (target && 'subnetId' in target) {
-      return this.syncTimeWithSubnet(target.subnetId);
-    }
-    return this.syncTime(target?.canisterId);
+  syncTimeWithSubnet(subnetId: Principal): Promise<void> {
+    return this.syncTime({ subnetId });
   }
 
   #setTimeDiffMsecs(callTime: number, replicaTimes: Array<number | undefined>): void {
@@ -1616,7 +1575,7 @@ export class HttpAgent implements Agent {
 
   async #syncTimeGuard(targetOverride?: TargetPrincipal): Promise<void> {
     if (this.#shouldSyncTime && !this.hasSyncedTime()) {
-      await this.#syncTimeWithTarget(targetOverride);
+      await this.syncTime(targetOverride);
     }
   }
 
