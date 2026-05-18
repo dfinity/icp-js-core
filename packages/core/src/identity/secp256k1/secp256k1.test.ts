@@ -1,6 +1,5 @@
 import type { DerEncodedPublicKey, PublicKey } from '#agent';
 import { randomBytes } from 'crypto';
-import { sha256 } from '@noble/hashes/sha2.js';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { Secp256k1KeyIdentity, Secp256k1PublicKey } from './secp256k1.ts';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
@@ -197,7 +196,7 @@ describe('Secp256k1KeyIdentity Tests', () => {
     const message = 'Hello world. Secp256k1 test here';
     const challenge = new TextEncoder().encode(message);
     const signature = await identity.sign(challenge);
-    const isValid = secp256k1.verify(signature, sha256(challenge), rawPublicKey);
+    const isValid = secp256k1.verify(signature, challenge, rawPublicKey);
     expect(isValid).toBe(true);
   });
 });

@@ -6,7 +6,6 @@ import {
   SignIdentity,
 } from '#agent';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
-import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils.js';
 import * as bip39 from '@scure/bip39';
 import { HDKey } from '@scure/bip32';
@@ -267,9 +266,7 @@ export class Secp256k1KeyIdentity extends SignIdentity {
    * @returns {Promise<Signature>} signature
    */
   public async sign(data: Uint8Array): Promise<Signature> {
-    const challenge = sha256(data);
-    const signature = secp256k1.sign(challenge, this._privateKey);
-    return signature as Signature;
+    return secp256k1.sign(data, this._privateKey) as Signature;
   }
 }
 

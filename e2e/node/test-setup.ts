@@ -10,7 +10,11 @@ import type { Principal } from '@icp-sdk/core/principal';
 // make global.crypto writeable
 Object.defineProperty(global, 'crypto', {
   writable: true,
-  value: { ...global.crypto, subtle },
+  value: {
+    ...global.crypto,
+    subtle,
+    getRandomValues: global.crypto.getRandomValues.bind(global.crypto)
+  },
 });
 
 function isPrincipal(value: unknown): value is Principal {
