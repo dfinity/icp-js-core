@@ -407,22 +407,19 @@ function _createActorMethod(
       };
 
       const agent = options.agent || actor[metadataSymbol].config.agent || new HttpAgent();
-      const cid = Principal.from(options.canisterId || actor[metadataSymbol].config.canisterId);
       const arg = IDL.encode(func.argTypes, args);
-      // Overrides determined in order:
-      // - immediate configuration options override actor config
-      //  - the immediate config's target field overrides the deprecated ecid field
-      // - then, the actor config has a chance to set it
-      //  - the actor config's target field overrides the deprecated ecid field
-      // - then, the fallback is to set the receiving canister ID as the effective target
+
+      const { canisterId, effectiveTarget, effectiveCanisterId } = {
+        ...DEFAULT_ACTOR_CONFIG,
+        ...actor[metadataSymbol].config,
+        ...options,
+      };
+      const cid = Principal.from(canisterId);
       const target =
-        options.effectiveTarget ??
-        (options.effectiveCanisterId
-          ? { canisterId: options.effectiveCanisterId }
-          : (actor[metadataSymbol].config.effectiveTarget ??
-            (actor[metadataSymbol].config.effectiveCanisterId
-              ? { canisterId: actor[metadataSymbol].config.effectiveCanisterId }
-              : { canisterId: cid })));
+        effectiveTarget ??
+        (effectiveCanisterId
+          ? { canisterId: effectiveCanisterId }
+          : { canisterId: Principal.from(canisterId) });
 
       const result = await agent.query(cid, {
         methodName,

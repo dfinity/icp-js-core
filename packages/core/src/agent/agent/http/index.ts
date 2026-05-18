@@ -625,7 +625,7 @@ export class HttpAgent implements Agent {
       let callError: AgentError;
       if (error instanceof AgentError) {
         // If the error is due to the v4 api not being supported, fall back to v2
-        if (error.hasCode(HttpV4ApiNotSupportedErrorCode)) {
+        if ('canisterId' in target && error.hasCode(HttpV4ApiNotSupportedErrorCode)) {
           this.log.warn('v4 api not supported. Fall back to v2');
           return this.call(
             canisterId,

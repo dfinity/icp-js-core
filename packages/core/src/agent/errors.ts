@@ -97,6 +97,14 @@ export abstract class ErrorCode {
         `\nCall context:\n` +
         `  Canister ID: ${this.callContext.canisterId.toText()}\n` +
         `  Method name: ${this.callContext.methodName}`;
+      if ('subnetId' in this.callContext.effectiveTarget) {
+        errorMessage += `\n  Effective target subnet: ${this.callContext.effectiveTarget.subnetId.toText()}`;
+      } else if (
+        this.callContext.effectiveTarget.canisterId.toText() !==
+        this.callContext.canisterId.toText()
+      ) {
+        errorMessage += `\n  Effective target canister: ${this.callContext.effectiveTarget.canisterId.toText()}`;
+      }
       if ('httpDetails' in this.callContext) {
         errorMessage += `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, bytesReplacer(ErrorCode.verbosity), 2)}`;
       }
@@ -953,7 +961,7 @@ export class EffectiveSubnetIdAsyncErrorCode extends ErrorCode {
   }
 
   public toErrorMessage(): string {
-    return 'Setting `effectiveSubnetId` is not allowed in `useSync = false` calls';
+    return 'Setting `effectiveTarget` to a `subnetId` is not allowed in `callSync = false` calls';
   }
 }
 
