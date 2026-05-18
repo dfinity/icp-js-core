@@ -349,7 +349,8 @@ describe('makeActor', () => {
 
     // `requestDetails` is not inside the type. TODO: fix this
     // eslint-disable-next-line
-    (replyUpdateWithHttpDetails.httpDetails as any)['requestDetails']['nonce'] = new Uint8Array() as Nonce;
+    (replyUpdateWithHttpDetails.httpDetails as any)['requestDetails']['nonce'] =
+      new Uint8Array() as Nonce;
 
     expect(replyUpdateWithHttpDetails.httpDetails).toMatchSnapshot();
   });
@@ -570,9 +571,9 @@ describe('makeActor', () => {
           certificate: new Uint8Array([1, 2, 3]),
           rootKey: new Uint8Array(),
           principal: fields.effectiveTarget
-            ? ('canisterId' in fields.effectiveTarget
+            ? 'canisterId' in fields.effectiveTarget
               ? { canisterId: Principal.from(fields.effectiveTarget.canisterId) }
-              : { subnetId: Principal.from(fields.effectiveTarget.subnetId) })
+              : { subnetId: Principal.from(fields.effectiveTarget.subnetId) }
             : { canisterId: Principal.from(cid) },
         });
         return {

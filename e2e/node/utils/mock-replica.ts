@@ -496,7 +496,11 @@ export async function prepareV3QueryResponse({
   sender = Principal.from(sender);
   ingressExpiryInMinutes = ingressExpiryInMinutes ?? 5;
   timeDiffMsecs = timeDiffMsecs ?? 0;
-  const coercedReply = reply ? (typeof reply === 'string' ? utf8ToBytes(reply) : reply) : new Uint8Array();
+  const coercedReply = reply
+    ? typeof reply === 'string'
+      ? utf8ToBytes(reply)
+      : reply
+    : new Uint8Array();
   date = date ?? new Date();
 
   const ingressExpiry = calculateIngressExpiry(ingressExpiryInMinutes, timeDiffMsecs);

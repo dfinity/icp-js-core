@@ -240,7 +240,7 @@ describe('pollForResponse', () => {
     replyByRequestKey.set(requestId, new Uint8Array([42]));
 
     const ErrorClass = errors[expectedError as keyof typeof errors] as {
-      new(...args: unknown[]): Error;
+      new (...args: unknown[]): Error;
     };
     await expect(pollForResponse(agent, { canisterId }, requestId)).rejects.toThrow(ErrorClass);
   });

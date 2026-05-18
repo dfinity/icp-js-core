@@ -96,9 +96,12 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
 
         const rootKey = agent.rootKey;
 
-        const response = await agent.readState({ canisterId }, {
-          paths: [encodedPath],
-        });
+        const response = await agent.readState(
+          { canisterId },
+          {
+            paths: [encodedPath],
+          },
+        );
 
         const certificate = await Certificate.create({
           certificate: response.certificate,

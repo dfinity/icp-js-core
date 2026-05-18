@@ -78,7 +78,7 @@ export abstract class ErrorCode {
   public requestContext?: RequestContext;
   public callContext?: CallContext | PollingCallContext;
 
-  constructor(public readonly isCertified: boolean = false) { }
+  constructor(public readonly isCertified: boolean = false) {}
 
   public abstract toErrorMessage(): string;
 

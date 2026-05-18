@@ -154,19 +154,19 @@ type VerifyFunc = (pk: Uint8Array, sig: Uint8Array, msg: Uint8Array) => Promise<
 
 export type TargetPrincipal =
   | {
-    /**
-     * The effective canister ID of the request when verifying a response, or
-     * the signing canister ID when verifying a certified variable.
-     */
-    canisterId: Principal;
-  }
+      /**
+       * The effective canister ID of the request when verifying a response, or
+       * the signing canister ID when verifying a certified variable.
+       */
+      canisterId: Principal;
+    }
   | {
-    /**
-     * The effective subnet ID of the request when verifying a response, or
-     * the subnet ID when verifying a certificate from a subnet.
-     */
-    subnetId: Principal;
-  };
+      /**
+       * The effective subnet ID of the request when verifying a response, or
+       * the subnet ID when verifying a certificate from a subnet.
+       */
+      subnetId: Principal;
+    };
 
 export interface CreateCertificateOptions {
   /**
@@ -213,9 +213,8 @@ export interface CreateCertificateOptions {
 export class Certificate {
   public cert: Cert;
   #disableTimeVerification: boolean = false;
-  #agent:
-    | Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime'>
-    | undefined = undefined;
+  #agent: Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime'> | undefined =
+    undefined;
 
   /**
    * Create a new instance of a certificate, automatically verifying it.
@@ -253,16 +252,8 @@ export class Certificate {
     this.#disableTimeVerification = disableTimeVerification;
     this.cert = cbor.decode(certificate);
 
-    if (
-      agent &&
-      'getTimeDiffMsecs' in agent &&
-      'hasSyncedTime' in agent &&
-      'syncTime' in agent
-    ) {
-      this.#agent = agent as Pick<
-        HttpAgent,
-        'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime'
-      >;
+    if (agent && 'getTimeDiffMsecs' in agent && 'hasSyncedTime' in agent && 'syncTime' in agent) {
+      this.#agent = agent as Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime'>;
     }
   }
 

@@ -44,7 +44,7 @@ export class Delegation implements ToCborValue {
     public readonly pubkey: Uint8Array<ArrayBuffer>,
     public readonly expiration: bigint,
     public readonly targets?: Principal[],
-  ) { }
+  ) {}
 
   public toCborValue() {
     return {
@@ -214,12 +214,12 @@ export class DelegationChain {
           _parseBlob(pubkey),
           BigInt(`0x${expiration}`), // expiration in JSON is an hexa string (See toJSON() below).
           targets &&
-          targets.map((t: unknown) => {
-            if (typeof t !== 'string') {
-              throw new Error('Invalid target.');
-            }
-            return Principal.fromHex(t);
-          }),
+            targets.map((t: unknown) => {
+              if (typeof t !== 'string') {
+                throw new Error('Invalid target.');
+              }
+              return Principal.fromHex(t);
+            }),
         ),
         signature: _parseBlob(signature) as Signature,
       };
@@ -243,7 +243,7 @@ export class DelegationChain {
   protected constructor(
     public readonly delegations: SignedDelegation[],
     public readonly publicKey: DerEncodedPublicKey,
-  ) { }
+  ) {}
 
   public toJSON(): JsonnableDelegationChain {
     return {

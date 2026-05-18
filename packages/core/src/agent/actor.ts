@@ -63,7 +63,10 @@ export interface CallConfig {
 /**
  * Configuration that can be passed to customize the Actor behavior.
  */
-export interface ActorConfig extends Pick<CallConfig, 'agent' | 'effectiveTarget' | 'effectiveCanisterId'> {
+export interface ActorConfig extends Pick<
+  CallConfig,
+  'agent' | 'effectiveTarget' | 'effectiveCanisterId'
+> {
   /**
    * The Canister ID of this Actor. This is required for an Actor.
    */
@@ -152,15 +155,15 @@ export type FunctionWithArgsAndReturn<Args extends unknown[] = unknown[], Ret = 
 // Update all entries of T with the extra information from ActorMethodWithInfo
 export type ActorMethodMappedWithHttpDetails<T> = {
   [K in keyof T]: T[K] extends FunctionWithArgsAndReturn<infer Args, infer Ret>
-  ? ActorMethodWithHttpDetails<Args, Ret>
-  : never;
+    ? ActorMethodWithHttpDetails<Args, Ret>
+    : never;
 };
 
 // Update all entries of T with the extra information from ActorMethodWithInfo
 export type ActorMethodMappedExtended<T> = {
   [K in keyof T]: T[K] extends FunctionWithArgsAndReturn<infer Args, infer Ret>
-  ? ActorMethodExtended<Args, Ret>
-  : never;
+    ? ActorMethodExtended<Args, Ret>
+    : never;
 };
 
 /**
@@ -412,11 +415,12 @@ function _createActorMethod(
       // - then, the actor config has a chance to set it
       //  - the actor config's target field overrides the deprecated ecid field
       // - then, the fallback is to set the receiving canister ID as the effective target
-      const target = options.effectiveTarget
-        ?? (options.effectiveCanisterId
+      const target =
+        options.effectiveTarget ??
+        (options.effectiveCanisterId
           ? { canisterId: options.effectiveCanisterId }
-          : (actor[metadataSymbol].config.effectiveTarget
-            ?? (actor[metadataSymbol].config.effectiveCanisterId
+          : (actor[metadataSymbol].config.effectiveTarget ??
+            (actor[metadataSymbol].config.effectiveCanisterId
               ? { canisterId: actor[metadataSymbol].config.effectiveCanisterId }
               : { canisterId: cid })));
 
@@ -451,9 +455,9 @@ function _createActorMethod(
         case QueryResponseStatus.Replied:
           return func.annotations.includes(ACTOR_METHOD_WITH_HTTP_DETAILS)
             ? {
-              httpDetails,
-              result: decodeReturnValue(func.retTypes, result.reply.arg),
-            }
+                httpDetails,
+                result: decodeReturnValue(func.retTypes, result.reply.arg),
+              }
             : decodeReturnValue(func.retTypes, result.reply.arg);
       }
     };
@@ -475,8 +479,9 @@ function _createActorMethod(
         ...actor[metadataSymbol].config,
         ...options,
       };
-      const target = effectiveTarget
-        ?? (effectiveCanisterId
+      const target =
+        effectiveTarget ??
+        (effectiveCanisterId
           ? { canisterId: effectiveCanisterId }
           : { canisterId: Principal.from(canisterId) });
       const cid = Principal.from(canisterId);
@@ -540,7 +545,7 @@ function _createActorMethod(
   const handler = (...args: unknown[]) => caller({}, ...args);
   handler.withOptions =
     (options: CallConfig) =>
-      (...args: unknown[]) =>
-        caller(options, ...args);
+    (...args: unknown[]) =>
+      caller(options, ...args);
   return handler as ActorMethod;
 }

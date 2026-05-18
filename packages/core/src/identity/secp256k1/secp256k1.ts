@@ -17,7 +17,12 @@ declare type PublicKeyHex = string;
 declare type SecretKeyHex = string;
 export declare type JsonableSecp256k1Identity = [PublicKeyHex, SecretKeyHex];
 
-declare type KeyLike = PublicKey | DerEncodedPublicKey | ArrayBuffer | ArrayBufferView | Uint8Array<ArrayBuffer>;
+declare type KeyLike =
+  | PublicKey
+  | DerEncodedPublicKey
+  | ArrayBuffer
+  | ArrayBufferView
+  | Uint8Array<ArrayBuffer>;
 
 function isObject(value: unknown) {
   return value !== null && typeof value === 'object';
@@ -164,7 +169,10 @@ export class Secp256k1KeyIdentity extends SignIdentity {
    * @param {Uint8Array} privateKey - Uint8Array
    * @returns {Secp256k1KeyIdentity} Secp256k1KeyIdentity
    */
-  public static fromKeyPair(publicKey: Uint8Array<ArrayBuffer>, privateKey: Uint8Array<ArrayBuffer>): Secp256k1KeyIdentity {
+  public static fromKeyPair(
+    publicKey: Uint8Array<ArrayBuffer>,
+    privateKey: Uint8Array<ArrayBuffer>,
+  ): Secp256k1KeyIdentity {
     return new Secp256k1KeyIdentity(Secp256k1PublicKey.fromRaw(publicKey), privateKey);
   }
 

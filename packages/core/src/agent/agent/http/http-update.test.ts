@@ -3,7 +3,12 @@ import { HttpAgent, type UpdateOptions } from '../index.ts';
 import type { SubmitResponse } from '../index.ts';
 import type { RequestId } from '../../request_id.ts';
 import type { LookupPathResultFound, LookupPathStatus } from '../../certificate.ts';
-import { ExternalError, RejectError, UnknownError, UnexpectedV4StatusErrorCode } from '../../errors.ts';
+import {
+  ExternalError,
+  RejectError,
+  UnknownError,
+  UnexpectedV4StatusErrorCode,
+} from '../../errors.ts';
 import type { Expiry } from './transforms.ts';
 import { type CallRequest, SubmitRequestType } from './types.ts';
 
@@ -445,7 +450,7 @@ describe('HttpAgent.update', () => {
     });
   });
 
-  describe("onPollingStarted callback", () => {
+  describe('onPollingStarted callback', () => {
     it('invoked upon receiving HTTP response status 202 (ACCEPTED)', async () => {
       const agent = createAgentWithCallMock();
       let callbackInvoked = false;
@@ -477,7 +482,7 @@ describe('HttpAgent.update', () => {
       expect(callbackInvoked).toBe(true);
     });
 
-    it("not invoked if v4 sync response contains reply", async () => {
+    it('not invoked if v4 sync response contains reply', async () => {
       const agent = createAgentWithV4Response();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
@@ -514,5 +519,5 @@ describe('HttpAgent.update', () => {
         expect(callbackInvoked).toBe(false);
       }
     });
-  })
+  });
 });

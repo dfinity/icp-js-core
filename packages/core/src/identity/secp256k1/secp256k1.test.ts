@@ -81,7 +81,7 @@ describe('Secp256k1PublicKey Tests', () => {
       Secp256k1PublicKey.fromDer(
         fromHex(
           '3056301006072a8648ce3d020106052b8104000a0342000401ec030acd7d1199f73ae3469329c114944e0693c89502f850bcc6bad397a5956767c79b410c29ac6f587eec84878020fdb54ba002a79b02aa153fe47b6ffd33' +
-          '1b42211ce',
+            '1b42211ce',
         ) as DerEncodedPublicKey,
       );
     }).toThrow('DER payload mismatch: Expected length 65 actual length 70');

@@ -1,5 +1,10 @@
 import { Principal } from '#principal';
-import { DelegationChain, DelegationIdentity, PartialDelegationIdentity, type SignedDelegation } from './delegation.ts';
+import {
+  DelegationChain,
+  DelegationIdentity,
+  PartialDelegationIdentity,
+  type SignedDelegation,
+} from './delegation.ts';
 import { Ed25519KeyIdentity } from './ed25519.ts';
 import { type DerEncodedPublicKey, Ed25519PublicKey } from '#agent';
 

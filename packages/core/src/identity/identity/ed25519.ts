@@ -159,7 +159,10 @@ export class Ed25519KeyIdentity extends SignIdentity {
     throw new Error(`Deserialization error: Invalid JSON type for string: ${JSON.stringify(json)}`);
   }
 
-  public static fromKeyPair(publicKey: Uint8Array<ArrayBuffer>, privateKey: Uint8Array<ArrayBuffer>): Ed25519KeyIdentity {
+  public static fromKeyPair(
+    publicKey: Uint8Array<ArrayBuffer>,
+    privateKey: Uint8Array<ArrayBuffer>,
+  ): Ed25519KeyIdentity {
     return new Ed25519KeyIdentity(Ed25519PublicKey.fromRaw(publicKey), privateKey);
   }
 

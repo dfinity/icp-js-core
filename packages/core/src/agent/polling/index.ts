@@ -103,7 +103,7 @@ function isSignedReadStateRequestWithExpiry(
     isObjectWithProperty(value, 'body') &&
     isObjectWithProperty(value.body, 'content') &&
     (value.body.content as { request_type: ReadRequestType }).request_type ===
-    ReadRequestType.ReadState &&
+      ReadRequestType.ReadState &&
     isObjectWithProperty(value.body.content, 'ingress_expiry') &&
     typeof value.body.content.ingress_expiry === 'object' &&
     value.body.content.ingress_expiry !== null &&
@@ -133,9 +133,10 @@ export async function pollForResponse(
     // compatibility with v5
     effectiveTarget = { canisterId: Principal.from(effectiveTarget) };
   }
-  const target = 'canisterId' in effectiveTarget
-    ? { canisterId: Principal.from(effectiveTarget.canisterId) }
-    : { subnetId: Principal.from(effectiveTarget.subnetId) };
+  const target =
+    'canisterId' in effectiveTarget
+      ? { canisterId: Principal.from(effectiveTarget.canisterId) }
+      : { subnetId: Principal.from(effectiveTarget.subnetId) };
   const path = [utf8ToBytes('request_status'), requestId];
 
   let state: ReadStateResponse;

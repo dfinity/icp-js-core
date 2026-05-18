@@ -92,7 +92,7 @@ export class Principal {
 
   public readonly _isPrincipal = true;
 
-  protected constructor(private _arr: Uint8Array) { }
+  protected constructor(private _arr: Uint8Array) {}
 
   public isAnonymous(): boolean {
     return this._arr.byteLength === 1 && this._arr[0] === ANONYMOUS_SUFFIX;

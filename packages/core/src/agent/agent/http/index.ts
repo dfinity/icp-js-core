@@ -601,7 +601,7 @@ export class HttpAgent implements Agent {
             ...transformedRequest.request,
             body,
           });
-        }
+        };
       }
       const { responseBodyBytes, ...response } = await this.#requestAndRetry({
         requestFn,
@@ -701,12 +701,7 @@ export class HttpAgent implements Agent {
 
     if (response.status === HTTP_STATUS_ACCEPTED) {
       fields.onPollingStarted?.();
-      const pollResult = await pollForResponse(
-        this,
-        target,
-        requestId,
-        pollingOptions,
-      );
+      const pollResult = await pollForResponse(this, target, requestId, pollingOptions);
       return { ...pollResult, requestDetails, callResponse: response };
     }
 
@@ -778,12 +773,7 @@ export class HttpAgent implements Agent {
           `v4 sync response certificate does not contain request ID ${bytesToHex(requestId)} status. Falling back to polling.`,
         );
         onPollingStarted?.();
-        const pollResult = await pollForResponse(
-          this,
-          effectiveTarget,
-          requestId,
-          pollingOptions,
-        );
+        const pollResult = await pollForResponse(this, effectiveTarget, requestId, pollingOptions);
         return { ...pollResult, requestDetails, callResponse: response };
       }
       default: {
@@ -840,9 +830,10 @@ export class HttpAgent implements Agent {
 
     const delay = tries === 0 ? 0 : backoff.next();
 
-    const url = 'canisterId' in target
-      ? new URL(`/api/v3/canister/${target.canisterId.toString()}/query`, this.host)
-      : new URL(`/api/v3/subnet/${target.subnetId.toString()}/query`, this.host);
+    const url =
+      'canisterId' in target
+        ? new URL(`/api/v3/canister/${target.canisterId.toString()}/query`, this.host)
+        : new URL(`/api/v3/subnet/${target.subnetId.toString()}/query`, this.host);
 
     this.log.print(`fetching "${url.pathname}" with tries:`, {
       tries,
@@ -877,8 +868,8 @@ export class HttpAgent implements Agent {
       if (tries < this.#retryTimes) {
         this.log.warn(
           `Caught exception while attempting to make query:\n` +
-          `  ${error}\n` +
-          `  Retrying query.`,
+            `  ${error}\n` +
+            `  Retrying query.`,
         );
         return await this.#requestAndRetryQuery({ ...args, tries: tries + 1 });
       }
@@ -1005,8 +996,8 @@ export class HttpAgent implements Agent {
       if (tries < this.#retryTimes) {
         this.log.warn(
           `Caught exception while attempting to make request:\n` +
-          `  ${error}\n` +
-          `  Retrying request.`,
+            `  ${error}\n` +
+            `  Retrying request.`,
         );
         // Delay the request by the configured backoff strategy
         return await this.#requestAndRetry({ requestFn, backoff, tries: tries + 1 });
@@ -1320,15 +1311,16 @@ export class HttpAgent implements Agent {
       transformedRequest = await this.createReadStateRequest(fields, identity);
     }
 
-    const url = 'canisterId' in target
-      ? new URL(`/api/v3/canister/${target.canisterId.toString()}/read_state`, this.host)
-      : new URL(`/api/v3/subnet/${target.subnetId.toString()}/read_state`, this.host);
+    const url =
+      'canisterId' in target
+        ? new URL(`/api/v3/canister/${target.canisterId.toString()}/read_state`, this.host)
+        : new URL(`/api/v3/subnet/${target.subnetId.toString()}/read_state`, this.host);
 
     return await this.#readStateInner(url, target, transformedRequest, requestId);
   }
 
   // eslint-disable-next-line
-  /** 
+  /**
    * @deprecated Use `readState`
    */
   readSubnetState(
@@ -1426,7 +1418,10 @@ export class HttpAgent implements Agent {
    * @param {TargetPrincipal} targetOverride - Pass a canister or subnet ID if you need to sync the time with a particular subnet. Uses the ICP ledger canister by default.
    */
   public async syncTime(targetOverride?: TargetPrincipal): Promise<void> {
-    if (targetOverride && (typeof targetOverride === 'string' || targetOverride instanceof Principal)) {
+    if (
+      targetOverride &&
+      (typeof targetOverride === 'string' || targetOverride instanceof Principal)
+    ) {
       // compatibility with v5
       targetOverride = { canisterId: Principal.from(targetOverride) };
     }
@@ -1442,7 +1437,9 @@ export class HttpAgent implements Agent {
             );
           }
           // Fall back with canisterId of the ICP Ledger
-          const target = targetOverride ?? { canisterId: Principal.from('ryjl3-tyaaa-aaaaa-aaaba-cai') };
+          const target = targetOverride ?? {
+            canisterId: Principal.from('ryjl3-tyaaa-aaaaa-aaaba-cai'),
+          };
 
           const anonymousAgent = HttpAgent.createSync({
             identity: new AnonymousIdentity(),
@@ -1457,19 +1454,20 @@ export class HttpAgent implements Agent {
             Array(3)
               .fill(null)
               .map(async () => {
-                const status = 'canisterId' in target
-                  ? await canisterStatusRequest({
-                    canisterId: target.canisterId,
-                    agent: anonymousAgent,
-                    paths: ['time'],
-                    disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
-                  })
-                  : await subnetStatusRequest({
-                    subnetId: target.subnetId,
-                    agent: anonymousAgent,
-                    paths: ['time'],
-                    disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
-                  });
+                const status =
+                  'canisterId' in target
+                    ? await canisterStatusRequest({
+                        canisterId: target.canisterId,
+                        agent: anonymousAgent,
+                        paths: ['time'],
+                        disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
+                      })
+                    : await subnetStatusRequest({
+                        subnetId: target.subnetId,
+                        agent: anonymousAgent,
+                        paths: ['time'],
+                        disableCertificateTimeVerification: true, // avoid recursive calls to syncTime
+                      });
 
                 const date = status.get('time');
                 if (date instanceof Date) {
@@ -1521,8 +1519,8 @@ export class HttpAgent implements Agent {
   public async status(): Promise<JsonObject> {
     const headers: Record<string, string> = this.#credentials
       ? {
-        Authorization: `Basic ${btoa(this.#credentials)}`,
-      }
+          Authorization: `Basic ${btoa(this.#credentials)}`,
+        }
       : {};
 
     const url = new URL(`/api/v2/status`, this.host);
@@ -1661,9 +1659,12 @@ export class HttpAgent implements Agent {
     const effectiveCanisterId = Principal.from(canisterId);
     await this.#asyncGuard({ canisterId: effectiveCanisterId });
 
-    const canisterReadState = await this.readState({ canisterId: effectiveCanisterId }, {
-      paths: [[utf8ToBytes('time')]],
-    });
+    const canisterReadState = await this.readState(
+      { canisterId: effectiveCanisterId },
+      {
+        paths: [[utf8ToBytes('time')]],
+      },
+    );
     const canisterCertificate = await Certificate.create({
       certificate: canisterReadState.certificate,
       rootKey: this.rootKey!,

@@ -319,9 +319,12 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const response = await agent.readState({ canisterId }, {
-        paths: [[new TextEncoder().encode('time')]],
-      });
+      const response = await agent.readState(
+        { canisterId },
+        {
+          paths: [[new TextEncoder().encode('time')]],
+        },
+      );
 
       expect(response.certificate).toBeDefined();
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(5);
@@ -365,9 +368,12 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const response = await agent.readState({ subnetId }, {
-        paths: [[new TextEncoder().encode('time')]],
-      });
+      const response = await agent.readState(
+        { subnetId },
+        {
+          paths: [[new TextEncoder().encode('time')]],
+        },
+      );
 
       expect(response.certificate).toBeDefined();
       expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(5);

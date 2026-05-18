@@ -13,7 +13,7 @@ Object.defineProperty(global, 'crypto', {
   value: {
     ...global.crypto,
     subtle,
-    getRandomValues: global.crypto.getRandomValues.bind(global.crypto)
+    getRandomValues: global.crypto.getRandomValues.bind(global.crypto),
   },
 });
 

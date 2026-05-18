@@ -123,9 +123,7 @@ test('call requestId matches the post-transform body content hash', async () => 
   // into the request body (e.g. AttributesIdentity adds `sender_info`), the
   // returned requestId must hash the post-transform content so it matches the
   // key the IC uses when storing the call result.
-  const mockFetch: jest.Mock = jest.fn(() =>
-    Promise.resolve(new Response(null, { status: 200 })),
-  );
+  const mockFetch: jest.Mock = jest.fn(() => Promise.resolve(new Response(null, { status: 200 })));
 
   const baseIdentity = createIdentity(0);
   const extraField = new Uint8Array([42, 43, 44]);
@@ -457,9 +455,12 @@ describe('invalidate identity', () => {
     // Test readState
     try {
       const path = utf8ToBytes('request_status');
-      await agent.readState({ canisterId }, {
-        paths: [[path]],
-      });
+      await agent.readState(
+        { canisterId },
+        {
+          paths: [[path]],
+        },
+      );
     } catch (error) {
       expect((error as Error).message).toBe(expectedError);
     }
@@ -1447,7 +1448,9 @@ describe('subnetNodeKeyExpirableStore option', () => {
     const canisterId = Principal.fromText('bkyz2-fmaaa-aaaaa-qaaaq-cai');
     const result = await agent.fetchSubnetKeys({ canisterId });
 
-    expect(customSubnetNodeKeyExpirableStore.get).toHaveBeenCalledWith(`canister:${canisterId.toText()}`);
+    expect(customSubnetNodeKeyExpirableStore.get).toHaveBeenCalledWith(
+      `canister:${canisterId.toText()}`,
+    );
     expect(result).toBe(cachedNodeKeys);
     // No network call should be made when the store returns a cached value
     expect(mockFetch).not.toHaveBeenCalled();

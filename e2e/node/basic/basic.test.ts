@@ -27,9 +27,12 @@ test('read_state', async () => {
   const validTimePath = [utf8ToBytes('time')];
   const invalidTimePath = [utf8ToBytes('Time')];
 
-  const response = await resolvedAgent.readState({ canisterId }, {
-    paths: [validTimePath],
-  });
+  const response = await resolvedAgent.readState(
+    { canisterId },
+    {
+      paths: [validTimePath],
+    },
+  );
   if (resolvedAgent.rootKey == null) {
     throw new Error(`The agent doesn't have a root key yet`);
   }
@@ -65,7 +68,12 @@ test('read_state with passed request', async () => {
   const path = [utf8ToBytes('time')];
   const canisterId = await getDefaultEffectiveCanisterId();
   const request = await resolvedAgent.createReadStateRequest({ paths: [path] });
-  const response = await resolvedAgent.readState({ canisterId }, { paths: [path] }, undefined, request);
+  const response = await resolvedAgent.readState(
+    { canisterId },
+    { paths: [path] },
+    undefined,
+    request,
+  );
   if (resolvedAgent.rootKey == null) {
     throw new Error(`The agent doesn't have a root key yet`);
   }
