@@ -86,6 +86,7 @@ test('AgentError', () => {
       statusText: 'OK',
       headers: [],
     },
+    effectiveTarget: { canisterId: Principal.anonymous() },
   };
   expect(errorCode.callContext).toBeDefined();
   expect(errorCode.toString().includes('\nCall context:')).toBe(true);
@@ -159,6 +160,7 @@ describe('ErrorCode httpDetails verbosity in toString()', () => {
           ingress_expiry: { __expiry__: '0' },
         },
       } as unknown as CallContext['httpDetails'],
+      effectiveTarget: { canisterId: Principal.anonymous() },
     };
     return errorCode;
   }

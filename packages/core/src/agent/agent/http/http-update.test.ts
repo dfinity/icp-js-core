@@ -107,7 +107,7 @@ const mockRequestDetails: CallRequest = {
 const updateFields: UpdateOptions = {
   methodName: 'test_method',
   arg: new Uint8Array([1]),
-  effectiveCanisterId: canisterId,
+  effectiveTarget: { canisterId },
 };
 
 function createAgentWithCallMock(
@@ -450,7 +450,7 @@ describe('HttpAgent.update', () => {
     });
   });
 
-  describe("onPollingStarted callback", () => {
+  describe('onPollingStarted callback', () => {
     it('invoked upon receiving HTTP response status 202 (ACCEPTED)', async () => {
       const agent = createAgentWithCallMock();
       let callbackInvoked = false;
@@ -482,7 +482,7 @@ describe('HttpAgent.update', () => {
       expect(callbackInvoked).toBe(true);
     });
 
-    it("not invoked if v4 sync response contains reply", async () => {
+    it('not invoked if v4 sync response contains reply', async () => {
       const agent = createAgentWithV4Response();
       replyByRequestKey.set(requestId, new Uint8Array([42]));
 
@@ -519,5 +519,5 @@ describe('HttpAgent.update', () => {
         expect(callbackInvoked).toBe(false);
       }
     });
-  })
+  });
 });

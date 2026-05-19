@@ -152,7 +152,7 @@ function isBufferGreaterThan(a: Uint8Array, b: Uint8Array): boolean {
 
 type VerifyFunc = (pk: Uint8Array, sig: Uint8Array, msg: Uint8Array) => Promise<boolean> | boolean;
 
-export type CertificatePrincipal =
+export type TargetPrincipal =
   | {
       /**
        * The effective canister ID of the request when verifying a response, or
@@ -162,7 +162,8 @@ export type CertificatePrincipal =
     }
   | {
       /**
-       * The subnet ID when verifying a certificate from a subnet.
+       * The effective subnet ID of the request when verifying a response, or
+       * the subnet ID when verifying a certificate from a subnet.
        */
       subnetId: Principal;
     };
@@ -180,7 +181,7 @@ export interface CreateCertificateOptions {
   /**
    * The principal for which the certificate is being verified.
    */
-  principal: CertificatePrincipal;
+  principal: TargetPrincipal;
   /**
    * BLS Verification strategy. Default strategy uses bls12_381 from `@noble/curves`
    */
@@ -202,7 +203,7 @@ export interface CreateCertificateOptions {
 
   /**
    * The agent used to sync time with the IC network, if the certificate fails the freshness check.
-   * If the agent does not implement the {@link HttpAgent.getTimeDiffMsecs}, {@link HttpAgent.hasSyncedTime}, {@link HttpAgent.syncTime} and {@link HttpAgent.syncTimeWithSubnet} methods,
+   * If the agent does not implement the {@link HttpAgent.getTimeDiffMsecs}, {@link HttpAgent.hasSyncedTime}, and {@link HttpAgent.syncTime} methods,
    * time will not be synced in case of a freshness check failure.
    * @default undefined
    */
@@ -212,9 +213,8 @@ export interface CreateCertificateOptions {
 export class Certificate {
   public cert: Cert;
   #disableTimeVerification: boolean = false;
-  #agent:
-    | Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime' | 'syncTimeWithSubnet'>
-    | undefined = undefined;
+  #agent: Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime'> | undefined =
+    undefined;
 
   /**
    * Create a new instance of a certificate, automatically verifying it.
@@ -243,7 +243,7 @@ export class Certificate {
   private constructor(
     certificate: Uint8Array,
     private _rootKey: Uint8Array,
-    private _principal: CertificatePrincipal,
+    private _principal: TargetPrincipal,
     private _blsVerify: VerifyFunc,
     private _maxAgeInMinutes: number = DEFAULT_CERTIFICATE_MAX_AGE_IN_MINUTES,
     disableTimeVerification: boolean = false,
@@ -252,17 +252,8 @@ export class Certificate {
     this.#disableTimeVerification = disableTimeVerification;
     this.cert = cbor.decode(certificate);
 
-    if (
-      agent &&
-      'getTimeDiffMsecs' in agent &&
-      'hasSyncedTime' in agent &&
-      'syncTime' in agent &&
-      'syncTimeWithSubnet' in agent
-    ) {
-      this.#agent = agent as Pick<
-        HttpAgent,
-        'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime' | 'syncTimeWithSubnet'
-      >;
+    if (agent && 'getTimeDiffMsecs' in agent && 'hasSyncedTime' in agent && 'syncTime' in agent) {
+      this.#agent = agent as Pick<HttpAgent, 'getTimeDiffMsecs' | 'hasSyncedTime' | 'syncTime'>;
     }
   }
 
@@ -418,20 +409,20 @@ export class Certificate {
     }
 
     if (isCanisterPrincipal(this._principal)) {
-      await this.#agent.syncTime(this._principal.canisterId);
+      await this.#agent.syncTime({ canisterId: this._principal.canisterId });
     } else {
-      await this.#agent.syncTimeWithSubnet(this._principal.subnetId);
+      await this.#agent.syncTime({ subnetId: this._principal.subnetId });
     }
   }
 }
 
-function isSubnetPrincipal<T extends CertificatePrincipal>(
+function isSubnetPrincipal<T extends TargetPrincipal>(
   principal: T,
 ): principal is T & { subnetId: Principal } {
   return 'subnetId' in principal;
 }
 
-function isCanisterPrincipal<T extends CertificatePrincipal>(
+function isCanisterPrincipal<T extends TargetPrincipal>(
   principal: T,
 ): principal is T & { canisterId: Principal } {
   return 'canisterId' in principal;

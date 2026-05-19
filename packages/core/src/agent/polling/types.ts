@@ -1,16 +1,15 @@
-import type { Certificate } from '../certificate.ts';
-import type { Principal } from '#principal';
+import type { Certificate, TargetPrincipal } from '../certificate.ts';
 import type { RequestStatusResponseStatus } from '../agent/http/types.ts';
 import type { RequestId } from '../request_id.ts';
 
 export type PollStrategy = (
-  canisterId: Principal,
+  effectiveTarget: TargetPrincipal,
   requestId: RequestId,
   status: RequestStatusResponseStatus,
 ) => Promise<void>;
 
 export type Predicate<T> = (
-  canisterId: Principal,
+  effectiveTarget: TargetPrincipal,
   requestId: RequestId,
   status: RequestStatusResponseStatus,
 ) => Promise<T>;

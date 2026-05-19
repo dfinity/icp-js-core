@@ -319,9 +319,12 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const response = await agent.readState(canisterId, {
-        paths: [[new TextEncoder().encode('time')]],
-      });
+      const response = await agent.readState(
+        { canisterId },
+        {
+          paths: [[new TextEncoder().encode('time')]],
+        },
+      );
 
       expect(response.certificate).toBeDefined();
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(5);
@@ -365,9 +368,12 @@ describe('syncTime', () => {
         res.status(200).send(readStateResponse);
       });
 
-      const response = await agent.readSubnetState(subnetId, {
-        paths: [[new TextEncoder().encode('time')]],
-      });
+      const response = await agent.readState(
+        { subnetId },
+        {
+          paths: [[new TextEncoder().encode('time')]],
+        },
+      );
 
       expect(response.certificate).toBeDefined();
       expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(5);
@@ -632,49 +638,49 @@ describe('syncTime', () => {
       expect(agent.hasSyncedTime()).toBe(false);
     });
   });
-});
 
-describe('syncTimeWithSubnet', () => {
-  const date = new Date('2025-05-01T12:34:56.789Z');
+  describe('with subnet parameter', () => {
+    const date = new Date('2025-05-01T12:34:56.789Z');
 
-  const rootSubnetKeyPair = randomKeyPair();
-  const keyPair = randomKeyPair();
-  const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
-  const identity = randomIdentity();
+    const rootSubnetKeyPair = randomKeyPair();
+    const keyPair = randomKeyPair();
+    const subnetId = Principal.selfAuthenticating(keyPair.publicKeyDer);
+    const identity = randomIdentity();
 
-  let mockReplica: MockReplica;
+    let mockReplica: MockReplica;
 
-  beforeEach(async () => {
-    mockReplica = await MockReplica.create();
+    beforeEach(async () => {
+      mockReplica = await MockReplica.create();
 
-    vi.useFakeTimers();
-    vi.setSystemTime(date);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('should sync time with a subnet', async () => {
-    const agent = await HttpAgent.create({
-      host: mockReplica.address,
-      rootKey: rootSubnetKeyPair.publicKeyDer,
-      identity,
+      vi.useFakeTimers();
+      vi.setSystemTime(date);
     });
 
-    await mockSyncSubnetTimeResponse({
-      rootSubnetKeyPair,
-      mockReplica,
-      keyPair,
-      date,
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
-    expect(agent.hasSyncedTime()).toBe(false);
+    it('should sync time with a subnet', async () => {
+      const agent = await HttpAgent.create({
+        host: mockReplica.address,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
+        identity,
+      });
 
-    await agent.syncTimeWithSubnet(subnetId);
+      await mockSyncSubnetTimeResponse({
+        rootSubnetKeyPair,
+        mockReplica,
+        keyPair,
+        date,
+      });
 
-    expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(3);
-    expect(agent.hasSyncedTime()).toBe(true);
+      expect(agent.hasSyncedTime()).toBe(false);
+
+      await agent.syncTime({ subnetId });
+
+      expect(mockReplica.getV3ReadSubnetStateSpy(subnetId.toString())).toHaveBeenCalledTimes(3);
+      expect(agent.hasSyncedTime()).toBe(true);
+    });
   });
 });
 

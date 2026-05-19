@@ -117,7 +117,7 @@ describe('call forwarding', () => {
       canisterId: counterCanisterId,
       methodName: 'inc_read',
       arg: '4449444c0000',
-      effectiveCanisterId: counterCanisterId,
+      effectiveTarget: { canisterId: counterCanisterId },
     };
 
     const agent = new HttpAgent({ host: 'https://icp-api.io' });
@@ -126,7 +126,7 @@ describe('call forwarding', () => {
       {
         methodName: forwardedOptions.methodName,
         arg: hexToBytes(forwardedOptions.arg),
-        effectiveCanisterId: Principal.fromText(forwardedOptions.effectiveCanisterId),
+        effectiveTarget: forwardedOptions.effectiveTarget,
       },
     );
 
@@ -134,7 +134,7 @@ describe('call forwarding', () => {
 
     const { certificate, reply } = await pollForResponse(
       agent,
-      Principal.fromText(forwardedOptions.effectiveCanisterId),
+      forwardedOptions.effectiveTarget,
       requestId,
     );
     expect(certificate).toBeTruthy();
@@ -156,7 +156,7 @@ test('it should succeed when setting an expiry in the near future', async () => 
     agent.call(counterCanisterId, {
       methodName: 'inc_read',
       arg: hexToBytes('4449444c0000'),
-      effectiveCanisterId: counterCanisterId,
+      effectiveTarget: { canisterId: counterCanisterId },
     }),
   ).resolves.toBeDefined();
 });
@@ -174,7 +174,7 @@ test('it should succeed when setting an expiry in the future', async () => {
     agent.call(counterCanisterId, {
       methodName: 'inc_read',
       arg: hexToBytes('4449444c0000'),
-      effectiveCanisterId: counterCanisterId,
+      effectiveTarget: { canisterId: counterCanisterId },
     }),
   ).resolves.toBeDefined();
 });

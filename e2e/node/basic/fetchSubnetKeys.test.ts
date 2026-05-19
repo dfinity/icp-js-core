@@ -41,7 +41,7 @@ describe('fetchSubnetKeys (root key, no delegation)', () => {
       res.status(200).send(readStateResponseBody);
     });
 
-    const nodeKeys = await agent.fetchSubnetKeys(canisterId);
+    const nodeKeys = await agent.fetchSubnetKeys({ canisterId });
 
     const expectedNodeKey = nodeIdentity.getPublicKey().toDer();
     expect(nodeKeys.get(nodeIdentity.getPrincipal().toText())).toEqual(expectedNodeKey);
@@ -66,7 +66,7 @@ describe('fetchSubnetKeys (root key, no delegation)', () => {
       res.status(200).send(readStateResponseBody);
     });
 
-    await expect(agent.fetchSubnetKeys(anotherCanisterId)).rejects.toThrow(
+    await expect(agent.fetchSubnetKeys({ canisterId: anotherCanisterId })).rejects.toThrow(
       TrustError.fromCode(
         new CertificateNotAuthorizedErrorCode(
           anotherCanisterId,
@@ -113,7 +113,7 @@ describe('fetchSubnetKeys (delegated subnet)', () => {
       res.status(200).send(readStateResponseBody);
     });
 
-    const nodeKeys = await agent.fetchSubnetKeys(canisterId);
+    const nodeKeys = await agent.fetchSubnetKeys({ canisterId });
 
     const expectedNodeKey = nodeIdentity.getPublicKey().toDer();
     expect(nodeKeys.get(nodeIdentity.getPrincipal().toText())).toEqual(expectedNodeKey);
@@ -139,7 +139,7 @@ describe('fetchSubnetKeys (delegated subnet)', () => {
       res.status(200).send(readStateResponseBody);
     });
 
-    await expect(agent.fetchSubnetKeys(anotherCanisterId)).rejects.toThrow(
+    await expect(agent.fetchSubnetKeys({ canisterId: anotherCanisterId })).rejects.toThrow(
       TrustError.fromCode(
         new CertificateNotAuthorizedErrorCode(
           anotherCanisterId,
@@ -188,8 +188,8 @@ describe('fetchSubnetKeys (parallel calls deduplication)', () => {
     });
 
     const [keys1, keys2] = await Promise.all([
-      agent.fetchSubnetKeys(canisterId),
-      agent.fetchSubnetKeys(canisterId),
+      agent.fetchSubnetKeys({ canisterId }),
+      agent.fetchSubnetKeys({ canisterId }),
     ]);
 
     expect(keys1).toEqual(keys2);
@@ -233,8 +233,8 @@ describe('fetchSubnetKeys (sequential calls cache)', () => {
       res.status(200).send(readStateResponseBody);
     });
 
-    const keys1 = await agent.fetchSubnetKeys(canisterId);
-    const keys2 = await agent.fetchSubnetKeys(canisterId);
+    const keys1 = await agent.fetchSubnetKeys({ canisterId });
+    const keys2 = await agent.fetchSubnetKeys({ canisterId });
 
     expect(keys1).toEqual(keys2);
     expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(1);

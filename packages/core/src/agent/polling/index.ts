@@ -5,8 +5,8 @@ import {
   lookupResultToBuffer,
 } from '../certificate.ts';
 import { readCertifiedReject } from '../utils/certificateReject.ts';
-import type { Agent, ReadStateResponse } from '../agent/api.ts';
-import type { Principal } from '#principal';
+import type { Agent, InputTargetPrincipal, ReadStateResponse } from '../agent/api.ts';
+import { Principal } from '#principal';
 import {
   ExternalError,
   InputError,
@@ -24,6 +24,7 @@ import type { PollStrategy, PollForResponseResult } from './types.ts';
 import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
 import { RequestStatusResponseStatus } from '../agent/http/types.ts';
 import { utf8ToBytes } from '@noble/hashes/utils.js';
+import { inputToTarget } from '../utils/target.ts';
 export { defaultStrategy } from './strategy.ts';
 export type { PollStrategy, PollForResponseResult } from './types.ts';
 
@@ -115,7 +116,7 @@ function isSignedReadStateRequestWithExpiry(
  * Polls the IC to check the status of the given request then
  * returns the response bytes once the request has been processed.
  * @param agent The agent to use to poll read_state.
- * @param canisterId The effective canister ID.
+ * @param effectiveTarget The effective canister or subnet ID.
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
  * @returns The certificate, reply bytes, and raw certificate bytes for the request.
@@ -125,10 +126,15 @@ function isSignedReadStateRequestWithExpiry(
  */
 export async function pollForResponse(
   agent: Agent,
-  canisterId: Principal,
+  effectiveTarget: InputTargetPrincipal,
   requestId: RequestId,
   options: PollingOptions = {},
 ): Promise<PollForResponseResult> {
+  if (typeof effectiveTarget === 'string' || effectiveTarget instanceof Principal) {
+    // compatibility with v5
+    effectiveTarget = { canisterId: Principal.from(effectiveTarget) };
+  }
+  const target = inputToTarget(effectiveTarget);
   const path = [utf8ToBytes('request_status'), requestId];
 
   let state: ReadStateResponse;
@@ -141,10 +147,10 @@ export async function pollForResponse(
       agent,
       pollingOptions: options,
     });
-    state = await agent.readState(canisterId, { paths: [path] }, undefined, currentRequest);
+    state = await agent.readState(target, { paths: [path] }, undefined, currentRequest);
   } else {
     // If preSignReadStateRequest is false, we use the default strategy and sign the request each time
-    state = await agent.readState(canisterId, { paths: [path] });
+    state = await agent.readState(target, { paths: [path] });
   }
 
   if (agent.rootKey == null) {
@@ -153,7 +159,7 @@ export async function pollForResponse(
   const cert = await Certificate.create({
     certificate: state.certificate,
     rootKey: agent.rootKey,
-    principal: { canisterId },
+    principal: target,
     blsVerify: options.blsVerify,
     agent,
   });
@@ -181,9 +187,9 @@ export async function pollForResponse(
     case RequestStatusResponseStatus.Processing: {
       // Execute the polling strategy, then retry.
       const strategy = options.strategy ?? defaultStrategy();
-      await strategy(canisterId, requestId, status);
+      await strategy(target, requestId, status);
 
-      return pollForResponse(agent, canisterId, requestId, {
+      return pollForResponse(agent, target, requestId, {
         ...options,
         // Pass over either the strategy already provided or the new one created above
         strategy,

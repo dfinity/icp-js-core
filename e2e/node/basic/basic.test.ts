@@ -21,22 +21,25 @@ export async function getDefaultEffectiveCanisterId() {
 }
 
 test('read_state', async () => {
-  const ecid = await getDefaultEffectiveCanisterId();
+  const canisterId = await getDefaultEffectiveCanisterId();
   const resolvedAgent = await agent;
   const now = Date.now() / 1000;
   const validTimePath = [utf8ToBytes('time')];
   const invalidTimePath = [utf8ToBytes('Time')];
 
-  const response = await resolvedAgent.readState(ecid, {
-    paths: [validTimePath],
-  });
+  const response = await resolvedAgent.readState(
+    { canisterId },
+    {
+      paths: [validTimePath],
+    },
+  );
   if (resolvedAgent.rootKey == null) {
     throw new Error(`The agent doesn't have a root key yet`);
   }
   const cert = await Certificate.create({
     certificate: response.certificate,
     rootKey: resolvedAgent.rootKey,
-    principal: { canisterId: ecid },
+    principal: { canisterId },
   });
 
   const timeLookup = cert.lookup_path(validTimePath);
@@ -65,7 +68,12 @@ test('read_state with passed request', async () => {
   const path = [utf8ToBytes('time')];
   const canisterId = await getDefaultEffectiveCanisterId();
   const request = await resolvedAgent.createReadStateRequest({ paths: [path] });
-  const response = await resolvedAgent.readState(canisterId, { paths: [path] }, undefined, request);
+  const response = await resolvedAgent.readState(
+    { canisterId },
+    { paths: [path] },
+    undefined,
+    request,
+  );
   if (resolvedAgent.rootKey == null) {
     throw new Error(`The agent doesn't have a root key yet`);
   }
