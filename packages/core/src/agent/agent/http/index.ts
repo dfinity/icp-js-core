@@ -100,6 +100,7 @@ import { uint8Equals, uint8FromBufLike } from '../../utils/buffer.ts';
 import { IC_RESPONSE_DOMAIN_SEPARATOR } from '../../constants.ts';
 
 import { RequestStatusResponseStatus } from './types.ts';
+import { getTargetKey, inputToTarget } from '../../utils/target.ts';
 export { RequestStatusResponseStatus } from './types.ts';
 
 const MINUTE_TO_MSECS = 60 * 1_000;
@@ -1706,19 +1707,6 @@ export class HttpAgent implements Agent {
   public hasSyncedTime(): boolean {
     return this.#hasSyncedTime;
   }
-}
-
-function inputToTarget(target: InputTargetPrincipal): TargetPrincipal {
-  if ('canisterId' in target) {
-    return { canisterId: Principal.from(target.canisterId) };
-  }
-  return { subnetId: Principal.from(target.subnetId) };
-}
-
-function getTargetKey(target: TargetPrincipal): string {
-  return 'canisterId' in target
-    ? `canister:${target.canisterId.toText()}`
-    : `subnet:${target.subnetId.toText()}`;
 }
 
 /**

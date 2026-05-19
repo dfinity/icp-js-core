@@ -24,6 +24,7 @@ import type { PollStrategy, PollForResponseResult } from './types.ts';
 import { ReadRequestType, type ReadStateRequest } from '../agent/http/types.ts';
 import { RequestStatusResponseStatus } from '../agent/http/types.ts';
 import { utf8ToBytes } from '@noble/hashes/utils.js';
+import { inputToTarget } from '../utils/target.ts';
 export { defaultStrategy } from './strategy.ts';
 export type { PollStrategy, PollForResponseResult } from './types.ts';
 
@@ -133,10 +134,7 @@ export async function pollForResponse(
     // compatibility with v5
     effectiveTarget = { canisterId: Principal.from(effectiveTarget) };
   }
-  const target =
-    'canisterId' in effectiveTarget
-      ? { canisterId: Principal.from(effectiveTarget.canisterId) }
-      : { subnetId: Principal.from(effectiveTarget.subnetId) };
+  const target = inputToTarget(effectiveTarget);
   const path = [utf8ToBytes('request_status'), requestId];
 
   let state: ReadStateResponse;
