@@ -11,7 +11,7 @@ import {
 } from '#agent';
 import { Principal } from '#principal';
 import { PartialIdentity } from './partial.ts';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 
 /**
  * Safe wrapper around bytesToHex that handles ArrayBuffer/Uint8Array type conversion.
@@ -25,7 +25,7 @@ function safeBytesToHex(data: ArrayBuffer | Uint8Array | ArrayLike<number>): str
   return bytesToHex(new Uint8Array(data));
 }
 
-function _parseBlob(value: unknown): Uint8Array {
+function _parseBlob(value: unknown): Uint8Array<ArrayBuffer> {
   if (typeof value !== 'string' || value.length < 64) {
     throw new Error('Invalid public key.');
   }
@@ -41,7 +41,7 @@ function _parseBlob(value: unknown): Uint8Array {
  */
 export class Delegation implements ToCborValue {
   constructor(
-    public readonly pubkey: Uint8Array,
+    public readonly pubkey: Uint8Array<ArrayBuffer>,
     public readonly expiration: bigint,
     public readonly targets?: Principal[],
   ) {}

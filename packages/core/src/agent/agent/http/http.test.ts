@@ -19,7 +19,7 @@ import {
   HttpFetchErrorCode,
   IdentityInvalidErrorCode,
 } from '../../errors.ts';
-import { utf8ToBytes, bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { utf8ToBytes, bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 
 const { window } = new JSDOM(`<!DOCTYPE html><p>Hello world</p>`);
 window.fetch = global.fetch;
@@ -123,9 +123,7 @@ test('call requestId matches the post-transform body content hash', async () => 
   // into the request body (e.g. AttributesIdentity adds `sender_info`), the
   // returned requestId must hash the post-transform content so it matches the
   // key the IC uses when storing the call result.
-  const mockFetch: jest.Mock = jest.fn(() =>
-    Promise.resolve(new Response(null, { status: 200 })),
-  );
+  const mockFetch: jest.Mock = jest.fn(() => Promise.resolve(new Response(null, { status: 200 })));
 
   const baseIdentity = createIdentity(0);
   const extraField = new Uint8Array([42, 43, 44]);
@@ -525,8 +523,8 @@ describe('makeNonce', () => {
       jest.spyOn(Math, 'random').mockImplementation(() => 0.5);
       jest
         .spyOn(global.crypto, 'getRandomValues')
-        .mockImplementation((array: ArrayBufferView | null) => {
-          const view = new Uint8Array(array!.buffer, array!.byteOffset, array!.byteLength);
+        .mockImplementation((array: ArrayBufferView<ArrayBufferLike>) => {
+          const view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
           for (let i = 0; i < view.length; i++) {
             view[i] = Math.floor(Math.random() * 256);
           }

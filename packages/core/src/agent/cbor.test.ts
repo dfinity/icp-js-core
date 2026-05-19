@@ -1,5 +1,5 @@
 import { Principal } from '#principal';
-import { bytesToHex } from '@noble/hashes/utils';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import * as cbor from './cbor.ts';
 
 test('round trip', () => {

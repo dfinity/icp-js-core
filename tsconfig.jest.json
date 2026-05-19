@@ -1,9 +1,6 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "esModuleInterop": true,
-    "verbatimModuleSyntax": false,
-    "skipLibCheck": true,
     "module": "commonjs",
     "moduleResolution": "node10",
     "types": ["jest"],

@@ -1,19 +1,11 @@
 {
-  "extends": ["../../tsconfig.json", "@tsconfig/node22/tsconfig.json"],
+  "extends": ["../../tsconfig.base.json"],
   "compilerOptions": {
-    "baseUrl": ".",
     "rootDir": ".",
-    "module": "preserve",
-    "moduleResolution": "bundler",
+    "moduleResolution": "NodeNext",
+    "types": ["vitest", "node"],
     "noEmit": true
   },
-  "include": [
-    "utils/**/*.ts",
-    "canisters/**/*.ts",
-    "basic/**/*.ts",
-    "pic-helpers.ts",
-    "setup-pic.ts"
-  ],
-  "exclude": [".dfx", "lib", "node_modules"],
-  "references": [{ "path": "../../packages/core" }]
+  "include": ["**/*.ts"],
+  "exclude": [".dfx", "lib", "node_modules"]
 }

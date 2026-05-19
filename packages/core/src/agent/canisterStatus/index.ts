@@ -13,7 +13,7 @@ import type { HttpAgent } from '../agent/http/index.ts';
 import { type Cert, Certificate, lookupResultToBuffer } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
 import { decodeTime } from '../utils/leb.ts';
-import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils';
+import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils.js';
 import type { CustomPath } from '../utils/readState.ts';
 import {
   type BaseSubnetStatus,

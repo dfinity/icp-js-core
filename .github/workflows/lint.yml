@@ -21,3 +21,5 @@ jobs:
         uses: dfinity/ci-tools/actions/setup-pnpm@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
 
       - run: pnpm lint
+
+      - run: pnpm typecheck

@@ -20,7 +20,7 @@ const importActor = async (mockUpdatePolling?: () => void) => {
   jest.dontMock('./polling');
   mockUpdatePolling?.();
 
-  return await import('./actor');
+  return await import('./actor.ts');
 };
 
 const originalDateNowFn = global.Date.now;
@@ -281,7 +281,7 @@ describe('makeActor', () => {
       });
     };
     const httpAgent = new HttpAgent({
-      fetch: mockFetch,
+      fetch: mockFetch as typeof fetch,
       host: 'http://127.0.0.1',
       verifyQuerySignatures: false,
     });
@@ -348,7 +348,9 @@ describe('makeActor', () => {
     expect(replyUpdateWithHttpDetails.result).toEqual(canisterDecodedReturnValue);
 
     // `requestDetails` is not inside the type. TODO: fix this
-    replyUpdateWithHttpDetails.httpDetails['requestDetails']['nonce'] = new Uint8Array() as Nonce;
+    // eslint-disable-next-line
+    (replyUpdateWithHttpDetails.httpDetails as any)['requestDetails']['nonce'] =
+      new Uint8Array() as Nonce;
 
     expect(replyUpdateWithHttpDetails.httpDetails).toMatchSnapshot();
   });

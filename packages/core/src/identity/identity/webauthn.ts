@@ -7,7 +7,7 @@ import {
   DER_COSE_OID,
   Cbor,
 } from '#agent';
-import { bytesToHex, hexToBytes, randomBytes, bytesToUtf8 } from '@noble/hashes/utils';
+import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils.js';
 import { uint8FromBufLike } from '#candid';
 
 function _coseToDerEncodedBlob(cose: Uint8Array): DerEncodedPublicKey {
@@ -228,7 +228,7 @@ export class WebAuthnIdentity extends SignIdentity {
 
     const encoded = Cbor.encode({
       authenticator_data: response.authenticatorData,
-      client_data_json: bytesToUtf8(new Uint8Array(response.clientDataJSON)),
+      client_data_json: new TextDecoder().decode(new Uint8Array(response.clientDataJSON)),
       signature: response.signature,
     });
 

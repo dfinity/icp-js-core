@@ -1,8 +1,10 @@
 {
-  "extends": ["./tsconfig.json", "../../tsconfig.cjs.json"],
+  "extends": ["./tsconfig.build.json", "@tsconfig/node22/tsconfig.json"],
   "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node10",
+    "verbatimModuleSyntax": false,
     "lib": ["ES2023", "DOM"],
-    "baseUrl": "./src",
     "rootDir": "./src",
     "outDir": "./lib/cjs"
   },

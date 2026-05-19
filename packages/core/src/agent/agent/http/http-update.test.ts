@@ -3,7 +3,12 @@ import { HttpAgent, type UpdateOptions } from '../index.ts';
 import type { SubmitResponse } from '../index.ts';
 import type { RequestId } from '../../request_id.ts';
 import type { LookupPathResultFound, LookupPathStatus } from '../../certificate.ts';
-import { ExternalError, RejectError, UnknownError, UnexpectedV4StatusErrorCode } from '../../errors.ts';
+import {
+  ExternalError,
+  RejectError,
+  UnknownError,
+  UnexpectedV4StatusErrorCode,
+} from '../../errors.ts';
 import type { Expiry } from './transforms.ts';
 import { type CallRequest, SubmitRequestType } from './types.ts';
 
@@ -353,7 +358,7 @@ describe('HttpAgent.update', () => {
       // The v4 certificate will return absent for the request ID.
       absentStatusRequestIds.add(requestId);
       const origReadState = agent.readState as jest.Mock;
-      origReadState.mockImplementation(async (...args: unknown[]) => {
+      origReadState.mockImplementation(async (..._args: unknown[]) => {
         // Polling gets a fresh certificate where the request is now present
         absentStatusRequestIds.delete(requestId);
         return { certificate: new Uint8Array([0]) };
@@ -463,7 +468,7 @@ describe('HttpAgent.update', () => {
       // The v4 certificate will return absent for the request ID.
       absentStatusRequestIds.add(requestId);
       const origReadState = agent.readState as jest.Mock;
-      origReadState.mockImplementation(async (...args: unknown[]) => {
+      origReadState.mockImplementation(async (..._args: unknown[]) => {
         // Polling gets a fresh certificate where the request is now present
         absentStatusRequestIds.delete(requestId);
         return { certificate: new Uint8Array([0]) };

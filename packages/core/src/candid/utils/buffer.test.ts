@@ -6,7 +6,7 @@ import {
   uint8Equals,
   uint8ToDataView,
 } from './buffer.ts';
-import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
 describe('PipeArrayBuffer', () => {
   test('can read', () => {

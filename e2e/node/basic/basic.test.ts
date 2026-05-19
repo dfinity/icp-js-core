@@ -4,7 +4,7 @@ import { IDL, PipeArrayBuffer } from '@icp-sdk/core/candid';
 import { Principal } from '@icp-sdk/core/principal';
 import agent from '../utils/agent.ts';
 import { test, expect } from 'vitest';
-import { utf8ToBytes } from '@noble/hashes/utils';
+import { utf8ToBytes } from '@noble/hashes/utils.js';
 
 /**
  * Util for determining the default effective canister id, necessary for pocketic

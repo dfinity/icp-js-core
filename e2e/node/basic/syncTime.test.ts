@@ -27,7 +27,7 @@ import {
   prepareV4Response,
 } from '../utils/mock-replica.ts';
 import { randomIdentity, randomKeyPair } from '../utils/identity.ts';
-import { concatBytes } from '@noble/hashes/utils';
+import { concatBytes } from '@noble/hashes/utils.js';
 
 const INVALID_EXPIRY_ERROR =
   'Invalid request expiry: Specified ingress_expiry not within expected range: Minimum allowed expiry: 2025-05-01 23:55:18.005285297 UTC, Maximum allowed expiry: 2025-05-02 00:00:48.005285297 UTC, Provided expiry: 2025-05-01 12:38:00 UTC';

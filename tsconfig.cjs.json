@@ -1,8 +1,0 @@
-{
-  "extends": ["./tsconfig.json", "@tsconfig/node22/tsconfig.json"],
-  "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node10",
-    "verbatimModuleSyntax": false
-  }
-}

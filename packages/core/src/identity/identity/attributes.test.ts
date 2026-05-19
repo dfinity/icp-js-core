@@ -6,6 +6,7 @@ import { AttributesIdentity } from './attributes.ts';
 import {
   Endpoint,
   ReadRequestType,
+  SubmitRequestType,
   type HttpAgentReadStateRequest,
   type HttpAgentSubmitRequest,
 } from '../../agent/agent/http/types.ts';
@@ -21,7 +22,7 @@ function makeCallRequest(): HttpAgentSubmitRequest {
     endpoint: Endpoint.Call,
     request: {},
     body: {
-      request_type: 'call' as const,
+      request_type: SubmitRequestType.Call,
       canister_id: Principal.fromText('aaaaa-aa'),
       method_name: 'greet',
       arg: new Uint8Array([]),

@@ -1,7 +1,12 @@
 import { Principal } from '#principal';
-import { DelegationChain, DelegationIdentity, PartialDelegationIdentity } from './delegation.ts';
+import {
+  DelegationChain,
+  DelegationIdentity,
+  PartialDelegationIdentity,
+  type SignedDelegation,
+} from './delegation.ts';
 import { Ed25519KeyIdentity } from './ed25519.ts';
-import { Ed25519PublicKey } from '#agent';
+import { type DerEncodedPublicKey, Ed25519PublicKey } from '#agent';
 
 function createIdentity(seed: number): Ed25519KeyIdentity {
   const s = new Uint8Array([seed, ...new Array(31).fill(0)]);
@@ -26,9 +31,12 @@ expect.extend({
   },
 });
 
-declare module '@jest/expect' {
-  interface Matchers<R> {
-    toBeHex(): R;
+declare global {
+  // eslint-disable-next-line
+  namespace jest {
+    interface Matchers<R> {
+      toBeHex(): R;
+    }
   }
 }
 
@@ -223,8 +231,8 @@ describe('DelegationChain with ArrayBuffers', () => {
     );
 
     const chainWithArrayBuffers = DelegationChain.fromDelegations(
-      delegationsWithArrayBuffer,
-      publicKeyArrayBuffer as ArrayBuffer,
+      delegationsWithArrayBuffer as unknown as SignedDelegation[],
+      publicKeyArrayBuffer as unknown as DerEncodedPublicKey,
     );
 
     expect.assertions(3);
@@ -258,19 +266,19 @@ describe('DelegationChain with ArrayBuffers', () => {
 
       // Create new delegation with ArrayBuffer pubkey
       const delegationWithArrayBuffer = {
-        pubkey: arrayBufferPubkey as Record<string, unknown>,
+        pubkey: arrayBufferPubkey,
         expiration: signedDelegation.delegation.expiration,
         targets: signedDelegation.delegation.targets,
       };
 
       return {
-        delegation: delegationWithArrayBuffer as ArrayBuffer,
+        delegation: delegationWithArrayBuffer,
         signature: signedDelegation.signature,
       };
     });
 
     const chainWithArrayBufferPubkey = DelegationChain.fromDelegations(
-      delegationsWithArrayBufferPubkey,
+      delegationsWithArrayBufferPubkey as unknown as SignedDelegation[],
       chain.publicKey,
     );
 
