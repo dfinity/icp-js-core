@@ -1020,7 +1020,7 @@ export class HttpAgent implements Agent {
 
     const responseText = await response.text();
 
-    if (response.status === HTTP_STATUS_NOT_FOUND && response.url.includes('api/v4')) {
+    if (response.status === HTTP_STATUS_NOT_FOUND && response.url.includes('api/v4/canister')) {
       throw ProtocolError.fromCode(new HttpV4ApiNotSupportedErrorCode());
     }
 
