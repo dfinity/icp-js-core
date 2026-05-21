@@ -2,7 +2,7 @@ import type { LookupPathResultFound } from '@icp-sdk/core/agent';
 import { Certificate, LookupPathStatus } from '@icp-sdk/core/agent';
 import { IDL, PipeArrayBuffer } from '@icp-sdk/core/candid';
 import { Principal } from '@icp-sdk/core/principal';
-import agent from '../utils/agent.ts';
+import agent, { gatewayPort } from '../utils/agent.ts';
 import { test, expect } from 'vitest';
 import { utf8ToBytes } from '@noble/hashes/utils';
 
@@ -11,7 +11,7 @@ import { utf8ToBytes } from '@noble/hashes/utils';
  * @returns the default effective canister id
  */
 export async function getDefaultEffectiveCanisterId() {
-  const res = await fetch(`http://127.0.0.1:${process.env.REPLICA_PORT}/_/topology`);
+  const res = await fetch(`http://127.0.0.1:${gatewayPort}/_/topology`);
   const data = (await res.json()) as Record<string, Record<string, string>>;
   const id = data['default_effective_canister_id']['canister_id'];
   // decode from base64

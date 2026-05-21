@@ -1,7 +1,8 @@
 import type { ActorMethod } from '@icp-sdk/core/agent';
-import { Actor, HttpAgent } from '@icp-sdk/core/agent';
+import { Actor } from '@icp-sdk/core/agent';
 import { counterActor, counter2Actor, counterCanisterId, idl } from '../canisters/counter.ts';
 import { it, expect, describe, vi, beforeAll, beforeEach, afterAll } from 'vitest';
+import { makeAgent } from '../utils/agent.ts';
 
 describe.sequential('counter', () => {
   beforeAll(async () => {
@@ -58,10 +59,7 @@ describe.sequential('counter', () => {
     // Create counter actor with preSignReadStateRequest enabled
     const counter = await Actor.createActor(idl, {
       canisterId: counterCanisterId,
-      agent: await HttpAgent.create({
-        host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
-        shouldFetchRootKey: true,
-      }),
+      agent: await makeAgent(),
       pollingOptions: {
         preSignReadStateRequest: true,
       },
@@ -83,12 +81,9 @@ describe.sequential('counter', () => {
 
   it('should allow method-specific pollingOptions override', async () => {
     // Create counter actor without preSignReadStateRequest
-    const counter = await Actor.createActor(idl, {
+    const counter = Actor.createActor(idl, {
       canisterId: counterCanisterId,
-      agent: await HttpAgent.create({
-        host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
-        shouldFetchRootKey: true,
-      }),
+      agent: await makeAgent(),
     });
 
     // Reset counter to 0
@@ -131,14 +126,9 @@ describe('retrytimes', () => {
       return fetch.apply(null, args as [input: string | Request, init?: RequestInit | undefined]);
     });
 
-    const counter = await Actor.createActor(idl, {
+    const counter = Actor.createActor(idl, {
       canisterId: counterCanisterId,
-      agent: await HttpAgent.create({
-        fetch: fetchMock as typeof fetch,
-        retryTimes: 3,
-        host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
-        shouldFetchRootKey: true,
-      }),
+      agent: await makeAgent({ fetch: fetchMock as typeof fetch, retryTimes: 3 }),
     });
 
     const result = await counter.greet('counter');
