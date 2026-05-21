@@ -4,7 +4,7 @@ import type { TargetPrincipal } from '../certificate.ts';
 import type { ExpirableStore } from './expirableStore.ts';
 
 /**
- * Converts InputTargetPrincpal to TargetPrincipal via Principal.from
+ * Converts InputTargetPrincipal to TargetPrincipal via Principal.from
  * @param target
  * @returns TargetPrincipal
  */
