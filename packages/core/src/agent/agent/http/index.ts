@@ -335,6 +335,10 @@ export class HttpAgent implements Agent {
 
     const host = determineHost(options.host);
     this.host = new URL(host);
+    // Ensure trailing slash so relative API path construction preserves any base path prefix
+    if (!this.host.pathname.endsWith('/')) {
+      this.host.pathname += '/';
+    }
     // Rewrite to avoid redirects and normalize the host before using it for namespacing caches
     if (this.host.hostname.endsWith(IC0_SUB_DOMAIN)) {
       this.host.hostname = IC0_DOMAIN;
@@ -563,7 +567,7 @@ export class HttpAgent implements Agent {
     try {
       // Attempt v4 sync call
       const requestSync = () => {
-        const url = new URL(`/api/v4/canister/${ecid.toText()}/call`, this.host);
+        const url = new URL(`api/v4/canister/${ecid.toText()}/call`, this.host);
         this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
         return this.#fetch(url, {
           ...this.#callOptions,
@@ -573,7 +577,7 @@ export class HttpAgent implements Agent {
       };
 
       const requestAsync = () => {
-        const url = new URL(`/api/v2/canister/${ecid.toText()}/call`, this.host);
+        const url = new URL(`api/v2/canister/${ecid.toText()}/call`, this.host);
         this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
         return this.#fetch(url, {
           ...this.#callOptions,
@@ -808,7 +812,7 @@ export class HttpAgent implements Agent {
 
     const delay = tries === 0 ? 0 : backoff.next();
 
-    const url = new URL(`/api/v3/canister/${ecid.toString()}/query`, this.host);
+    const url = new URL(`api/v3/canister/${ecid.toString()}/query`, this.host);
 
     this.log.print(`fetching "${url.pathname}" with tries:`, {
       tries,
@@ -1275,7 +1279,7 @@ export class HttpAgent implements Agent {
       transformedRequest = await this.createReadStateRequest(fields, identity);
     }
 
-    const url = new URL(`/api/v3/canister/${canister.toString()}/read_state`, this.host);
+    const url = new URL(`api/v3/canister/${canister.toString()}/read_state`, this.host);
 
     return await this.#readStateInner(url, { canisterId: canister }, transformedRequest, requestId);
   }
@@ -1293,7 +1297,7 @@ export class HttpAgent implements Agent {
     await this.#rootKeyGuard();
     const subnet = Principal.from(subnetId);
 
-    const url = new URL(`/api/v3/subnet/${subnet.toString()}/read_state`, this.host);
+    const url = new URL(`api/v3/subnet/${subnet.toString()}/read_state`, this.host);
     const transformedRequest: ReadStateRequest = await this.createReadStateRequest(
       options,
       this.#identity ?? undefined,
@@ -1522,7 +1526,7 @@ export class HttpAgent implements Agent {
         }
       : {};
 
-    const url = new URL(`/api/v2/status`, this.host);
+    const url = new URL(`api/v2/status`, this.host);
 
     this.log.print(`fetching "${url.pathname}"`);
     const backoff = this.#backoffStrategy();
