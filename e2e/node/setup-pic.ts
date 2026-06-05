@@ -6,7 +6,7 @@
  *   npx tsx setup-pic.ts [--gateway-port PORT]    Start PocketIC and keep alive
  *   npx tsx setup-pic.ts --wait [--timeout SEC]    Wait for a running instance to be ready
  *
- * Writes a .env file with REPLICA_PORT and canister IDs.
+ * Writes a .env file with GATEWAY_PORT, SERVER_URL, and canister IDs.
  * The PocketIC server stays running until this process is killed.
  */
 import { existsSync, readFileSync, writeFileSync } from 'fs';
@@ -27,7 +27,7 @@ if (args.includes('--wait')) {
   while (Date.now() < deadline) {
     if (existsSync(ENV_PATH)) {
       const content = readFileSync(ENV_PATH, 'utf-8');
-      if (content.includes('REPLICA_PORT')) {
+      if (content.includes('GATEWAY_PORT')) {
         // eslint-disable-next-line no-console
         console.log(content.trim());
         process.exit(0);
@@ -51,7 +51,7 @@ const envContent = Object.entries(envVars)
 writeFileSync(ENV_PATH, `${envContent}\n`);
 
 // eslint-disable-next-line no-console
-console.log(`PocketIC gateway listening on port ${envVars.REPLICA_PORT}`);
+console.log(`PocketIC gateway listening on port ${envVars.GATEWAY_PORT}`);
 // eslint-disable-next-line no-console
 console.log(`Canister IDs written to .env`);
 

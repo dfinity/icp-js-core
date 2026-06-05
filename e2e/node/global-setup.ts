@@ -13,13 +13,13 @@ let pic: PocketIc;
 
 /** Start PocketIC and deploy canisters, or reuse an existing instance. */
 export async function setup(): Promise<void> {
-  // If a .env file already exists with REPLICA_PORT set (e.g., from setup-pic.ts),
+  // If a .env file already exists with GATEWAY_PORT set (e.g., from setup-pic.ts),
   // verify the server is actually reachable before reusing it.
   if (existsSync(ENV_PATH)) {
     const existing = dotenv.parse(readFileSync(ENV_PATH));
-    if (existing.REPLICA_PORT && existing.CANISTER_ID_COUNTER) {
+    if (existing.GATEWAY_PORT && existing.CANISTER_ID_COUNTER) {
       try {
-        const res = await fetch(`http://127.0.0.1:${existing.REPLICA_PORT}/api/v2/status`);
+        const res = await fetch(`http://127.0.0.1:${existing.GATEWAY_PORT}/api/v2/status`);
         if (res.ok) {
           Object.assign(process.env, existing);
           return;

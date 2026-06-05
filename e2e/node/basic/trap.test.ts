@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { ActorMethod } from '@icp-sdk/core/agent';
-import { Actor, HttpAgent, AgentError, CertifiedRejectErrorCode } from '@icp-sdk/core/agent';
+import { Actor, AgentError, CertifiedRejectErrorCode } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import { requireEnv } from '../test-setup.ts';
+import { makeAgent } from '../utils/agent.ts';
 
 const trapCanisterId = requireEnv('CANISTER_ID_TRAP');
 
@@ -20,10 +21,7 @@ export interface _SERVICE {
 
 describe('trap', () => {
   it('should trap', async () => {
-    const agent = await HttpAgent.create({
-      host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
-      shouldFetchRootKey: true,
-    });
+    const agent = await makeAgent();
     const actor = Actor.createActor<_SERVICE>(idlFactory, { canisterId: trapCanisterId, agent });
     expect.assertions(3);
     try {
@@ -36,10 +34,7 @@ describe('trap', () => {
     }
   });
   it('should trap', async () => {
-    const agent = await HttpAgent.create({
-      host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
-      shouldFetchRootKey: true,
-    });
+    const agent = await makeAgent();
     const actor = Actor.createActor<_SERVICE>(idlFactory, { canisterId: trapCanisterId, agent });
     expect.assertions(3);
     try {

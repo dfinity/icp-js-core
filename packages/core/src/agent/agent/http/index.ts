@@ -338,6 +338,10 @@ export class HttpAgent implements Agent {
 
     const host = determineHost(options.host);
     this.host = new URL(host);
+    // Ensure trailing slash so relative API path construction preserves any base path prefix
+    if (!this.host.pathname.endsWith('/')) {
+      this.host.pathname += '/';
+    }
     // Rewrite to avoid redirects and normalize the host before using it for namespacing caches
     if (this.host.hostname.endsWith(IC0_SUB_DOMAIN)) {
       this.host.hostname = IC0_DOMAIN;
@@ -570,7 +574,7 @@ export class HttpAgent implements Agent {
       if ('canisterId' in target) {
         // Attempt v4 sync call
         const requestSync = () => {
-          const url = new URL(`/api/v4/canister/${target.canisterId.toText()}/call`, this.host);
+          const url = new URL(`api/v4/canister/${target.canisterId.toText()}/call`, this.host);
           this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
           return this.#fetch(url, {
             ...this.#callOptions,
@@ -580,7 +584,7 @@ export class HttpAgent implements Agent {
         };
 
         const requestAsync = () => {
-          const url = new URL(`/api/v2/canister/${target.canisterId.toText()}/call`, this.host);
+          const url = new URL(`api/v2/canister/${target.canisterId.toText()}/call`, this.host);
           this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
           return this.#fetch(url, {
             ...this.#callOptions,
@@ -595,7 +599,7 @@ export class HttpAgent implements Agent {
           throw InputError.fromCode(new EffectiveSubnetIdAsyncErrorCode());
         }
         requestFn = () => {
-          const url = new URL(`/api/v4/subnet/${target.subnetId.toText()}/call`, this.host);
+          const url = new URL(`api/v4/subnet/${target.subnetId.toText()}/call`, this.host);
           this.log.print(`fetching "${url.pathname}" with request:`, transformedRequest);
           return this.#fetch(url, {
             ...this.#callOptions,
@@ -833,8 +837,8 @@ export class HttpAgent implements Agent {
 
     const url =
       'canisterId' in target
-        ? new URL(`/api/v3/canister/${target.canisterId.toString()}/query`, this.host)
-        : new URL(`/api/v3/subnet/${target.subnetId.toString()}/query`, this.host);
+        ? new URL(`api/v3/canister/${target.canisterId.toString()}/query`, this.host)
+        : new URL(`api/v3/subnet/${target.subnetId.toString()}/query`, this.host);
 
     this.log.print(`fetching "${url.pathname}" with tries:`, {
       tries,
@@ -1314,8 +1318,8 @@ export class HttpAgent implements Agent {
 
     const url =
       'canisterId' in target
-        ? new URL(`/api/v3/canister/${target.canisterId.toString()}/read_state`, this.host)
-        : new URL(`/api/v3/subnet/${target.subnetId.toString()}/read_state`, this.host);
+        ? new URL(`api/v3/canister/${target.canisterId.toString()}/read_state`, this.host)
+        : new URL(`api/v3/subnet/${target.subnetId.toString()}/read_state`, this.host);
 
     return await this.#readStateInner(url, target, transformedRequest, requestId);
   }
@@ -1524,7 +1528,7 @@ export class HttpAgent implements Agent {
         }
       : {};
 
-    const url = new URL(`/api/v2/status`, this.host);
+    const url = new URL(`api/v2/status`, this.host);
 
     this.log.print(`fetching "${url.pathname}"`);
     const backoff = this.#backoffStrategy();

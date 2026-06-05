@@ -33,10 +33,7 @@ describe('canister status', () => {
   });
   it('should throw an error if fetchRootKey has not been called', async () => {
     const counterCanisterId = Principal.fromText(requireEnv('CANISTER_ID_COUNTER'));
-    const agent = HttpAgent.createSync({
-      host: `http://127.0.0.1:${process.env.REPLICA_PORT ?? 4943}`,
-      verifyQuerySignatures: false,
-    });
+    const agent = await makeAgent({ verifyQuerySignatures: false, shouldFetchRootKey: false });
     expect.assertions(1);
     try {
       await CanisterStatus.request({

@@ -75,7 +75,8 @@ export async function startPocketIC({
   const port = gwData.Created.port;
 
   const envVars: Record<string, string> = {
-    REPLICA_PORT: String(port),
+    GATEWAY_PORT: String(port),
+    SERVER_URL: serverUrl,
     CANISTER_ID_COUNTER: counterCanisterId,
     CANISTER_ID_COUNTER2: counter2CanisterId,
     CANISTER_ID_COUNTER3: counter3CanisterId,
