@@ -160,14 +160,14 @@ export function uint8FromBufLike(
     | [number]
     | number[]
     | { buffer: ArrayBuffer },
-): Uint8Array<ArrayBuffer> {
+): Uint8ArrayBuffer {
   if (!bufLike) {
     throw new Error('Input cannot be null or undefined');
   }
 
   if (bufLike instanceof Uint8Array) {
     if (bufLike.buffer instanceof ArrayBuffer) {
-      return bufLike as Uint8Array<ArrayBuffer>;
+      return bufLike as Uint8ArrayBuffer;
     }
     return new Uint8Array(bufLike);
   }
@@ -182,6 +182,7 @@ export function uint8FromBufLike(
   }
   return new Uint8Array(bufLike).slice();
 }
+export type Uint8ArrayBuffer = ReturnType<typeof Uint8Array.of>;
 
 /**
  *

@@ -8,7 +8,7 @@ import {
   Cbor,
 } from '#agent';
 import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils.js';
-import { uint8FromBufLike } from '#candid';
+import { type Uint8ArrayBuffer, uint8FromBufLike } from '#candid';
 
 function _coseToDerEncodedBlob(cose: Uint8Array): DerEncodedPublicKey {
   return wrapDER(cose, DER_COSE_OID) as DerEncodedPublicKey;
@@ -46,9 +46,11 @@ function _authDataToCose(authData: Uint8Array): Uint8Array {
 
 export class CosePublicKey implements PublicKey {
   protected _encodedKey: DerEncodedPublicKey;
+  protected _cose: Uint8ArrayBuffer;
 
-  public constructor(protected _cose: Uint8Array) {
-    this._encodedKey = _coseToDerEncodedBlob(_cose);
+  public constructor(cose: Uint8Array) {
+    this._cose = cose.slice();
+    this._encodedKey = _coseToDerEncodedBlob(this._cose);
   }
 
   public toDer(): DerEncodedPublicKey {
@@ -68,7 +70,9 @@ export class CosePublicKey implements PublicKey {
  * @param challenge The challenge to transform into a byte array. By default a hard
  *        coded string.
  */
-function _createChallengeBuffer(challenge: string | Uint8Array = '<ic0.app>'): Uint8Array {
+function _createChallengeBuffer(
+  challenge: string | Uint8ArrayBuffer = '<ic0.app>',
+): Uint8ArrayBuffer {
   if (typeof challenge === 'string') {
     return Uint8Array.from(challenge, c => c.charCodeAt(0));
   }
@@ -91,13 +95,13 @@ async function _createCredential(
         userVerification: 'preferred',
       },
       attestation: 'direct',
-      challenge: _createChallengeBuffer() as Uint8Array<ArrayBuffer>,
+      challenge: _createChallengeBuffer() as Uint8ArrayBuffer,
       pubKeyCredParams: [{ type: 'public-key', alg: PubKeyCoseAlgo.ECDSA_WITH_SHA256 }],
       rp: {
         name: 'Internet Identity Service',
       },
       user: {
-        id: randomBytes(16) as Uint8Array<ArrayBuffer>,
+        id: randomBytes(16),
         name: 'Internet Identity',
         displayName: 'Internet Identity',
       },
@@ -180,14 +184,16 @@ export class WebAuthnIdentity extends SignIdentity {
   }
 
   protected _publicKey: CosePublicKey;
+  public readonly rawId: Uint8ArrayBuffer;
 
   public constructor(
-    public readonly rawId: Uint8Array,
+    rawId: Uint8Array,
     cose: Uint8Array,
     protected authenticatorAttachment: AuthenticatorAttachment | undefined,
   ) {
     super();
     this._publicKey = new CosePublicKey(cose);
+    this.rawId = rawId.slice();
   }
 
   public getPublicKey(): PublicKey {
@@ -207,15 +213,17 @@ export class WebAuthnIdentity extends SignIdentity {
   }
 
   public async sign(blob: Uint8Array): Promise<Signature> {
+    const challenge =
+      blob.buffer instanceof ArrayBuffer ? (blob as Uint8ArrayBuffer) : blob.slice();
     const result = (await navigator.credentials.get({
       publicKey: {
         allowCredentials: [
           {
             type: 'public-key',
-            id: this.rawId as Uint8Array<ArrayBuffer>,
+            id: this.rawId,
           },
         ],
-        challenge: blob as Uint8Array<ArrayBuffer>,
+        challenge,
         userVerification: 'preferred',
       },
     })) as PublicKeyCredentialWithAttachment;

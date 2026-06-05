@@ -1,4 +1,4 @@
-import type { JsonObject } from '#candid';
+import type { JsonObject, Uint8ArrayBuffer } from '#candid';
 import { Principal } from '#principal';
 import {
   HashTreeDecodeErrorCode,
@@ -563,7 +563,7 @@ export class HttpAgent implements Agent {
     // Compute the request ID from the post-transform content so it matches the
     // hash the IC computes (e.g. when an Identity injects `sender_info`).
     const requestId = requestIdOf(transformedRequest.body.content ?? submit);
-    const body = cbor.encode(transformedRequest.body) as Uint8Array<ArrayBuffer>;
+    const body = cbor.encode(transformedRequest.body) as Uint8ArrayBuffer;
     const backoff = this.#backoffStrategy();
     try {
       let requestFn: () => Promise<Response>;
@@ -822,7 +822,7 @@ export class HttpAgent implements Agent {
   async #requestAndRetryQuery(args: {
     target: TargetPrincipal;
     transformedRequest: HttpAgentRequest;
-    body: Uint8Array<ArrayBuffer>;
+    body: Uint8ArrayBuffer;
     requestId: RequestId;
     backoff: BackoffStrategy;
     tries: number;
@@ -1100,7 +1100,7 @@ export class HttpAgent implements Agent {
     // Compute the request ID from the post-transform content so it matches the
     // hash the IC computes (e.g. when an Identity injects `sender_info`).
     const requestId = requestIdOf(transformedRequest.body.content ?? request);
-    const body = cbor.encode(transformedRequest.body) as Uint8Array<ArrayBuffer>;
+    const body = cbor.encode(transformedRequest.body) as Uint8ArrayBuffer;
 
     const args = {
       canister: canister.toText(),

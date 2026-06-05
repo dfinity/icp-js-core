@@ -8,11 +8,11 @@ import {
   unwrapDER,
   wrapDER,
 } from '#agent';
-import { uint8Equals, uint8FromBufLike } from '#candid';
+import { uint8Equals, uint8FromBufLike, type Uint8ArrayBuffer } from '#candid';
 import { ed25519 } from '@noble/curves/ed25519.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 
-declare type KeyLike = PublicKey | DerEncodedPublicKey | ArrayBuffer | ArrayBufferView;
+type KeyLike = PublicKey | DerEncodedPublicKey | ArrayBuffer | ArrayBufferView;
 
 function isObject(value: unknown) {
   return value !== null && typeof value === 'object';
@@ -54,7 +54,7 @@ export class Ed25519PublicKey implements PublicKey {
     throw new Error('Cannot construct Ed25519PublicKey from the provided key.');
   }
 
-  public static fromRaw(rawKey: Uint8Array<ArrayBuffer>): Ed25519PublicKey {
+  public static fromRaw(rawKey: Uint8Array): Ed25519PublicKey {
     return new Ed25519PublicKey(rawKey);
   }
 
@@ -71,7 +71,7 @@ export class Ed25519PublicKey implements PublicKey {
     return key;
   }
 
-  private static derDecode(key: DerEncodedPublicKey): Uint8Array<ArrayBuffer> {
+  private static derDecode(key: DerEncodedPublicKey): Uint8ArrayBuffer {
     const unwrapped = unwrapDER(key, ED25519_OID);
     if (unwrapped.length !== this.RAW_KEY_LENGTH) {
       throw new Error('An Ed25519 public key must be exactly 32bytes long');
@@ -79,9 +79,9 @@ export class Ed25519PublicKey implements PublicKey {
     return unwrapped;
   }
 
-  #rawKey: Uint8Array<ArrayBuffer>;
+  #rawKey: Uint8ArrayBuffer;
 
-  public get rawKey(): Uint8Array<ArrayBuffer> {
+  public get rawKey(): Uint8ArrayBuffer {
     return this.#rawKey;
   }
 
@@ -92,19 +92,19 @@ export class Ed25519PublicKey implements PublicKey {
   }
 
   // `fromRaw` and `fromDer` should be used for instantiation, not this constructor.
-  private constructor(key: Uint8Array<ArrayBuffer>) {
+  private constructor(key: Uint8Array) {
     if (key.byteLength !== Ed25519PublicKey.RAW_KEY_LENGTH) {
       throw new Error('An Ed25519 public key must be exactly 32bytes long');
     }
-    this.#rawKey = key;
-    this.#derKey = Ed25519PublicKey.derEncode(key);
+    this.#rawKey = key.slice();
+    this.#derKey = Ed25519PublicKey.derEncode(this.#rawKey);
   }
 
   public toDer(): DerEncodedPublicKey {
     return this.derKey;
   }
 
-  public toRaw(): Uint8Array<ArrayBuffer> {
+  public toRaw(): Uint8ArrayBuffer {
     return this.rawKey;
   }
 }
@@ -118,11 +118,13 @@ export class Ed25519KeyIdentity extends SignIdentity {
    * @param seed a 32-byte seed for the private key. If not provided, a random seed will be generated.
    * @returns Ed25519KeyIdentity
    */
-  public static generate(seed?: Uint8Array<ArrayBuffer>): Ed25519KeyIdentity {
+  public static generate(seed?: Uint8Array): Ed25519KeyIdentity {
     if (seed && seed.length !== 32) {
       throw new Error('Ed25519 Seed needs to be 32 bytes long.');
     }
-    if (!seed) {
+    if (seed) {
+      seed = seed.slice();
+    } else {
       seed = ed25519.utils.randomSecretKey();
     }
     // Check if the seed is all zeros
@@ -144,7 +146,7 @@ export class Ed25519KeyIdentity extends SignIdentity {
     const [publicKeyDer, privateKeyRaw] = obj;
     return new Ed25519KeyIdentity(
       Ed25519PublicKey.fromDer(hexToBytes(publicKeyDer) as DerEncodedPublicKey),
-      hexToBytes(privateKeyRaw) as Uint8Array<ArrayBuffer>,
+      hexToBytes(privateKeyRaw),
     );
   }
 
@@ -159,26 +161,23 @@ export class Ed25519KeyIdentity extends SignIdentity {
     throw new Error(`Deserialization error: Invalid JSON type for string: ${JSON.stringify(json)}`);
   }
 
-  public static fromKeyPair(
-    publicKey: Uint8Array<ArrayBuffer>,
-    privateKey: Uint8Array<ArrayBuffer>,
-  ): Ed25519KeyIdentity {
+  public static fromKeyPair(publicKey: Uint8Array, privateKey: Uint8Array): Ed25519KeyIdentity {
     return new Ed25519KeyIdentity(Ed25519PublicKey.fromRaw(publicKey), privateKey);
   }
 
-  public static fromSecretKey(secretKey: Uint8Array<ArrayBuffer>): Ed25519KeyIdentity {
+  public static fromSecretKey(secretKey: Uint8Array): Ed25519KeyIdentity {
     const publicKey = ed25519.getPublicKey(secretKey);
     return Ed25519KeyIdentity.fromKeyPair(publicKey, secretKey);
   }
 
   #publicKey: Ed25519PublicKey;
-  #privateKey: Uint8Array<ArrayBuffer>;
+  #privateKey: Uint8ArrayBuffer;
 
   // `fromRaw` and `fromDer` should be used for instantiation, not this constructor.
-  protected constructor(publicKey: PublicKey, privateKey: Uint8Array<ArrayBuffer>) {
+  protected constructor(publicKey: PublicKey, privateKey: Uint8Array) {
     super();
     this.#publicKey = Ed25519PublicKey.from(publicKey);
-    this.#privateKey = privateKey;
+    this.#privateKey = privateKey.slice();
   }
 
   /**

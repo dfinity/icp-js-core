@@ -1,4 +1,4 @@
-import { uint8Equals } from '#candid';
+import { type Uint8ArrayBuffer, uint8Equals } from '#candid';
 
 export const encodeLenBytes = (len: number): number => {
   if (len <= 0x7f) {
@@ -146,7 +146,7 @@ export function wrapDER(payload: Uint8Array, oid: Uint8Array): Uint8Array {
  * @param oid The DER encoded (and SEQUENCE wrapped!) expected OID
  * @returns The unwrapped payload
  */
-export const unwrapDER = (derEncoded: Uint8Array, oid: Uint8Array): Uint8Array<ArrayBuffer> => {
+export const unwrapDER = (derEncoded: Uint8Array, oid: Uint8Array): Uint8ArrayBuffer => {
   let offset = 0;
   const expect = (n: number, msg: string) => {
     if (buf[offset++] !== n) {

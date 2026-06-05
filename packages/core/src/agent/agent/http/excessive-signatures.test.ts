@@ -57,7 +57,7 @@ describe('excessive signatures guard', () => {
   function createMockFetch(queryResponse: unknown) {
     return jest.fn((url: unknown) => {
       if (String(url).includes('/query')) {
-        const body = cbor.encode(queryResponse) as Uint8Array<ArrayBuffer>;
+        const body = cbor.encode(queryResponse);
         return Promise.resolve(
           new Response(body, {
             status: 200,
@@ -67,7 +67,7 @@ describe('excessive signatures guard', () => {
       }
       const readStateResponse = cbor.encode({
         certificate: new Uint8Array(0),
-      }) as Uint8Array<ArrayBuffer>;
+      });
       return Promise.resolve(
         new Response(readStateResponse, {
           status: 200,

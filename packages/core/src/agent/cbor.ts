@@ -2,6 +2,7 @@ import { Principal } from '#principal';
 import * as cbor from '@dfinity/cbor';
 import { CborDecodeErrorCode, CborEncodeErrorCode, InputError } from './errors.ts';
 import { Expiry } from './agent/http/expiry.ts';
+import type { Uint8ArrayBuffer } from '#candid';
 
 /**
  * Used to extend classes that need to provide a custom value for the CBOR encoding process.
@@ -22,9 +23,9 @@ function hasCborValueMethod(value: unknown): value is ToCborValue {
  * the {@link ToCborValue.toCborValue} method will be called to get the value to encode.
  * @param value The value to encode
  */
-export function encode(value: unknown): Uint8Array<ArrayBuffer> {
+export function encode(value: unknown): Uint8ArrayBuffer {
   try {
-    return cbor.encodeWithSelfDescribedTag(value, value => {
+    const encoded = cbor.encodeWithSelfDescribedTag(value, value => {
       if (Principal.isPrincipal(value)) {
         return value.toUint8Array();
       }
@@ -38,7 +39,10 @@ export function encode(value: unknown): Uint8Array<ArrayBuffer> {
       }
 
       return value;
-    }) as Uint8Array<ArrayBuffer>;
+    });
+    // Convert only because cbor.encode* always returns ArrayBuffer. If there were actually a chance of it
+    // returning SharedArrayBuffer then this would be declared to return ArrayBufferLike instead.
+    return encoded.buffer instanceof ArrayBuffer ? (encoded as Uint8ArrayBuffer) : encoded.slice();
   } catch (error) {
     throw InputError.fromCode(new CborEncodeErrorCode(error, value));
   }

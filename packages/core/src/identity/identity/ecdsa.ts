@@ -1,5 +1,5 @@
 import { type DerEncodedPublicKey, type PublicKey, type Signature, SignIdentity } from '#agent';
-import { uint8FromBufLike } from '#candid';
+import { type Uint8ArrayBuffer, uint8FromBufLike } from '#candid';
 
 /**
  * Options used in a {@link ECDSAKeyIdentity}
@@ -137,20 +137,18 @@ export class ECDSAKeyIdentity extends SignIdentity {
 
   /**
    * Signs a blob of data, with this identity's private key.
-   * @param {Uint8Array} challenge - challenge to sign with this identity's secretKey, producing a signature
+   * @param {Uint8Array} blob - challenge to sign with this identity's secretKey, producing a signature
    * @returns {Promise<Signature>} signature
    */
-  public async sign(challenge: Uint8Array): Promise<Signature> {
+  public async sign(blob: Uint8Array): Promise<Signature> {
     const params: EcdsaParams = {
       name: 'ECDSA',
       hash: { name: 'SHA-256' },
     };
+    const challenge =
+      blob.buffer instanceof ArrayBuffer ? (blob as Uint8ArrayBuffer) : blob.slice();
     const signature = uint8FromBufLike(
-      await this._subtleCrypto.sign(
-        params,
-        this._keyPair.privateKey,
-        challenge as Uint8Array<ArrayBuffer>,
-      ),
+      await this._subtleCrypto.sign(params, this._keyPair.privateKey, challenge),
     );
 
     Object.assign(signature, {
