@@ -1,5 +1,5 @@
 import { PipeArrayBuffer as Pipe } from './buffer.ts';
-import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 import {
   lebDecode,
   lebEncode,

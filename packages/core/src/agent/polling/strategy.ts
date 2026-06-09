@@ -1,9 +1,9 @@
-import type { Principal } from '#principal';
 import type { RequestStatusResponseStatus } from '../agent/http/types.ts';
 import type { RequestId } from '../request_id.ts';
 import { ProtocolError, TimeoutWaitingForResponseErrorCode } from '../errors.ts';
 
 import type { PollStrategy, Predicate } from './types.ts';
+import type { TargetPrincipal } from '../certificate.ts';
 export type { PollStrategy, Predicate } from './types.ts';
 
 const FIVE_MINUTES_IN_MSEC = 5 * 60 * 1000;
@@ -40,11 +40,11 @@ export function once(): Predicate<boolean> {
  */
 export function conditionalDelay(condition: Predicate<boolean>, timeInMsec: number): PollStrategy {
   return async (
-    canisterId: Principal,
+    target: TargetPrincipal,
     requestId: RequestId,
     status: RequestStatusResponseStatus,
   ) => {
-    if (await condition(canisterId, requestId, status)) {
+    if (await condition(target, requestId, status)) {
       return new Promise(resolve => setTimeout(resolve, timeInMsec));
     }
   };
@@ -57,7 +57,7 @@ export function conditionalDelay(condition: Predicate<boolean>, timeInMsec: numb
 export function maxAttempts(count: number): PollStrategy {
   let attempts = count;
   return async (
-    _canisterId: Principal,
+    _target: TargetPrincipal,
     requestId: RequestId,
     status: RequestStatusResponseStatus,
   ) => {
@@ -88,7 +88,7 @@ export function throttle(throttleInMsec: number): PollStrategy {
 export function timeout(timeInMsec: number): PollStrategy {
   const end = Date.now() + timeInMsec;
   return async (
-    _canisterId: Principal,
+    _target: TargetPrincipal,
     requestId: RequestId,
     status: RequestStatusResponseStatus,
   ) => {
@@ -129,12 +129,12 @@ export function backoff(startingThrottleInMsec: number, backoffFactor: number): 
  */
 export function chain(...strategies: PollStrategy[]): PollStrategy {
   return async (
-    canisterId: Principal,
+    target: TargetPrincipal,
     requestId: RequestId,
     status: RequestStatusResponseStatus,
   ) => {
     for (const a of strategies) {
-      await a(canisterId, requestId, status);
+      await a(target, requestId, status);
     }
   };
 }

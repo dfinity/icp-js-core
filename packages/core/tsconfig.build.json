@@ -1,9 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true,
+    "composite": true,
     "rootDir": "./src",
-    "types": ["jest", "node"],
+    "outDir": "./lib/esm",
     "paths": {
       "#agent": ["./src/agent/index.ts"],
       "#candid": ["./src/candid/index.ts"],
@@ -11,5 +11,6 @@
       "#principal": ["./src/principal/index.ts"]
     }
   },
-  "include": ["./src/**/*.ts"]
+  "include": ["./src/**/*.ts"],
+  "exclude": ["./src/**/*.test.ts"]
 }

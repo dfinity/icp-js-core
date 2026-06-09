@@ -4,7 +4,7 @@
  * @module libs/agent/canister-env/api
  */
 
-import { hexToBytes } from '@noble/hashes/utils';
+import { hexToBytes } from '@noble/hashes/utils.js';
 import {
   InputError,
   InvalidRootKeyErrorCode,

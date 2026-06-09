@@ -8,11 +8,11 @@ import {
   unwrapDER,
   wrapDER,
 } from '#agent';
-import { uint8Equals, uint8FromBufLike } from '#candid';
-import { ed25519 } from '@noble/curves/ed25519';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { uint8Equals, uint8FromBufLike, type Uint8ArrayBuffer } from '#candid';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 
-declare type KeyLike = PublicKey | DerEncodedPublicKey | ArrayBuffer | ArrayBufferView;
+type KeyLike = PublicKey | DerEncodedPublicKey | ArrayBuffer | ArrayBufferView;
 
 function isObject(value: unknown) {
   return value !== null && typeof value === 'object';
@@ -71,7 +71,7 @@ export class Ed25519PublicKey implements PublicKey {
     return key;
   }
 
-  private static derDecode(key: DerEncodedPublicKey): Uint8Array {
+  private static derDecode(key: DerEncodedPublicKey): Uint8ArrayBuffer {
     const unwrapped = unwrapDER(key, ED25519_OID);
     if (unwrapped.length !== this.RAW_KEY_LENGTH) {
       throw new Error('An Ed25519 public key must be exactly 32bytes long');
@@ -79,9 +79,9 @@ export class Ed25519PublicKey implements PublicKey {
     return unwrapped;
   }
 
-  #rawKey: Uint8Array;
+  #rawKey: Uint8ArrayBuffer;
 
-  public get rawKey(): Uint8Array {
+  public get rawKey(): Uint8ArrayBuffer {
     return this.#rawKey;
   }
 
@@ -96,15 +96,15 @@ export class Ed25519PublicKey implements PublicKey {
     if (key.byteLength !== Ed25519PublicKey.RAW_KEY_LENGTH) {
       throw new Error('An Ed25519 public key must be exactly 32bytes long');
     }
-    this.#rawKey = key;
-    this.#derKey = Ed25519PublicKey.derEncode(key);
+    this.#rawKey = key.slice();
+    this.#derKey = Ed25519PublicKey.derEncode(this.#rawKey);
   }
 
   public toDer(): DerEncodedPublicKey {
     return this.derKey;
   }
 
-  public toRaw(): Uint8Array {
+  public toRaw(): Uint8ArrayBuffer {
     return this.rawKey;
   }
 }
@@ -122,8 +122,10 @@ export class Ed25519KeyIdentity extends SignIdentity {
     if (seed && seed.length !== 32) {
       throw new Error('Ed25519 Seed needs to be 32 bytes long.');
     }
-    if (!seed) {
-      seed = ed25519.utils.randomPrivateKey();
+    if (seed) {
+      seed = seed.slice();
+    } else {
+      seed = ed25519.utils.randomSecretKey();
     }
     // Check if the seed is all zeros
     if (uint8Equals(seed, new Uint8Array(new Array(32).fill(0)))) {
@@ -169,13 +171,13 @@ export class Ed25519KeyIdentity extends SignIdentity {
   }
 
   #publicKey: Ed25519PublicKey;
-  #privateKey: Uint8Array;
+  #privateKey: Uint8ArrayBuffer;
 
   // `fromRaw` and `fromDer` should be used for instantiation, not this constructor.
   protected constructor(publicKey: PublicKey, privateKey: Uint8Array) {
     super();
     this.#publicKey = Ed25519PublicKey.from(publicKey);
-    this.#privateKey = privateKey;
+    this.#privateKey = privateKey.slice();
   }
 
   /**

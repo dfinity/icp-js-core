@@ -1,14 +1,15 @@
+import type { Uint8ArrayBuffer } from '#candid';
 import * as asn1js from 'asn1js';
 
 const HEADER = `-----BEGIN EC PRIVATE KEY-----`;
 const FOOTER = `-----END EC PRIVATE KEY-----`;
 
 /**
- * Parse a PEM-encoded key into a Uint8Array
+ * Parse a PEM-encoded key into a Uint8Array<ArrayBuffer>
  * @param pem - the PEM-encoded key
- * @returns secret key as a Uint8Array
+ * @returns secret key as a Uint8Array<ArrayBuffer>
  */
-export function pemToSecretKey(pem: string): Uint8Array {
+export function pemToSecretKey(pem: string): Uint8ArrayBuffer {
   const lines = pem.trim().split('\n');
   const header = lines[0].trim();
   const footer = lines[lines.length - 1].trim();

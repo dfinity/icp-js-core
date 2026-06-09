@@ -5,15 +5,16 @@
   "scripts": {
     "build": "tsc -b",
     "e2e": "vitest",
-    "mitm": "vitest --config vitest.config.mitm.ts"
+    "mitm": "vitest --config vitest.config.mitm.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@icp-sdk/core": "workspace:*",
-    "@noble/curves": "^1.9.7",
-    "@noble/hashes": "^1.8.0"
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0"
   },
   "devDependencies": {
-    "@dfinity/pic": "^0.18.0",
+    "@dfinity/pic": "^0.22.0",
     "@tsconfig/node22": "^22.0.5",
     "@types/express": "^5.0.6",
     "express": "^5.2.1"

@@ -22,7 +22,7 @@ import {
 } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
 import { decodeTime } from '../utils/leb.ts';
-import { utf8ToBytes } from '@noble/hashes/utils';
+import { utf8ToBytes } from '@noble/hashes/utils.js';
 import type { CustomPath } from '../utils/readState.ts';
 import {
   type BaseStatus,

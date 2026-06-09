@@ -92,9 +92,14 @@ export interface QueryFields {
   arg: Uint8Array;
 
   /**
-   * Overrides canister id for path to fetch. This is used for management canister calls.
+   * Overrides canister or subnet id for path to fetch. This is used for management canister calls.
    */
-  effectiveCanisterId?: Principal;
+  effectiveTarget?: InputTargetPrincipal;
+
+  /**
+   * @deprecated Use {@link QueryFields.effectiveTarget}
+   */
+  effectiveCanisterId?: Principal | string;
 }
 
 /**
@@ -112,10 +117,15 @@ export interface CallOptions {
   arg: Uint8Array;
 
   /**
-   * An effective canister ID, used for routing. Usually the canister ID, except for management canister calls.
+   * An effective canister or subnet ID, used for routing. Usually the canister ID, except for management canister calls.
    * @see https://internetcomputer.org/docs/current/references/ic-interface-spec/#http-effective-canister-id
    */
-  effectiveCanisterId: Principal | string;
+  effectiveTarget?: InputTargetPrincipal;
+
+  /**
+   * @deprecated Use {@link CallOptions.effectiveTarget} instead.
+   */
+  effectiveCanisterId?: Principal | string;
 
   /**
    * Whether to use synchronous call mode. Defaults to true.
@@ -200,6 +210,10 @@ export interface UpdateResult extends PollForResponseResult {
   callResponse: SubmitResponse['response'];
 }
 
+export type InputTargetPrincipal =
+  | { canisterId: Principal | string }
+  | { subnetId: Principal | string };
+
 /**
  * An Agent able to make calls and queries to a Replica.
  */
@@ -223,13 +237,13 @@ export interface Agent {
    * Send a read state query to the replica. This includes a list of paths to return,
    * and will return a Certificate. This will only reject on communication errors,
    * but the certificate might contain less information than requested.
-   * @param effectiveCanisterId A Canister ID related to this call.
+   * @param effectiveTarget A Canister ID or Subnet ID related to this call.
    * @param options The options for this call.
    * @param identity Identity for the call. If not specified, uses the instance identity.
    * @param request The request to send in case it has already been created.
    */
   readState(
-    effectiveCanisterId: Principal | string,
+    effectiveTarget: InputTargetPrincipal,
     options: ReadStateOptions,
     identity?: Identity,
     request?: unknown,

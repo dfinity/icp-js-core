@@ -1,7 +1,7 @@
 import { base32Decode, base32Encode } from './utils/base32.ts';
 import { getCrc32 } from './utils/getCrc.ts';
-import { sha224 } from '@noble/hashes/sha2';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { sha224 } from '@noble/hashes/sha2.js';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 
 export const JSON_KEY_PRINCIPAL = '__principal__';
 const SELF_AUTHENTICATING_SUFFIX = 2;

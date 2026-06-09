@@ -1,9 +1,8 @@
 import type { DerEncodedPublicKey, PublicKey } from '#agent';
 import { randomBytes } from 'crypto';
-import { sha256 } from '@noble/hashes/sha2';
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { Secp256k1KeyIdentity, Secp256k1PublicKey } from './secp256k1.ts';
-import { hexToBytes, bytesToHex } from '@noble/curves/abstract/utils';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
 // DER KEY SECP256K1 PREFIX = 3056301006072a8648ce3d020106052b8104000a03420004
 // These test vectors contain the hex encoding of the corresponding raw and DER versions
@@ -179,7 +178,7 @@ describe('Secp256k1KeyIdentity Tests', () => {
       const shortArray = new Uint8Array(secretKey).subarray(1, 32);
       Secp256k1KeyIdentity.fromSecretKey(Uint8Array.from(shortArray).subarray(1, 32));
     };
-    expect(shouldFail).toThrow('invalid private key: expected ui8a of size 32, got object'); // this error comes from @noble/curves
+    expect(shouldFail).toThrow('Field.fromBytes: expected 32 bytes, got 30'); // this error comes from @noble/curves
   });
 
   test('getKeyPair should return a copy of the key pair', () => {
@@ -197,7 +196,7 @@ describe('Secp256k1KeyIdentity Tests', () => {
     const message = 'Hello world. Secp256k1 test here';
     const challenge = new TextEncoder().encode(message);
     const signature = await identity.sign(challenge);
-    const isValid = secp256k1.verify(signature, sha256(challenge), rawPublicKey);
+    const isValid = secp256k1.verify(signature, challenge, rawPublicKey);
     expect(isValid).toBe(true);
   });
 });

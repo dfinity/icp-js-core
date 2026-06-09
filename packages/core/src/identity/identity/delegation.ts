@@ -9,9 +9,10 @@ import {
   IC_REQUEST_DOMAIN_SEPARATOR,
   IC_REQUEST_AUTH_DELEGATION_DOMAIN_SEPARATOR,
 } from '#agent';
+import type { Uint8ArrayBuffer } from '#candid';
 import { Principal } from '#principal';
 import { PartialIdentity } from './partial.ts';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 
 /**
  * Safe wrapper around bytesToHex that handles ArrayBuffer/Uint8Array type conversion.
@@ -25,7 +26,7 @@ function safeBytesToHex(data: ArrayBuffer | Uint8Array | ArrayLike<number>): str
   return bytesToHex(new Uint8Array(data));
 }
 
-function _parseBlob(value: unknown): Uint8Array {
+function _parseBlob(value: unknown): Uint8ArrayBuffer {
   if (typeof value !== 'string' || value.length < 64) {
     throw new Error('Invalid public key.');
   }
@@ -40,11 +41,14 @@ function _parseBlob(value: unknown): Uint8Array {
  * {@link DelegationChain}
  */
 export class Delegation implements ToCborValue {
+  public readonly pubkey: Uint8ArrayBuffer;
   constructor(
-    public readonly pubkey: Uint8Array,
+    pubkey: Uint8Array,
     public readonly expiration: bigint,
     public readonly targets?: Principal[],
-  ) {}
+  ) {
+    this.pubkey = pubkey.slice();
+  }
 
   public toCborValue() {
     return {

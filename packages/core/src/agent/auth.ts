@@ -1,25 +1,26 @@
 import { Principal } from '#principal';
 import type { HttpAgentRequest } from './agent/http/types.ts';
 import { requestIdOf } from './request_id.ts';
-import { bytesToHex, concatBytes } from '@noble/hashes/utils';
+import { bytesToHex, concatBytes } from '@noble/hashes/utils.js';
 import { IC_REQUEST_DOMAIN_SEPARATOR } from './constants.ts';
+import type { Uint8ArrayBuffer } from '#candid';
 /**
  * A Key Pair, containing a secret and public key.
  */
 export interface KeyPair {
-  secretKey: Uint8Array;
+  secretKey: Uint8ArrayBuffer;
   publicKey: PublicKey;
 }
 
 /**
  * A public key that is DER encoded. This is a branded Uint8Array.
  */
-export type DerEncodedPublicKey = Uint8Array & { __derEncodedPublicKey__?: void };
+export type DerEncodedPublicKey = Uint8ArrayBuffer & { __derEncodedPublicKey__?: void };
 
 /**
  * A signature array buffer.
  */
-export type Signature = Uint8Array & { __signature__: void };
+export type Signature = Uint8ArrayBuffer & { __signature__: void };
 
 /**
  * A Public Key implementation.
@@ -27,8 +28,8 @@ export type Signature = Uint8Array & { __signature__: void };
 export interface PublicKey {
   toDer(): DerEncodedPublicKey;
   // rawKey, toRaw, and derKey are optional for backwards compatibility.
-  toRaw?(): Uint8Array;
-  rawKey?: Uint8Array;
+  toRaw?(): Uint8ArrayBuffer;
+  rawKey?: Uint8ArrayBuffer;
   derKey?: DerEncodedPublicKey;
 }
 

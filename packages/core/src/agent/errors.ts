@@ -9,8 +9,8 @@ import type { RequestId } from './request_id.ts';
 import type { RequestStatusResponseStatus } from './agent/http/types.ts';
 import type { Expiry } from './agent/http/expiry.ts';
 import type { HttpHeaderField } from './agent/http/types.ts';
-import type { LookupPathStatus, LookupSubtreeStatus } from './certificate.ts';
-import { bytesToHex } from '@noble/hashes/utils';
+import type { LookupPathStatus, LookupSubtreeStatus, TargetPrincipal } from './certificate.ts';
+import { bytesToHex } from '@noble/hashes/utils.js';
 
 export enum ErrorKindEnum {
   Trust = 'Trust',
@@ -36,6 +36,7 @@ export interface RequestContext {
 export interface PollingCallContext {
   canisterId: Principal;
   methodName: string;
+  effectiveTarget: TargetPrincipal;
 }
 
 /**
@@ -96,6 +97,14 @@ export abstract class ErrorCode {
         `\nCall context:\n` +
         `  Canister ID: ${this.callContext.canisterId.toText()}\n` +
         `  Method name: ${this.callContext.methodName}`;
+      if ('subnetId' in this.callContext.effectiveTarget) {
+        errorMessage += `\n  Effective target subnet: ${this.callContext.effectiveTarget.subnetId.toText()}`;
+      } else if (
+        this.callContext.effectiveTarget.canisterId.toText() !==
+        this.callContext.canisterId.toText()
+      ) {
+        errorMessage += `\n  Effective target canister: ${this.callContext.effectiveTarget.canisterId.toText()}`;
+      }
       if ('httpDetails' in this.callContext) {
         errorMessage += `\n  HTTP details: ${JSON.stringify(this.callContext.httpDetails, bytesReplacer(ErrorCode.verbosity), 2)}`;
       }
@@ -940,6 +949,19 @@ export class EmptyCookieErrorCode extends ErrorCode {
 
   public toErrorMessage(): string {
     return `Cookie '${this.expectedCookieName}' is empty`;
+  }
+}
+
+export class EffectiveSubnetIdAsyncErrorCode extends ErrorCode {
+  public name = 'EffectiveSubnetIdAsyncErrorCode';
+
+  constructor() {
+    super();
+    Object.setPrototypeOf(this, EffectiveSubnetIdAsyncErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return 'Setting `effectiveTarget` to a `subnetId` is not allowed in `callSync = false` calls';
   }
 }
 

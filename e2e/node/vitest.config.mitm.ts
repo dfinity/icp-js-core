@@ -7,7 +7,7 @@ export default defineConfig({
     include: ['**/mitm.test.ts'],
     typecheck: {
       enabled: true,
-      tsconfig: './tsconfig.test.json',
+      tsconfig: './tsconfig.json',
     },
   },
 });

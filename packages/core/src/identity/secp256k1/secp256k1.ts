@@ -5,14 +5,13 @@ import {
   type PublicKey,
   SignIdentity,
 } from '#agent';
-import { secp256k1 } from '@noble/curves/secp256k1';
-import { sha256 } from '@noble/hashes/sha2';
-import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
+import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils.js';
 import * as bip39 from '@scure/bip39';
 import { HDKey } from '@scure/bip32';
 import { SECP256K1_OID, unwrapDER, wrapDER } from './der.ts';
 import { pemToSecretKey } from './pem.ts';
-import { uint8FromBufLike } from '#candid';
+import { type Uint8ArrayBuffer, uint8FromBufLike } from '#candid';
 
 declare type PublicKeyHex = string;
 declare type SecretKeyHex = string;
@@ -74,13 +73,13 @@ export class Secp256k1PublicKey implements PublicKey {
     return key;
   }
 
-  private static derDecode(key: DerEncodedPublicKey): Uint8Array {
+  private static derDecode(key: DerEncodedPublicKey): Uint8ArrayBuffer {
     return unwrapDER(key, SECP256K1_OID);
   }
 
-  #rawKey: Uint8Array;
+  #rawKey: Uint8ArrayBuffer;
 
-  public get rawKey(): Uint8Array {
+  public get rawKey(): Uint8ArrayBuffer {
     return this.#rawKey;
   }
 
@@ -92,15 +91,15 @@ export class Secp256k1PublicKey implements PublicKey {
 
   // `fromRaw` and `fromDer` should be used for instantiation, not this constructor.
   private constructor(key: Uint8Array) {
-    this.#rawKey = key;
-    this.#derKey = Secp256k1PublicKey.derEncode(key);
+    this.#rawKey = key.slice();
+    this.#derKey = Secp256k1PublicKey.derEncode(this.#rawKey);
   }
 
   public toDer(): DerEncodedPublicKey {
     return this.derKey;
   }
 
-  public toRaw(): Uint8Array {
+  public toRaw(): Uint8ArrayBuffer {
     return this.rawKey;
   }
 }
@@ -115,7 +114,7 @@ export class Secp256k1KeyIdentity extends SignIdentity {
    * @returns {Secp256k1KeyIdentity} Secp256k1KeyIdentity
    */
   public static generate(seed?: Uint8Array): Secp256k1KeyIdentity {
-    if (seed && seed.byteLength !== 32) {
+    if (seed && seed.length !== 32) {
       throw new Error('Secp256k1 Seed needs to be 32 bytes long.');
     }
     let privateKey: Uint8Array;
@@ -124,12 +123,12 @@ export class Secp256k1KeyIdentity extends SignIdentity {
       // private key from seed according to https://en.bitcoin.it/wiki/BIP_0032
       // master key generation:
       privateKey = seed;
-      if (!secp256k1.utils.isValidPrivateKey(privateKey)) {
+      if (!secp256k1.utils.isValidSecretKey(privateKey)) {
         throw new Error('The seed is invalid.');
       }
     } else {
       privateKey = randomBytes(32);
-      while (!secp256k1.utils.isValidPrivateKey(privateKey)) {
+      while (!secp256k1.utils.isValidSecretKey(privateKey)) {
         privateKey = randomBytes(32);
       }
     }
@@ -211,7 +210,7 @@ export class Secp256k1KeyIdentity extends SignIdentity {
       throw new Error('Failed to derive private key from seed phrase');
     }
 
-    return Secp256k1KeyIdentity.fromSecretKey(addrnode.privateKey);
+    return Secp256k1KeyIdentity.fromSecretKey(addrnode.privateKey as Uint8Array);
   }
 
   /**
@@ -225,13 +224,12 @@ export class Secp256k1KeyIdentity extends SignIdentity {
   }
 
   _publicKey: Secp256k1PublicKey;
+  _privateKey: Uint8ArrayBuffer;
 
-  protected constructor(
-    publicKey: Secp256k1PublicKey,
-    protected _privateKey: Uint8Array,
-  ) {
+  protected constructor(publicKey: Secp256k1PublicKey, privateKey: Uint8Array) {
     super();
     this._publicKey = publicKey;
+    this._privateKey = privateKey.slice();
   }
 
   /**
@@ -267,9 +265,7 @@ export class Secp256k1KeyIdentity extends SignIdentity {
    * @returns {Promise<Signature>} signature
    */
   public async sign(data: Uint8Array): Promise<Signature> {
-    const challenge = sha256(data);
-    const signature = secp256k1.sign(challenge, this._privateKey).toCompactRawBytes();
-    return signature as Signature;
+    return secp256k1.sign(data, this._privateKey) as Signature;
   }
 }
 

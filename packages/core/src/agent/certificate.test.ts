@@ -23,7 +23,7 @@ import {
   UnknownError,
   UNREACHABLE_ERROR,
 } from './errors.ts';
-import { utf8ToBytes, hexToBytes, bytesToHex } from '@noble/hashes/utils';
+import { utf8ToBytes, hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 import { uint8Equals } from './utils/buffer.ts';
 import { goldenCertificates } from './agent/http/__certificates__/goldenCertificates.ts';
 

@@ -3,7 +3,7 @@ import { request, fetchNodeKeys } from './index.ts';
 import { Principal } from '#principal';
 import { HttpAgent } from '../agent/index.ts';
 import * as Cert from '../certificate.ts';
-import { hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
+import { hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { goldenCertificates } from '../agent/http/__certificates__/goldenCertificates.ts';
 import { decode } from '../cbor.ts';
 import { LookupErrorCode, ProtocolError } from '../errors.ts';
@@ -93,9 +93,8 @@ describe('Canister Status utility', () => {
     ]);
     const statusUTF8 = await getStatus([
       {
-        kind: 'metadata',
-        path: 'candid:service',
         key: 'candid',
+        path: 'candid:service',
         decodeStrategy: 'utf-8',
       },
     ]);
@@ -122,17 +121,15 @@ describe('Canister Status utility', () => {
   it('should support valid metadata queries', async () => {
     const status = await getStatus([
       {
-        kind: 'metadata',
-        path: 'candid:service',
         key: 'candid',
+        path: 'candid:service',
         decodeStrategy: 'hex',
       },
     ]);
     const statusEncoded = await getStatus([
       {
-        kind: 'metadata',
-        path: utf8ToBytes('candid:service'),
         key: 'candid',
+        path: utf8ToBytes('candid:service'),
         decodeStrategy: 'hex',
       },
     ]);

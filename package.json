@@ -46,6 +46,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "size": "size-limit --json",
+    "typecheck": "pnpm -r typecheck",
     "prettier:check": "npx -p prettier -p pretty-quick pretty-quick --check --branch main",
     "prettier:format": "npx -p prettier -p pretty-quick pretty-quick --branch main"
   },
@@ -55,7 +56,6 @@
   },
   "author": "DFINITY Stiftung <sdk@dfinity.org>",
   "license": "Apache-2.0",
-  "pnpm": {},
   "size-limit": [
     {
       "name": "@icp-sdk/core",
@@ -65,7 +65,7 @@
     {
       "name": "@icp-sdk/core/agent",
       "path": "./packages/core/dist/agent/index.js",
-      "limit": "53.5 kb"
+      "limit": "55 kb"
     },
     {
       "name": "@icp-sdk/core/candid",

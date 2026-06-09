@@ -1,7 +1,7 @@
 import { HttpAgent } from '@icp-sdk/core/agent';
 import { Principal } from '@icp-sdk/core/principal';
 import { describe, it, expect, vi } from 'vitest';
-import { utf8ToBytes } from '@noble/hashes/utils';
+import { utf8ToBytes } from '@noble/hashes/utils.js';
 
 const MINUTES_TO_MSEC = 60_000;
 

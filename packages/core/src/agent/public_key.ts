@@ -1,3 +1,4 @@
+import type { Uint8ArrayBuffer } from '#candid';
 import type { DerEncodedPublicKey, PublicKey } from './auth.ts';
 import { ED25519_OID, unwrapDER, wrapDER } from './der.ts';
 import { DerDecodeErrorCode, InputError } from './errors.ts';
@@ -22,7 +23,7 @@ export class Ed25519PublicKey implements PublicKey {
     return wrapDER(publicKey, ED25519_OID) as DerEncodedPublicKey;
   }
 
-  private static derDecode(key: DerEncodedPublicKey): Uint8Array {
+  private static derDecode(key: DerEncodedPublicKey): Uint8ArrayBuffer {
     const unwrapped = unwrapDER(key, ED25519_OID);
     if (unwrapped.length !== this.RAW_KEY_LENGTH) {
       throw InputError.fromCode(
@@ -32,9 +33,9 @@ export class Ed25519PublicKey implements PublicKey {
     return unwrapped;
   }
 
-  #rawKey: Uint8Array;
+  #rawKey: Uint8ArrayBuffer;
 
-  public get rawKey(): Uint8Array {
+  public get rawKey(): Uint8ArrayBuffer {
     return this.#rawKey;
   }
 
@@ -51,15 +52,15 @@ export class Ed25519PublicKey implements PublicKey {
         new DerDecodeErrorCode('An Ed25519 public key must be exactly 32 bytes long'),
       );
     }
-    this.#rawKey = key;
-    this.#derKey = Ed25519PublicKey.derEncode(key);
+    this.#rawKey = key.slice();
+    this.#derKey = Ed25519PublicKey.derEncode(this.#rawKey);
   }
 
   public toDer(): DerEncodedPublicKey {
     return this.derKey;
   }
 
-  public toRaw(): Uint8Array {
+  public toRaw(): Uint8ArrayBuffer {
     return this.rawKey;
   }
 }

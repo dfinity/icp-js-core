@@ -1,8 +1,8 @@
 // https://github.com/dfinity-lab/dfinity/blob/5fef1450c9ab16ccf18381379149e504b11c8218/docs/spec/public/index.adoc#request-ids
 import { Principal } from '#principal';
 import { hashValue, requestIdOf } from './request_id.ts';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
-import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 
 const testHashOfBlob = async (input: Uint8Array, expected: string) => {
   const hashed = sha256(input);
