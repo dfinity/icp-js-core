@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Feat
+
+- effective subnet ID (#1360)
+- support URLs with path components (#1361)
+
 ## v5.4.0 (2026-04-30)
 
 ### Feat
