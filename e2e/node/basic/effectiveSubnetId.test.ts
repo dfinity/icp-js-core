@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { HttpAgent } from '@icp-sdk/core/agent';
 import { IDL } from '@icp-sdk/core/candid';
 import { Principal } from '@icp-sdk/core/principal';
 import { getDefaultEffectiveCanisterId } from './basic.test.ts';
+import { makeAgent } from '../utils/agent.ts';
 
 const MANAGEMENT_CANISTER = Principal.fromText('aaaaa-aa');
 
@@ -21,10 +21,7 @@ const provisionalCreateResponseIdl = IDL.Record({
 
 describe('effective subnet ID', () => {
   it('should discover the default subnet ID and create a canister targeting it', async () => {
-    const agent = await HttpAgent.create({
-      host: `http://127.0.0.1:${process.env.REPLICA_PORT}`,
-      shouldFetchRootKey: true,
-    });
+    const agent = await makeAgent();
 
     // Discover the subnet ID for the default PocketIC subnet.
     const defaultCanisterId = await getDefaultEffectiveCanisterId();

@@ -14,7 +14,7 @@
     "@noble/hashes": "^2.2.0"
   },
   "devDependencies": {
-    "@dfinity/pic": "^0.18.0",
+    "@dfinity/pic": "^0.22.0",
     "@tsconfig/node22": "^22.0.5",
     "@types/express": "^5.0.6",
     "express": "^5.2.1"
