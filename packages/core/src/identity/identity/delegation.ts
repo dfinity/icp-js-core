@@ -46,6 +46,7 @@ export class Delegation implements ToCborValue {
     pubkey: Uint8Array,
     public readonly expiration: bigint,
     public readonly targets?: Principal[],
+    public readonly permissions?: string,
   ) {
     this.pubkey = pubkey.slice();
   }
@@ -57,6 +58,9 @@ export class Delegation implements ToCborValue {
       ...(this.targets && {
         targets: this.targets,
       }),
+      ...(this.permissions !== undefined && {
+        permissions: this.permissions,
+      }),
     };
   }
 
@@ -64,10 +68,13 @@ export class Delegation implements ToCborValue {
     // every string should be hex and once-de-hexed,
     // discoverable what it is (e.g. de-hex to get JSON with a 'type' property, or de-hex to DER
     // with an OID). After de-hex, if it's not obvious what it is, it's an ArrayBuffer.
+    // `permissions` is the exception: it is a semantic value (e.g. "queries"),
+    // not opaque binary, so it is kept as a plain string rather than hex-encoded.
     return {
       expiration: this.expiration.toString(16),
       pubkey: safeBytesToHex(this.pubkey),
       ...(this.targets && { targets: this.targets.map(p => p.toHex()) }),
+      ...(this.permissions !== undefined && { permissions: this.permissions }),
     };
   }
 }
@@ -85,6 +92,9 @@ interface JsonnableDelegation {
   pubkey: string;
   // Array of strings, where each string is hex of principal blob (*NOT* textual representation).
   targets?: string[];
+  // The delegation's optional `permissions` field (e.g. "queries"). Unlike the
+  // fields above, this is a plain semantic string, *NOT* hex-encoded.
+  permissions?: string;
 }
 
 /**
@@ -104,17 +114,20 @@ export interface SignedDelegation {
  * @param to The identity that receives the delegation.
  * @param expiration An expiration date for this delegation.
  * @param targets Limit this delegation to the target principals.
+ * @param permissions Restrict the kinds of calls the delegation permits (e.g. "queries").
  */
 async function _createSingleDelegation(
   from: SignIdentity,
   to: PublicKey,
   expiration: Date,
   targets?: Principal[],
+  permissions?: string,
 ): Promise<SignedDelegation> {
   const delegation: Delegation = new Delegation(
     to.toDer(),
     BigInt(+expiration) * BigInt(1000000), // In nanoseconds.
     targets,
+    permissions,
   );
   // The signature is calculated by signing the concatenation of the domain separator
   // and the message.
@@ -141,6 +154,7 @@ export interface JsonnableDelegationChain {
       pubkey: string;
       expiration: string;
       targets?: string[];
+      permissions?: string;
     };
   }>;
 }
@@ -179,6 +193,7 @@ export class DelegationChain {
    * @param options A set of options for this delegation. expiration and previous
    * @param options.previous - Another DelegationChain that this chain should start with.
    * @param options.targets - targets that scope the delegation (e.g. Canister Principals)
+   * @param options.permissions - restricts the kinds of calls the delegation permits (e.g. "queries")
    */
   public static async create(
     from: SignIdentity,
@@ -187,9 +202,16 @@ export class DelegationChain {
     options: {
       previous?: DelegationChain;
       targets?: Principal[];
+      permissions?: string;
     } = {},
   ): Promise<DelegationChain> {
-    const delegation = await _createSingleDelegation(from, to, expiration, options.targets);
+    const delegation = await _createSingleDelegation(
+      from,
+      to,
+      expiration,
+      options.targets,
+      options.permissions,
+    );
     return new DelegationChain(
       [...(options.previous?.delegations || []), delegation],
       options.previous?.publicKey || from.getPublicKey().toDer(),
@@ -208,9 +230,12 @@ export class DelegationChain {
 
     const parsedDelegations: SignedDelegation[] = delegations.map(signedDelegation => {
       const { delegation, signature } = signedDelegation;
-      const { pubkey, expiration, targets } = delegation;
+      const { pubkey, expiration, targets, permissions } = delegation;
       if (targets !== undefined && !Array.isArray(targets)) {
         throw new Error('Invalid targets.');
+      }
+      if (permissions !== undefined && typeof permissions !== 'string') {
+        throw new Error('Invalid permissions.');
       }
 
       return {
@@ -224,6 +249,7 @@ export class DelegationChain {
               }
               return Principal.fromHex(t);
             }),
+          permissions,
         ),
         signature: _parseBlob(signature) as Signature,
       };
@@ -253,7 +279,7 @@ export class DelegationChain {
     return {
       delegations: this.delegations.map(signedDelegation => {
         const { delegation, signature } = signedDelegation;
-        const { targets } = delegation;
+        const { targets, permissions } = delegation;
         return {
           delegation: {
             expiration: delegation.expiration.toString(16),
@@ -261,6 +287,7 @@ export class DelegationChain {
             ...(targets && {
               targets: targets.map(t => t.toHex()),
             }),
+            ...(permissions !== undefined && { permissions }),
           },
           signature: safeBytesToHex(signature),
         };
