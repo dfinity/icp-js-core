@@ -58,7 +58,7 @@ export class Delegation implements ToCborValue {
       ...(this.targets && {
         targets: this.targets,
       }),
-      ...(this.permissions !== undefined && {
+      ...(this.permissions && {
         permissions: this.permissions,
       }),
     };
@@ -74,7 +74,7 @@ export class Delegation implements ToCborValue {
       expiration: this.expiration.toString(16),
       pubkey: safeBytesToHex(this.pubkey),
       ...(this.targets && { targets: this.targets.map(p => p.toHex()) }),
-      ...(this.permissions !== undefined && { permissions: this.permissions }),
+      ...(this.permissions && { permissions: this.permissions }),
     };
   }
 }
@@ -287,7 +287,7 @@ export class DelegationChain {
             ...(targets && {
               targets: targets.map(t => t.toHex()),
             }),
-            ...(permissions !== undefined && { permissions }),
+            ...(permissions && { permissions }),
           },
           signature: safeBytesToHex(signature),
         };
