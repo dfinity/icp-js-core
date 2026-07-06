@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.0.0 (2026-07-06)
+
+### Feat
+
+- wire the delegation permissions field through Delegation (#1366)
+- effective subnet ID (#1360)
+- support URLs with path components (#1361)
+
 ## v5.4.0 (2026-04-30)
 
 ### Feat
