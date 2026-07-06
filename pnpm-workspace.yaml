@@ -3,13 +3,25 @@ packages:
   - e2e/node
   - packages/core
   - packages/migrate
+
+minimumReleaseAge: 10080
+
+minimumReleaseAgeExclude:
+  - '@dfinity/cbor'
+  - '@dfinity/pic'
+
 onlyBuiltDependencies:
-  - "@dfinity/pic"
+  - '@dfinity/pic'
   - esbuild
   - sharp
   - unrs-resolver
 
-minimumReleaseAge: 10080 # ignore dependency updates released less than 7 days ago
-minimumReleaseAgeExclude:
-  - "@dfinity/cbor"
-  - "@dfinity/pic"
+overrides:
+  '@babel/core@<=7.29.0': '>=7.29.6'
+  esbuild@>=0.27.3 <0.28.1: '>=0.28.1'
+  js-yaml@<3.15.0: '>=3.15.0'
+  linkify-it@<=5.0.0: '>=5.0.1'
+  markdown-it@<=14.1.1: '>=14.2.0'
+  undici@>=7.0.0 <7.28.0: '>=7.28.0 <8'
+  undici@>=7.23.0 <7.28.0: '>=7.28.0 <8'
+  vite@>=8.0.0 <=8.0.15: '>=8.0.16'
