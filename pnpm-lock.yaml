@@ -10,8 +10,8 @@ overrides:
   js-yaml@<3.15.0: '>=3.15.0'
   linkify-it@<=5.0.0: '>=5.0.1'
   markdown-it@<=14.1.1: '>=14.2.0'
-  undici@>=7.0.0 <7.28.0: '>=7.28.0'
-  undici@>=7.23.0 <7.28.0: '>=7.28.0'
+  undici@>=7.0.0 <7.28.0: '>=7.28.0 <8'
+  undici@>=7.23.0 <7.28.0: '>=7.28.0 <8'
   vite@>=8.0.0 <=8.0.15: '>=8.0.16'
 
 importers:
@@ -3238,9 +3238,9 @@ packages:
   undici-types@7.25.0:
     resolution: {integrity: sha512-AXNgS1Byr27fTI+2bsPEkV9CxkT8H6xNyRI68b3TatlZo3RkzlqQBLL+w7SmGPVpokjHbcuNVQUWE7FRTg+LRA==}
 
-  undici@8.5.0:
-    resolution: {integrity: sha512-xamtWoB1EshgjpmlXd7GGm2VfdDtw1+rD8uhry8pSNW3If6S8E0m2T2+orSKeZXEn/aPJMviCpDBA65WJt8zhg==}
-    engines: {node: '>=22.19.0'}
+  undici@7.28.0:
+    resolution: {integrity: sha512-cRZYrTDwWznlnRiPjggAGxZXanty6M8RV1ff8Wm4LWXBp7/IG8v5DnOm74DtUBp9OONpK75YlPnIjQqX0dBDtA==}
+    engines: {node: '>=20.18.1'}
 
   unicode-emoji-modifier-base@1.0.0:
     resolution: {integrity: sha512-yLSH4py7oFH3oG/9K+XWrz1pSi3dfUrWEnInbxMfArOfc1+33BlGPQtLsOYwvdMy11AwUBetYuaRxSPqgkq+8g==}
@@ -5909,7 +5909,7 @@ snapshots:
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.1
-      undici: 8.5.0
+      undici: 7.28.0
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -6730,7 +6730,7 @@ snapshots:
 
   undici-types@7.25.0: {}
 
-  undici@8.5.0: {}
+  undici@7.28.0: {}
 
   unicode-emoji-modifier-base@1.0.0: {}
 
