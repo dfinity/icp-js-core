@@ -25,40 +25,42 @@ const textDecoder = new TextDecoder();
 const statusesByRequestId = new Map<RequestId, string[]>();
 const replyByRequestId = new Map<RequestId, Uint8Array>();
 
+// Fake verified certificate returned by the fake agent's `readState`, reproducing the
+// `lookup_path` behaviour polling relies on, driven by the per-request status queues.
+function makeMockCertificate() {
+  return {
+    lookup_path: (path: [string, RequestId, string]): LookupPathResultFound => {
+      // Path shape: ['request_status', requestIdBytes, 'status'|'reject_code'|'reject_message'|'error_code'|'reply']
+      const requestIdBytes = path[1];
+      const lastPathElement = path[path.length - 1] as string | Uint8Array;
+      const lastPathElementStr =
+        typeof lastPathElement === 'string' ? lastPathElement : textDecoder.decode(lastPathElement);
+
+      if (lastPathElementStr === 'status') {
+        const q = statusesByRequestId.get(requestIdBytes) ?? [];
+        const current = q.length > 0 ? q.shift()! : 'replied';
+        statusesByRequestId.set(requestIdBytes, q);
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: textEncoder.encode(current),
+        };
+      }
+      if (lastPathElementStr === 'reply') {
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: replyByRequestId.get(requestIdBytes)!,
+        };
+      }
+      throw new Error(`Unexpected lastPathElementStr ${lastPathElementStr}`);
+    },
+  } as const;
+}
+
 jest.mock('./certificate.ts', () => {
   return {
     lookupResultToBuffer: (res: { value: Uint8Array }) => res?.value,
     Certificate: {
-      create: jest.fn(async () => {
-        return {
-          lookup_path: (path: [string, RequestId, string]): LookupPathResultFound => {
-            // Path shape: ['request_status', requestIdBytes, 'status'|'reject_code'|'reject_message'|'error_code'|'reply']
-            const requestIdBytes = path[1];
-            const lastPathElement = path[path.length - 1] as string | Uint8Array;
-            const lastPathElementStr =
-              typeof lastPathElement === 'string'
-                ? lastPathElement
-                : textDecoder.decode(lastPathElement);
-
-            if (lastPathElementStr === 'status') {
-              const q = statusesByRequestId.get(requestIdBytes) ?? [];
-              const current = q.length > 0 ? q.shift()! : 'replied';
-              statusesByRequestId.set(requestIdBytes, q);
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: textEncoder.encode(current),
-              };
-            }
-            if (lastPathElementStr === 'reply') {
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: replyByRequestId.get(requestIdBytes)!,
-              };
-            }
-            throw new Error(`Unexpected lastPathElementStr ${lastPathElementStr}`);
-          },
-        } as const;
-      }),
+      create: jest.fn(async () => makeMockCertificate()),
     },
   };
 });
@@ -105,7 +107,10 @@ describe('Actor default polling options are not reused across calls', () => {
           requestDetails: object;
         };
       },
-      readState: async () => ({ certificate: new Uint8Array([0]) }),
+      readState: async () => ({
+        certificate: new Uint8Array([0]),
+        verifiedCertificate: makeMockCertificate(),
+      }),
       async update(canisterId: Principal | string, fields: CallOptions, options?: PollingOptions) {
         const { pollForResponse } = await import('./polling/index.ts');
         const effectiveTarget = fields.effectiveTarget

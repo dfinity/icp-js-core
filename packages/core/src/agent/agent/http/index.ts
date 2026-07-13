@@ -1321,7 +1321,24 @@ export class HttpAgent implements Agent {
         ? new URL(`api/v3/canister/${target.canisterId.toString()}/read_state`, this.host)
         : new URL(`api/v3/subnet/${target.subnetId.toString()}/read_state`, this.host);
 
-    return await this.#readStateInner(url, target, transformedRequest, requestId);
+    if (this.rootKey === null) {
+      throw ExternalError.fromCode(new MissingRootKeyErrorCode(this.#shouldFetchRootKey));
+    }
+    const rootKey = this.rootKey;
+
+    const { certificate } = await this.#readStateInner(url, target, transformedRequest, requestId);
+
+    const verifiedCertificate = await Certificate.create({
+      certificate,
+      rootKey,
+      principal: target,
+      blsVerify: fields.blsVerify,
+      maxAgeInMinutes: fields.maxAgeInMinutes,
+      disableTimeVerification: fields.disableTimeVerification,
+      agent: this,
+    });
+
+    return { certificate, verifiedCertificate };
   }
 
   // eslint-disable-next-line
@@ -1340,7 +1357,7 @@ export class HttpAgent implements Agent {
     target: TargetPrincipal,
     transformedRequest: ReadStateRequest,
     requestId?: RequestId,
-  ): Promise<ReadStateResponse> {
+  ): Promise<{ certificate: Uint8Array }> {
     const backoff = this.#backoffStrategy();
     try {
       const { responseBodyBytes } = await this.#requestAndRetry({
@@ -1354,7 +1371,7 @@ export class HttpAgent implements Agent {
         tries: 0,
       });
 
-      const decodedResponse: ReadStateResponse = cbor.decode(responseBodyBytes);
+      const decodedResponse: { certificate: Uint8Array } = cbor.decode(responseBodyBytes);
 
       return decodedResponse;
     } catch (error) {
@@ -1623,14 +1640,8 @@ export class HttpAgent implements Agent {
 
     const rootKey = this.rootKey!;
 
-    const canisterReadState = await this.readState(target, {
+    const { verifiedCertificate: canisterCertificate } = await this.readState(target, {
       paths: [[utf8ToBytes('subnet')]],
-    });
-    const canisterCertificate = await Certificate.create({
-      certificate: canisterReadState.certificate,
-      rootKey,
-      principal: target,
-      agent: this,
     });
     const targetKey = getTargetKey(target);
     if ('canisterId' in target && !canisterCertificate.cert.delegation) {
@@ -1664,18 +1675,12 @@ export class HttpAgent implements Agent {
     const effectiveCanisterId = Principal.from(canisterId);
     await this.#asyncGuard({ canisterId: effectiveCanisterId });
 
-    const canisterReadState = await this.readState(
+    const { verifiedCertificate: canisterCertificate } = await this.readState(
       { canisterId: effectiveCanisterId },
       {
         paths: [[utf8ToBytes('time')]],
       },
     );
-    const canisterCertificate = await Certificate.create({
-      certificate: canisterReadState.certificate,
-      rootKey: this.rootKey!,
-      principal: { canisterId: effectiveCanisterId },
-      agent: this,
-    });
 
     return getSubnetIdFromCertificate(canisterCertificate.cert, this.rootKey!);
   }

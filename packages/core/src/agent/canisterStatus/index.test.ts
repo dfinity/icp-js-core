@@ -47,9 +47,16 @@ const testCases = [
 // Mocked status using precomputed certificate
 const getStatus = async (paths: Path[]) => {
   const agent = new HttpAgent({ host: 'https://ic0.app' });
-  agent.readState = jest.fn(() =>
-    Promise.resolve({ certificate: hexToBytes(testCases[0].certificate) }),
-  );
+  const certificate = hexToBytes(testCases[0].certificate);
+  agent.readState = jest.fn(async () => ({
+    certificate,
+    verifiedCertificate: await Cert.Certificate.create({
+      certificate,
+      rootKey: agent.rootKey!,
+      principal: { canisterId: testPrincipal },
+      agent,
+    }),
+  }));
 
   return await request({
     canisterId: testPrincipal,

@@ -10,7 +10,7 @@ import {
   CertificateTimeErrorCode,
 } from '../errors.ts';
 import type { HttpAgent } from '../agent/http/index.ts';
-import { type Cert, Certificate, lookupResultToBuffer } from '../certificate.ts';
+import { type Cert, type Certificate, lookupResultToBuffer } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
 import { decodeTime } from '../utils/leb.ts';
 import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils.js';
@@ -100,16 +100,11 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
           { canisterId },
           {
             paths: [encodedPath],
+            disableTimeVerification: disableCertificateTimeVerification,
           },
         );
 
-        const certificate = await Certificate.create({
-          certificate: response.certificate,
-          rootKey,
-          principal: { canisterId },
-          disableTimeVerification: disableCertificateTimeVerification,
-          agent,
-        });
+        const certificate = response.verifiedCertificate;
 
         const lookup = (cert: Certificate, path: Path) => {
           if (path === 'subnet') {

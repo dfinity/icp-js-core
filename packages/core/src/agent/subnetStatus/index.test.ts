@@ -30,7 +30,15 @@ const getStatus = async (paths: Path[], subnetId: Principal = testSubnetId) => {
   jest.setSystemTime(certificateTime);
 
   const agent = HttpAgent.createSync({ host: 'https://ic0.app' });
-  agent.readSubnetState = jest.fn(() => Promise.resolve({ certificate: certificateBytes }));
+  agent.readSubnetState = jest.fn(async () => ({
+    certificate: certificateBytes,
+    verifiedCertificate: await Cert.Certificate.create({
+      certificate: certificateBytes,
+      rootKey: agent.rootKey!,
+      principal: { subnetId },
+      agent,
+    }),
+  }));
 
   return await request({
     subnetId,

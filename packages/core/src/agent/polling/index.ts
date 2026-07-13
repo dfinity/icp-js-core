@@ -1,17 +1,11 @@
 import type { RequestId } from '../request_id.ts';
-import {
-  type CreateCertificateOptions,
-  Certificate,
-  lookupResultToBuffer,
-} from '../certificate.ts';
+import { type VerifyFunc, lookupResultToBuffer } from '../certificate.ts';
 import { readCertifiedReject } from '../utils/certificateReject.ts';
 import type { Agent, InputTargetPrincipal, ReadStateResponse } from '../agent/api.ts';
 import { Principal } from '#principal';
 import {
-  ExternalError,
   InputError,
   InvalidReadStateRequestErrorCode,
-  MissingRootKeyErrorCode,
   RejectError,
   RequestStatusDoneNoReplyErrorCode,
   UnknownError,
@@ -54,7 +48,7 @@ export interface PollingOptions {
   /**
    * Optional replacement function that verifies the BLS signature of a certificate.
    */
-  blsVerify?: CreateCertificateOptions['blsVerify'];
+  blsVerify?: VerifyFunc;
 
   /**
    * The request to use for polling. If not provided, a new request will be created.
@@ -120,7 +114,8 @@ function isSignedReadStateRequestWithExpiry(
  * @param requestId The Request ID to poll status for.
  * @param options polling options to control behavior
  * @returns The certificate, reply bytes, and raw certificate bytes for the request.
- * @throws {ExternalError} If the agent's root key is not available.
+ * @throws {import('../errors.ts').ExternalError} If {@link Agent.readState} rejects, e.g. the
+ * agent's root key is not available or the returned certificate fails verification.
  * @throws {RejectError} If the request was rejected by the canister.
  * @throws {UnknownError} If the request reached `done` status without a reply.
  */
@@ -147,22 +142,18 @@ export async function pollForResponse(
       agent,
       pollingOptions: options,
     });
-    state = await agent.readState(target, { paths: [path] }, undefined, currentRequest);
+    state = await agent.readState(
+      target,
+      { paths: [path], blsVerify: options.blsVerify },
+      undefined,
+      currentRequest,
+    );
   } else {
     // If preSignReadStateRequest is false, we use the default strategy and sign the request each time
-    state = await agent.readState(target, { paths: [path] });
+    state = await agent.readState(target, { paths: [path], blsVerify: options.blsVerify });
   }
 
-  if (agent.rootKey == null) {
-    throw ExternalError.fromCode(new MissingRootKeyErrorCode());
-  }
-  const cert = await Certificate.create({
-    certificate: state.certificate,
-    rootKey: agent.rootKey,
-    principal: target,
-    blsVerify: options.blsVerify,
-    agent,
-  });
+  const cert = state.verifiedCertificate;
 
   const maybeBuf = lookupResultToBuffer(cert.lookup_path([...path, utf8ToBytes('status')]));
   let status;

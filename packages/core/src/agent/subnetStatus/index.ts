@@ -1,8 +1,6 @@
 import { Principal } from '#principal';
 import {
   CertificateVerificationErrorCode,
-  MissingRootKeyErrorCode,
-  ExternalError,
   AgentError,
   UnknownError,
   UnexpectedErrorCode,
@@ -14,7 +12,7 @@ import type { HttpAgent } from '../agent/http/index.ts';
 import {
   type Cert,
   type CanisterRanges,
-  Certificate,
+  type Certificate,
   lookupResultToBuffer,
   decodeCanisterRanges,
   lookup_path,
@@ -103,23 +101,12 @@ export async function request(options: SubnetStatusOptions): Promise<StatusMap> 
 
     return (async () => {
       try {
-        if (agent.rootKey === null) {
-          throw ExternalError.fromCode(new MissingRootKeyErrorCode());
-        }
-
-        const rootKey = agent.rootKey;
-
         const response = await agent.readSubnetState(subnetId, {
           paths: [encodedPath],
+          disableTimeVerification: disableCertificateTimeVerification,
         });
 
-        const certificate = await Certificate.create({
-          certificate: response.certificate,
-          rootKey,
-          principal: { subnetId },
-          disableTimeVerification: disableCertificateTimeVerification,
-          agent,
-        });
+        const certificate = response.verifiedCertificate;
 
         const lookup = (cert: Certificate, lookupPath: Path) => {
           if (lookupPath === 'nodeKeys') {
