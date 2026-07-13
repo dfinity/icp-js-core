@@ -5,6 +5,9 @@ import type { Identity } from '../auth.ts';
 import type { CallRequest, HttpHeaderField, QueryRequest } from './http/types.ts';
 import type { PollForResponseResult, PollingOptions } from '../polling/index.ts';
 import type { Certificate, VerifyFunc } from '../certificate.ts';
+import type { KnownPath, Path, StateValues } from '../utils/readState.ts';
+
+export { KnownPath, StatePaths, StateValues, encodePath, type Path } from '../utils/readState.ts';
 
 /**
  * Codes used by the replica for rejecting a message.
@@ -24,8 +27,13 @@ export enum ReplicaRejectCode {
 export interface ReadStateOptions {
   /**
    * A list of paths to read the state of.
+   *
+   * Each {@link Path} may be a raw encoded path (an array of buffers) or a {@link KnownPath}
+   * (see {@link import('../utils/readState.ts').StatePaths | StatePaths} for the well-known ones).
+   * KnownPaths are encoded internally, and their values are decoded into
+   * {@link ReadStateResponse.values}.
    */
-  paths: Uint8Array[][];
+  paths: Path[];
 
   /**
    * BLS verification strategy used to verify the returned certificate.
@@ -46,6 +54,14 @@ export interface ReadStateOptions {
    * @default false
    */
   disableTimeVerification?: boolean;
+}
+
+/**
+ * {@link ReadStateOptions} with every path already encoded to its raw form. Used by the low-level
+ * request builders ({@link Agent.createReadStateRequest}), which do not perform path encoding.
+ */
+export interface ResolvedReadStateOptions extends Omit<ReadStateOptions, 'paths'> {
+  paths: Uint8Array[][];
 }
 
 /**
@@ -180,6 +196,12 @@ export interface ReadStateResponse {
    * set, verification includes the certificate freshness check.
    */
   verifiedCertificate: Certificate;
+  /**
+   * Decoded values for each requested {@link KnownPath}, looked up by passing the same KnownPath
+   * instance to {@link StateValues.get}. Each value is decoded with the path's
+   * {@link KnownPath.decode}. Raw (pre-encoded `Uint8Array[]`) paths are not decoded and are absent.
+   */
+  values: StateValues;
 }
 
 export interface v2ResponseBody {
@@ -257,8 +279,14 @@ export interface Agent {
    * Create the request for the read state call.
    * `readState` uses this internally.
    * Useful to avoid signing the same request multiple times.
+   *
+   * Paths must already be encoded ({@link ResolvedReadStateOptions}); path resolution is done by
+   * {@link Agent.readState} before this is called.
    */
-  createReadStateRequest?(options: ReadStateOptions, identity?: Identity): Promise<unknown>;
+  createReadStateRequest?(
+    options: ResolvedReadStateOptions,
+    identity?: Identity,
+  ): Promise<unknown>;
 
   /**
    * Send a read state query to the replica, given a list of paths to return. Returns the raw

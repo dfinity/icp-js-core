@@ -46,6 +46,7 @@ import {
   type QueryResponse,
   type ReadStateOptions,
   type ReadStateResponse,
+  type ResolvedReadStateOptions,
   type SubmitResponse,
   type CallOptions,
   type UpdateOptions,
@@ -71,7 +72,13 @@ import {
 } from './types.ts';
 import { request as canisterStatusRequest } from '../../canisterStatus/index.ts';
 import { request as subnetStatusRequest } from '../../subnetStatus/index.ts';
-import { lookupNodeKeysFromCertificate, type SubnetNodeKeys } from '../../utils/readState.ts';
+import {
+  type KnownPath,
+  StateValues,
+  encodePath,
+  lookupNodeKeysFromCertificate,
+  type SubnetNodeKeys,
+} from '../../utils/readState.ts';
 import {
   Certificate,
   check_canister_ranges,
@@ -1238,7 +1245,7 @@ export class HttpAgent implements Agent {
   };
 
   public async createReadStateRequest(
-    fields: ReadStateOptions,
+    fields: ResolvedReadStateOptions,
     identity?: Identity | Promise<Identity>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
@@ -1273,7 +1280,7 @@ export class HttpAgent implements Agent {
     return id.transformRequest(transformedRequest);
   }
 
-  #getRequestId(options: ReadStateOptions): RequestId | undefined {
+  #getRequestId(options: ResolvedReadStateOptions): RequestId | undefined {
     for (const path of options.paths) {
       const [pathName, value] = path;
       const request_status = new TextEncoder().encode('request_status');
@@ -1297,6 +1304,20 @@ export class HttpAgent implements Agent {
     await this.#rootKeyGuard();
     const target = inputToTarget(effectiveTarget);
 
+    // Encode paths into their raw form. Raw (pre-encoded) paths pass through unchanged; each
+    // KnownPath is retained alongside its encoded form so its value can be decoded below.
+    const scope = 'canisterId' in target ? target.canisterId : target.subnetId;
+    const encodedPaths: Uint8Array[][] = [];
+    const knownPaths: { path: KnownPath<unknown>; encoded: Uint8Array[] }[] = [];
+    for (const path of fields.paths) {
+      const encoded = encodePath(path, scope);
+      encodedPaths.push(encoded);
+      if (!Array.isArray(path)) {
+        knownPaths.push({ path, encoded });
+      }
+    }
+    const resolvedFields: ResolvedReadStateOptions = { ...fields, paths: encodedPaths };
+
     let transformedRequest: ReadStateRequest;
     let requestId: RequestId | undefined;
 
@@ -1306,14 +1327,14 @@ export class HttpAgent implements Agent {
       transformedRequest = request;
     } else {
       // This is fields, we need to create a request
-      requestId = this.#getRequestId(fields);
+      requestId = this.#getRequestId(resolvedFields);
 
       // Always create a fresh request with the current identity
       const identity = await this.#identity;
       if (!identity) {
         throw ExternalError.fromCode(new IdentityInvalidErrorCode());
       }
-      transformedRequest = await this.createReadStateRequest(fields, identity);
+      transformedRequest = await this.createReadStateRequest(resolvedFields, identity);
     }
 
     const url =
@@ -1338,7 +1359,15 @@ export class HttpAgent implements Agent {
       agent: this,
     });
 
-    return { certificate, verifiedCertificate };
+    // Decode the value at each KnownPath with its own decoder, keyed by the path. A value absent
+    // from the certificate maps to null.
+    const decoded = new Map<symbol, unknown>();
+    for (const { path, encoded } of knownPaths) {
+      const buffer = lookupResultToBuffer(verifiedCertificate.lookup_path(encoded));
+      decoded.set(path.key, buffer === undefined ? null : path.decode(buffer));
+    }
+
+    return { certificate, verifiedCertificate, values: new StateValues(decoded) };
   }
 
   // eslint-disable-next-line

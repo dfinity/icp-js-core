@@ -1,6 +1,6 @@
 import { Principal } from '#principal';
 import * as cbor from '../cbor.ts';
-import { decodeLeb128 } from '../utils/leb.ts';
+import { decodeLeb128, decodeTime } from '../utils/leb.ts';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import type { DerEncodedPublicKey } from '../auth.ts';
 import {
@@ -54,17 +54,49 @@ export interface BaseSubnetStatus {
 export type BaseStatus = string | Uint8Array | Date | Uint8Array[] | Principal[] | bigint | null;
 
 /**
- * Decode strategy for custom paths
+ * Decode strategy for a {@link CustomPath}. `'raw'` returns the looked-up bytes unchanged.
  */
 export type DecodeStrategy = 'cbor' | 'hex' | 'leb128' | 'utf-8' | 'raw';
 
 /**
- * Interface to define a custom path. Nested paths will be represented as individual buffers, and can be created from text using TextEncoder.
- * @param {string} key the key to use to access the returned value in the status map
- * @param {Uint8Array[]} path the path to the desired value, represented as an array of buffers
- * @param {string} decodeStrategy the strategy to use to decode the returned value
+ * A strongly-typed, structured `read_state` path.
+ *
+ * Pre-built instances for the well-known canister paths are available on {@link StatePaths}, e.g.
+ * {@link StatePaths.time} is a `KnownPath<Date>`. Construct your own for arbitrary paths: `path` is
+ * the sequence of label segments (strings are UTF-8 encoded), optionally prefixed with
+ * `['canister', <id>]` via the `canisterScoped` flag.
+ *
+ * The value at the path is decoded with the `decode` function, and looked up from the response
+ * by passing the instance to {@link StateValues.get}.
+ * @template T the type produced by decoding the value at this path
  */
-export class CustomPath implements CustomPath {
+export class KnownPath<T> {
+  /**
+   * A unique token identifying this path in {@link StateValues}.
+   */
+  public readonly key: symbol = Symbol();
+  public readonly path: Uint8Array[];
+  constructor(
+    path: (Uint8Array | string)[] | Uint8Array | string,
+    public readonly decode: (bytes: Uint8Array) => T,
+    public readonly canisterScoped: boolean,
+  ) {
+    const segments = Array.isArray(path) ? path : [path];
+    this.path = segments.map(segment =>
+      typeof segment === 'string' ? utf8ToBytes(segment) : segment,
+    );
+  }
+}
+
+/**
+ * A `read_state` path defined by the user, with a string {@link DecodeStrategy}. Consumed by the
+ * status utilities (e.g. `CanisterStatus.request`), which translate it into a {@link KnownPath}
+ * before calling {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState}.
+ * @param {string} key the key to use to access the returned value in the status map
+ * @param {Uint8Array[] | Uint8Array | string} path the path to the desired value
+ * @param {DecodeStrategy} decodeStrategy the strategy used to decode the returned value
+ */
+export class CustomPath {
   public key: string;
   public path: Uint8Array[] | Uint8Array | string;
   public decodeStrategy: DecodeStrategy;
@@ -77,6 +109,72 @@ export class CustomPath implements CustomPath {
     this.path = path;
     this.decodeStrategy = decodeStrategy;
   }
+}
+
+/**
+ * A path to read from the `read_state` endpoint.
+ *
+ * May be a {@link KnownPath} (see {@link StatePaths} for the well-known ones) or a raw encoded
+ * path (an array of buffers) which is passed through unchanged.
+ * {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState}
+ * accepts these directly, encoding them internally.
+ */
+export type Path = KnownPath<unknown> | Uint8Array[];
+
+/**
+ * Pre-built {@link KnownPath} instances for the well-known canister state paths, accepted directly
+ * by {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState}.
+ */
+export const StatePaths = {
+  /** The canister's time, as a {@link Date}. */
+  time: new KnownPath(['time'], decodeTime, false),
+  /** The canister's controllers, as {@link Principal}s. */
+  controllers: new KnownPath(['controllers'], decodeControllers, true),
+  /** The canister's module hash, hex-encoded. */
+  moduleHash: new KnownPath(['module_hash'], bytesToHex, true),
+  /** The canister's `candid:service` metadata, as a UTF-8 string. */
+  candid: new KnownPath(
+    ['metadata', 'candid:service'],
+    bytes => new TextDecoder().decode(bytes),
+    true,
+  ),
+} as const;
+
+/**
+ * The decoded values returned by {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState},
+ * keyed by {@link KnownPath}. Look values up by passing the same {@link KnownPath} instance that
+ * was requested; the return type follows the path's type parameter.
+ */
+export class StateValues {
+  readonly #values: Map<symbol, unknown>;
+  constructor(values: Map<symbol, unknown> = new Map()) {
+    this.#values = values;
+  }
+
+  /**
+   * The decoded value for `path`, or `null` if it was absent from the certificate or not requested.
+   * @param path the {@link KnownPath} whose value to read
+   */
+  get<T>(path: KnownPath<T>): T | null {
+    return (this.#values.get(path.key) ?? null) as T | null;
+  }
+}
+
+/**
+ * Encode a {@link Path} into the raw path expected by the `read_state` endpoint.
+ * @param path the path to encode
+ * @param canisterId the canister ID to scope canister-specific paths to
+ * @returns the encoded path, as an array of buffers
+ */
+export function encodePath(path: Path, canisterId: Principal): Uint8Array[] {
+  // Raw encoded paths pass through unchanged.
+  if (Array.isArray(path)) {
+    return path;
+  }
+  // A fully-formed path, optionally scoped under the target canister.
+  return path.canisterScoped
+    ? [utf8ToBytes('canister'), canisterId.toUint8Array(), ...path.path]
+    : path.path;
 }
 
 /**
@@ -110,20 +208,6 @@ export function decodeControllers(buf: Uint8Array): Principal[] {
   return controllersRaw.map(buf => {
     return Principal.fromUint8Array(buf);
   });
-}
-
-/**
- * Encode a metadata path for canister metadata queries
- * @param metaPath the metadata path (string or Uint8Array)
- * @param canisterUint8Array the canister ID as Uint8Array
- * @returns the encoded path
- */
-export function encodeMetadataPath(
-  metaPath: string | Uint8Array,
-  canisterUint8Array: Uint8Array,
-): Uint8Array[] {
-  const encoded = typeof metaPath === 'string' ? utf8ToBytes(metaPath) : metaPath;
-  return [utf8ToBytes('canister'), canisterUint8Array, utf8ToBytes('metadata'), encoded];
 }
 
 /**

@@ -7,6 +7,7 @@ import * as Cert from '../certificate.ts';
 import { goldenCertificates } from '../agent/http/__certificates__/goldenCertificates.ts';
 import { decode } from '../cbor.ts';
 import { decodeCanisterRanges } from '../certificate.ts';
+import { StateValues } from '../utils/readState.ts';
 
 // bypass bls verification so that an old certificate is accepted
 jest.mock('../utils/bls', () => {
@@ -38,6 +39,7 @@ const getStatus = async (paths: Path[], subnetId: Principal = testSubnetId) => {
       principal: { subnetId },
       agent,
     }),
+    values: new StateValues(),
   }));
 
   return await request({

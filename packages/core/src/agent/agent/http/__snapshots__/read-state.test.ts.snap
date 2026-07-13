@@ -1,0 +1,53 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`HttpAgent.readState value decoding decodes the well-known StatePaths with their strong types 1`] = `2022-05-19T20:58:22.596Z`;
+
+exports[`HttpAgent.readState value decoding decodes the well-known StatePaths with their strong types 2`] = `
+[
+  "2vxsx-fae",
+  "rwlgt-iiaaa-aaaaa-aaaaa-cai",
+]
+`;
+
+exports[`HttpAgent.readState value decoding decodes the well-known StatePaths with their strong types 3`] = `"896f6c079f96bc3cbef782af1ab1b52847f04700ff916eb49425566995a9a064"`;
+
+exports[`HttpAgent.readState value decoding decodes the well-known StatePaths with their strong types 4`] = `
+"type Example = text;
+service : {
+  greet: (Example) -> (text) query;
+}
+"
+`;
+
+exports[`HttpAgent.readState value decoding supports custom KnownPaths with arbitrary decoders 1`] = `2022-05-19T20:58:22.596Z`;
+
+exports[`HttpAgent.readState value decoding supports custom KnownPaths with arbitrary decoders 2`] = `
+Uint8Array [
+  128,
+  244,
+  133,
+  225,
+  164,
+  166,
+  167,
+  248,
+  22,
+]
+`;
+
+exports[`HttpAgent.readState value decoding supports custom KnownPaths with arbitrary decoders 3`] = `"80f485e1a4a6a7f816"`;
+
+exports[`HttpAgent.readState value decoding supports custom KnownPaths with arbitrary decoders 4`] = `
+"type Example = text;
+service : {
+  greet: (Example) -> (text) query;
+}
+"
+`;
+
+exports[`HttpAgent.readState value decoding supports custom KnownPaths with arbitrary decoders 5`] = `
+[
+  "2vxsx-fae",
+  "rwlgt-iiaaa-aaaaa-aaaaa-cai",
+]
+`;
