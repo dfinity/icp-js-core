@@ -11,7 +11,7 @@ import {
 import type { HttpAgent } from '../agent/http/index.ts';
 import type { Cert } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
-import { utf8ToBytes } from '@noble/hashes/utils.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import {
   type BaseSubnetStatus,
   type BaseStatus,
@@ -52,7 +52,7 @@ const namedToKnown = (
     case 'controllers':
       return StatePaths.canisterControllers(canisterId);
     case 'module_hash':
-      return StatePaths.canisterModuleHash(canisterId);
+      return new KnownPath(StatePaths.canisterModuleHash(canisterId).path, bytesToHex);
     case 'candid':
       return StatePaths.canisterCandid(canisterId);
   }

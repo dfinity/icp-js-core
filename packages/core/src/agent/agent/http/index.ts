@@ -1303,6 +1303,9 @@ export class HttpAgent implements Agent {
     }
     await this.#rootKeyGuard();
     const target = inputToTarget(effectiveTarget);
+    if (!fields.disableTimeVerification) {
+      await this.#syncTimeGuard(target);
+    }
 
     // Encode paths into their raw form. Raw (pre-encoded) paths pass through unchanged; each
     // KnownPath is retained alongside its encoded form so its value can be decoded below.

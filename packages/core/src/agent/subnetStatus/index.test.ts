@@ -212,6 +212,54 @@ describe('encodePath', () => {
   });
 });
 
+// Regression test: the `canisterRanges` path must be looked up at `/subnet/<subnet_id>/canister_ranges`
+// and decoded with `decodeCanisterRanges`. A previous bug requested the sharded
+// `/canister_ranges/<subnet_id>` path but still decoded it with the flat-format function, so ranges
+// from a certificate carrying the flat path could never be read. The `mainnetSystem` golden
+// certificate uses the flat format (no `/canister_ranges/<subnet_id>` subtree), so requesting the
+// sharded path against it yields no value.
+describe('canisterRanges path regression', () => {
+  const systemCertBytes = hexToBytes(goldenCertificates.mainnetSystem);
+  // Certificate time from mainnetSystem: 2023-09-27T19:58:19.412Z
+  const systemCertTime = Date.parse('2023-09-27T19:58:19.412Z');
+
+  it('reads canister ranges stored at the flat /subnet/<id>/canister_ranges path', async () => {
+    jest.setSystemTime(systemCertTime);
+
+    const body = encode({ certificate: systemCertBytes });
+    const fetch = jest.fn(() =>
+      Promise.resolve(new Response(body, { status: 200 })),
+    ) as unknown as typeof globalThis.fetch;
+    const agent = HttpAgent.createSync({ host: 'https://ic0.app', fetch });
+
+    const status = await request({
+      subnetId: testSubnetId,
+      paths: ['canisterRanges'],
+      agent,
+      disableCertificateTimeVerification: true,
+    });
+
+    // Cross-check against the ranges decoded directly from the flat path in the certificate.
+    const flatLookup = Cert.lookup_path(
+      ['subnet', testSubnetId.toUint8Array(), 'canister_ranges'],
+      decode<Cert.Cert>(systemCertBytes).tree,
+    );
+    if (flatLookup.status !== Cert.LookupPathStatus.Found) {
+      throw new Error('golden mainnetSystem certificate is missing the flat canister_ranges path');
+    }
+    const expected = decodeCanisterRanges(flatLookup.value);
+
+    const ranges = status.get('canisterRanges') as Cert.CanisterRanges;
+    // Would be `null` if the sharded path were requested, since mainnetSystem has no such subtree.
+    expect(ranges).not.toBeNull();
+    expect(ranges).toEqual(expected);
+    // Sanity check the concrete value so a wrong-but-non-null decode is still caught.
+    expect(ranges.map(([start, end]) => [start.toText(), end.toText()])).toEqual([
+      ['v7pvf-xyaaa-aaaao-aaaaa-cai', 'jujpo-eqaaa-aaaao-p777q-cai'],
+    ]);
+  });
+});
+
 describe('IC_ROOT_SUBNET_ID', () => {
   it('should be the correct root subnet ID', () => {
     expect(IC_ROOT_SUBNET_ID.toText()).toBe(
