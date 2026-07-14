@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Feat
+
+- Revamp Agent.readState (#1375)
+
 ## v6.0.0 (2026-07-06)
 
 ### Feat
