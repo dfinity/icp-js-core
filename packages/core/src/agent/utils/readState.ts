@@ -93,10 +93,11 @@ export class KnownPath<T> {
 /**
  * A `read_state` path defined by the user, with a string {@link DecodeStrategy}. Consumed by the
  * status utilities (e.g. `CanisterStatus.request`), which translate it into a {@link KnownPath}
- * before calling {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState}.
+ * before calling `Agent.readState`.
  * @param {string} key the key to use to access the returned value in the status map
  * @param {Uint8Array[] | Uint8Array | string} path the path to the desired value
  * @param {DecodeStrategy} decodeStrategy the strategy used to decode the returned value
+ * @deprecated Use {@link KnownPath} with `Agent.readState` instead.
  */
 export class CustomPath {
   public key: string;
@@ -118,14 +119,13 @@ export class CustomPath {
  *
  * May be a {@link KnownPath} (see {@link StatePaths} for the well-known ones) or a raw encoded
  * path (an array of buffers) which is passed through unchanged.
- * {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState}
- * accepts these directly, encoding them internally.
+ * `Agent.readState` accepts these directly, encoding them internally.
  */
 export type Path = KnownPath<unknown> | Uint8Array[];
 
 /**
  * Builders for the well-known state paths, producing {@link KnownPath}s accepted directly
- * by {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState}.
+ * by `Agent.readState`.
  *
  * The `canister*` and `subnet*` entries are functions taking the target ID, since it is baked into
  * the path. Pass the `subnet*` paths when reading state from a subnet (`readState({ subnetId }, …)`)
@@ -151,16 +151,15 @@ export const StatePaths = {
    * @param canisterId the canister to scope the path to
    */
   canisterCandid: (canisterId: Principal): KnownPath<string> =>
-    new KnownPath(
-      ['canister', canisterId.toUint8Array(), 'metadata', 'candid:service'],
-      bytes => new TextDecoder().decode(bytes),
+    new KnownPath(['canister', canisterId.toUint8Array(), 'metadata', 'candid:service'], bytes =>
+      new TextDecoder().decode(bytes),
     ),
   /**
    * The given subnet's canister ID ranges.
    * @param subnetId the subnet to scope the path to
    */
   subnetCanisterRanges: (subnetId: Principal): KnownPath<CanisterRanges> =>
-    new KnownPath(['canister_ranges', subnetId.toUint8Array()], decodeCanisterRanges),
+    new KnownPath(['subnet', subnetId.toUint8Array(), 'canister_ranges'], decodeCanisterRanges),
   /**
    * The given subnet's public key, as raw bytes.
    * @param subnetId the subnet to scope the path to
@@ -170,8 +169,8 @@ export const StatePaths = {
 } as const;
 
 /**
- * The decoded values returned by {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState},
- * keyed by {@link KnownPath}. Look values up by passing the same {@link KnownPath} instance that
+ * The decoded values returned by `Agent.readState`, keyed by {@link KnownPath}.
+ * Look values up by passing the same {@link KnownPath} instance that
  * was requested; the return type follows the path's type parameter.
  */
 export class StateValues {

@@ -67,10 +67,7 @@ const namedToKnown = (
 const customToKnown = (custom: CustomPath, canisterId: Principal): KnownPath<BaseStatus> => {
   const decode = (bytes: Uint8Array): BaseStatus => decodeValue(bytes, custom.decodeStrategy);
   if (typeof custom.path === 'string' || custom.path instanceof Uint8Array) {
-    return new KnownPath(
-      ['canister', canisterId.toUint8Array(), 'metadata', custom.path],
-      decode,
-    );
+    return new KnownPath(['canister', canisterId.toUint8Array(), 'metadata', custom.path], decode);
   }
   return new KnownPath(custom.path, decode);
 };
@@ -103,9 +100,7 @@ export interface CanisterStatusOptions {
  * > [!WARNING]
  * > Requesting the `subnet` path from the canister status might be deprecated in the future.
  * > Use {@link https://js.icp.build/core/latest/libs/agent/api/namespaces/subnetstatus/functions/request | SubnetStatus.request} to fetch subnet information instead.
- * @deprecated Call {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState}
- * directly with {@link StatePaths} (or your own {@link KnownPath}s) and read the decoded values off
- * {@link import('../agent/api.ts').ReadStateResponse.values | ReadStateResponse.values}.
+ * @deprecated Use {@link HttpAgent.readState} directly with {@link StatePaths} instead. This function will be removed in a future release.
  * @param {CanisterStatusOptions} options The configuration for the canister status request.
  * @see {@link CanisterStatusOptions} for detailed options.
  * @returns {Promise<StatusMap>} A map populated with data from the requested paths. Each path is a key in the map, and the value is the data obtained from the certificate for that path.
@@ -162,7 +157,8 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
       if (
         error instanceof AgentError &&
         (error.hasCode(CertificateVerificationErrorCode) ||
-          error.hasCode(CertificateTimeErrorCode))
+          error.hasCode(CertificateTimeErrorCode) ||
+          error.hasCode(MissingRootKeyErrorCode))
       ) {
         throw error;
       }
@@ -213,4 +209,20 @@ export const fetchNodeKeys = (
   };
 };
 
-export { encodePath } from '../utils/readState.ts';
+/**
+ * Encode a canister status {@link Path} into the raw path expected by the `read_state` endpoint.
+ * Retained for backwards compatibility; prefer building a {@link StatePaths} path and passing it to
+ * {@link HttpAgent.readState} directly.
+ * @param path the canister status path to encode
+ * @param canisterId the canister ID to scope the path to
+ * @returns the encoded path, as an array of buffers
+ */
+export const encodePath = (path: Path, canisterId: Principal): Uint8Array[] => {
+  // The `subnet` path is a bare root label, not backed by a KnownPath.
+  if (path === 'subnet') {
+    return [utf8ToBytes('subnet')];
+  }
+  const known =
+    typeof path === 'string' ? namedToKnown(path, canisterId) : customToKnown(path, canisterId);
+  return known.path;
+};

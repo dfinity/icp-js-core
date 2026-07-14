@@ -174,7 +174,11 @@ describe('encodePath', () => {
 
   it('should encode canisterRanges path', () => {
     const encoded = encodePath('canisterRanges', subnetId);
-    expect(encoded).toEqual([utf8ToBytes('canister_ranges'), subnetUint8Array]);
+    expect(encoded).toEqual([
+      utf8ToBytes('subnet'),
+      subnetUint8Array,
+      utf8ToBytes('canister_ranges'),
+    ]);
   });
 
   it('should encode publicKey path', () => {

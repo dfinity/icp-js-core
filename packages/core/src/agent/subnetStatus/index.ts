@@ -7,14 +7,10 @@ import {
   CertificateTimeErrorCode,
   ProtocolError,
   LookupErrorCode,
+  MissingRootKeyErrorCode,
 } from '../errors.ts';
 import type { HttpAgent } from '../agent/http/index.ts';
-import {
-  type Cert,
-  type CanisterRanges,
-  lookup_path,
-  LookupPathStatus,
-} from '../certificate.ts';
+import { type Cert, type CanisterRanges, lookup_path, LookupPathStatus } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
 import { utf8ToBytes } from '@noble/hashes/utils.js';
 import {
@@ -111,6 +107,7 @@ export interface SubnetStatusOptions {
  * @param {SubnetStatusOptions} options The configuration for the subnet status request.
  * @see {@link SubnetStatusOptions} for detailed options.
  * @returns {Promise<StatusMap>} A map populated with data from the requested paths. Each path is a key in the map, and the value is the data obtained from the certificate for that path.
+ * @deprecated Use {@link HttpAgent.readState} directly with {@link StatePaths} instead. This function will be removed in a future release.
  * @example
  * const status = await subnetStatus.request({
  *   subnetId: IC_ROOT_SUBNET_ID,
@@ -161,7 +158,8 @@ export async function request(options: SubnetStatusOptions): Promise<StatusMap> 
       if (
         error instanceof AgentError &&
         (error.hasCode(CertificateVerificationErrorCode) ||
-          error.hasCode(CertificateTimeErrorCode))
+          error.hasCode(CertificateTimeErrorCode) ||
+          error.hasCode(MissingRootKeyErrorCode))
       ) {
         throw error;
       }
@@ -218,7 +216,7 @@ export function encodePath(path: Path, subnetId: Principal): Uint8Array[] {
     case 'time':
       return [utf8ToBytes('time')];
     case 'canisterRanges':
-      return [utf8ToBytes('canister_ranges'), subnetUint8Array];
+      return [utf8ToBytes('subnet'), subnetUint8Array, utf8ToBytes('canister_ranges')];
     case 'publicKey':
       return [utf8ToBytes('subnet'), subnetUint8Array, utf8ToBytes('public_key')];
     case 'nodeKeys':
