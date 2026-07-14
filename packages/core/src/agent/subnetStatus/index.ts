@@ -122,7 +122,7 @@ export async function request(options: SubnetStatusOptions): Promise<StatusMap> 
   const { agent, paths, disableCertificateTimeVerification = false } = options;
   const subnetId = Principal.from(options.subnetId);
 
-  const uniquePaths = [...new Set(paths)];
+  const uniquePaths = [...new Set(paths ?? [])];
   const status: StatusMap = new Map();
 
   const keyOf = (path: Path): string => (typeof path === 'string' ? path : path.key);

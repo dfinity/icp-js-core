@@ -141,7 +141,7 @@ export const StatePaths = {
   canisterControllers: (canisterId: Principal): KnownPath<Principal[]> =>
     new KnownPath(['canister', canisterId.toUint8Array(), 'controllers'], decodeControllers),
   /**
-   * The given canister's module hash, hex-encoded.
+   * The given canister's module hash.
    * @param canisterId the canister to scope the path to
    */
   canisterModuleHash: (canisterId: Principal): KnownPath<Uint8Array> =>

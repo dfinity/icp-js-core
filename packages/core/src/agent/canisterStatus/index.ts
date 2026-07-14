@@ -116,7 +116,7 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
   const { agent, paths, disableCertificateTimeVerification = false } = options;
   const canisterId = Principal.from(options.canisterId);
 
-  const uniquePaths = [...new Set(paths)];
+  const uniquePaths = [...new Set(paths ?? [])];
   const status: StatusMap = new Map();
 
   const keyOf = (path: Path): string => (typeof path === 'string' ? path : path.key);
