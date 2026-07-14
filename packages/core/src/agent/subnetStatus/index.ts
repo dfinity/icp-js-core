@@ -206,6 +206,7 @@ function lookupSubnetPublicKey(certificate: Cert, subnetId: Principal): Uint8Arr
 
 /**
  * Encode a path for subnet state queries
+ * @deprecated Use {@link HttpAgent.readState} directly with {@link StatePaths} instead
  * @param path the path to encode
  * @param subnetId the subnet ID
  * @returns the encoded path as an array of Uint8Arrays

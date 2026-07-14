@@ -6,7 +6,6 @@ import type {
   Cert,
   Nonce,
   RequestId,
-  ReadStateResponse,
   HashTree,
   Signed,
   UnSigned,

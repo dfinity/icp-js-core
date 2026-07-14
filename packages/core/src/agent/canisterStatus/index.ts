@@ -208,21 +208,3 @@ export const fetchNodeKeys = (
     nodeKeys,
   };
 };
-
-/**
- * Encode a canister status {@link Path} into the raw path expected by the `read_state` endpoint.
- * Retained for backwards compatibility; prefer building a {@link StatePaths} path and passing it to
- * {@link HttpAgent.readState} directly.
- * @param path the canister status path to encode
- * @param canisterId the canister ID to scope the path to
- * @returns the encoded path, as an array of buffers
- */
-export const encodePath = (path: Path, canisterId: Principal): Uint8Array[] => {
-  // The `subnet` path is a bare root label, not backed by a KnownPath.
-  if (path === 'subnet') {
-    return [utf8ToBytes('subnet')];
-  }
-  const known =
-    typeof path === 'string' ? namedToKnown(path, canisterId) : customToKnown(path, canisterId);
-  return known.path;
-};
