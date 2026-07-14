@@ -151,7 +151,14 @@ export const StatePaths = {
    * @param canisterId the canister to scope the path to
    */
   canisterCandid: (canisterId: Principal): KnownPath<string> =>
-    new KnownPath(['canister', canisterId.toUint8Array(), 'metadata', 'candid:service'], bytes =>
+    StatePaths.canisterMetadataString(canisterId, 'candid:service'),
+  /**
+   * The given canister's metadata entry, as a UTF-8 string.
+   * @param canisterId the canister to scope the path to
+   * @param key the metadata key to read
+   */
+  canisterMetadataString: (canisterId: Principal, key: string): KnownPath<string> =>
+    new KnownPath(['canister', canisterId.toUint8Array(), 'metadata', key], bytes =>
       new TextDecoder().decode(bytes),
     ),
   /**
