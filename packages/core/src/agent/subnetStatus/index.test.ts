@@ -5,7 +5,7 @@ import { request, lookupSubnetInfo, encodePath, IC_ROOT_SUBNET_ID } from './inde
 import { HttpAgent } from '../agent/index.ts';
 import * as Cert from '../certificate.ts';
 import { goldenCertificates } from '../agent/http/__certificates__/goldenCertificates.ts';
-import { decode } from '../cbor.ts';
+import { decode, encode } from '../cbor.ts';
 import { decodeCanisterRanges } from '../certificate.ts';
 
 // bypass bls verification so that an old certificate is accepted
@@ -25,12 +25,16 @@ const testSubnetId = Principal.fromText(
 // Certificate time from mainnetApplicationO3ow2: 2025-11-20T00:07:23.446Z
 const certificateTime = Date.parse('2025-11-20T00:07:23.446Z');
 
-// Helper to get status using precomputed certificate
+// Helper to get status using precomputed certificate. The read_state endpoint is mocked to always
+// return the golden certificate, so the real HttpAgent.readState verifies and decodes it.
 const getStatus = async (paths: Path[], subnetId: Principal = testSubnetId) => {
   jest.setSystemTime(certificateTime);
 
-  const agent = HttpAgent.createSync({ host: 'https://ic0.app' });
-  agent.readSubnetState = jest.fn(() => Promise.resolve({ certificate: certificateBytes }));
+  const body = encode({ certificate: certificateBytes });
+  const fetch = jest.fn(() =>
+    Promise.resolve(new Response(body, { status: 200 })),
+  ) as unknown as typeof globalThis.fetch;
+  const agent = HttpAgent.createSync({ host: 'https://ic0.app', fetch });
 
   return await request({
     subnetId,
@@ -170,7 +174,11 @@ describe('encodePath', () => {
 
   it('should encode canisterRanges path', () => {
     const encoded = encodePath('canisterRanges', subnetId);
-    expect(encoded).toEqual([utf8ToBytes('canister_ranges'), subnetUint8Array]);
+    expect(encoded).toEqual([
+      utf8ToBytes('subnet'),
+      subnetUint8Array,
+      utf8ToBytes('canister_ranges'),
+    ]);
   });
 
   it('should encode publicKey path', () => {
@@ -201,6 +209,54 @@ describe('encodePath', () => {
     };
     const encoded = encodePath(customPath, subnetId);
     expect(encoded).toEqual([utf8ToBytes('subnet'), subnetUint8Array, utf8ToBytes('custom_field')]);
+  });
+});
+
+// Regression test: the `canisterRanges` path must be looked up at `/subnet/<subnet_id>/canister_ranges`
+// and decoded with `decodeCanisterRanges`. A previous bug requested the sharded
+// `/canister_ranges/<subnet_id>` path but still decoded it with the flat-format function, so ranges
+// from a certificate carrying the flat path could never be read. The `mainnetSystem` golden
+// certificate uses the flat format (no `/canister_ranges/<subnet_id>` subtree), so requesting the
+// sharded path against it yields no value.
+describe('canisterRanges path regression', () => {
+  const systemCertBytes = hexToBytes(goldenCertificates.mainnetSystem);
+  // Certificate time from mainnetSystem: 2023-09-27T19:58:19.412Z
+  const systemCertTime = Date.parse('2023-09-27T19:58:19.412Z');
+
+  it('reads canister ranges stored at the flat /subnet/<id>/canister_ranges path', async () => {
+    jest.setSystemTime(systemCertTime);
+
+    const body = encode({ certificate: systemCertBytes });
+    const fetch = jest.fn(() =>
+      Promise.resolve(new Response(body, { status: 200 })),
+    ) as unknown as typeof globalThis.fetch;
+    const agent = HttpAgent.createSync({ host: 'https://ic0.app', fetch });
+
+    const status = await request({
+      subnetId: testSubnetId,
+      paths: ['canisterRanges'],
+      agent,
+      disableCertificateTimeVerification: true,
+    });
+
+    // Cross-check against the ranges decoded directly from the flat path in the certificate.
+    const flatLookup = Cert.lookup_path(
+      ['subnet', testSubnetId.toUint8Array(), 'canister_ranges'],
+      decode<Cert.Cert>(systemCertBytes).tree,
+    );
+    if (flatLookup.status !== Cert.LookupPathStatus.Found) {
+      throw new Error('golden mainnetSystem certificate is missing the flat canister_ranges path');
+    }
+    const expected = decodeCanisterRanges(flatLookup.value);
+
+    const ranges = status.get('canisterRanges') as Cert.CanisterRanges;
+    // Would be `null` if the sharded path were requested, since mainnetSystem has no such subtree.
+    expect(ranges).not.toBeNull();
+    expect(ranges).toEqual(expected);
+    // Sanity check the concrete value so a wrong-but-non-null decode is still caught.
+    expect(ranges.map(([start, end]) => [start.toText(), end.toText()])).toEqual([
+      ['v7pvf-xyaaa-aaaao-aaaaa-cai', 'jujpo-eqaaa-aaaao-p777q-cai'],
+    ]);
   });
 });
 

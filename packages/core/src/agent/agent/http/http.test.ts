@@ -8,6 +8,7 @@ import { makeNonce, SubmitRequestType } from './types.ts';
 import { Principal } from '#principal';
 import type { RequestId } from '../../request_id.ts';
 import { requestIdOf } from '../../request_id.ts';
+import { Certificate } from '../../certificate.ts';
 
 import { JSDOM } from 'jsdom';
 import type { SignIdentity, Signature } from '../../index.ts';
@@ -205,8 +206,12 @@ test('queries with the same content should have the same signature', async () =>
 
   const paths = [[utf8ToBytes('request_status'), requestId, utf8ToBytes('reply')]];
 
+  // This test asserts request determinism, not response verification; the mocked fetch
+  // returns a non-certificate body, so stub out readState's certificate verification.
+  const certSpy = jest.spyOn(Certificate, 'create').mockResolvedValue({} as unknown as Certificate);
   const response1 = await httpAgent.readState({ canisterId }, { paths });
   const response2 = await httpAgent.readState({ canisterId }, { paths });
+  certSpy.mockRestore();
 
   const response3 = await httpAgent.query(canisterId, { arg, methodName });
   const response4 = await httpAgent.query(canisterId, { methodName, arg });
@@ -268,7 +273,11 @@ test('readState should not call transformers if request is passed', async () => 
 
   const request = await httpAgent.createReadStateRequest({ paths });
   expect(transformMock).toHaveBeenCalledTimes(1);
+  // This test asserts transformer invocation, not response verification; the mocked fetch
+  // returns a non-certificate body, so stub out readState's certificate verification.
+  const certSpy = jest.spyOn(Certificate, 'create').mockResolvedValue({} as unknown as Certificate);
   await httpAgent.readState({ canisterId }, { paths }, undefined, request);
+  certSpy.mockRestore();
   expect(transformMock).toHaveBeenCalledTimes(1);
 });
 
