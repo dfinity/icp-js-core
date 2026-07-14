@@ -56,14 +56,14 @@ describe('HttpAgent.readState value decoding', () => {
     // The type of each value follows the KnownPath's type parameter.
     const time: Date | null = values.get(timePath);
     const controllers: Principal[] | null = values.get(controllersPath);
-    const moduleHash: string | null = values.get(moduleHashPath);
+    const moduleHash: Uint8Array | null = values.get(moduleHashPath);
     const candid: string | null = values.get(candidPath);
 
     expect(time).toBeInstanceOf(Date);
     expect(controllers?.every(c => c instanceof Principal)).toBe(true);
     expect(time).toMatchSnapshot();
     expect(controllers?.map(c => c.toText())).toMatchSnapshot();
-    expect(moduleHash).toMatchSnapshot();
+    expect(bytesToHex(moduleHash!)).toMatchSnapshot();
     expect(candid).toMatchSnapshot();
   });
 
@@ -76,7 +76,10 @@ describe('HttpAgent.readState value decoding', () => {
       ['canister', canisterBuffer, 'metadata', 'candid:service'],
       bytes => new TextDecoder().decode(bytes),
     );
-    const controllers = new KnownPath(['canister', canisterBuffer, 'controllers'], decodeControllers);
+    const controllers = new KnownPath(
+      ['canister', canisterBuffer, 'controllers'],
+      decodeControllers,
+    );
 
     const { values } = await agent.readState(
       { canisterId: testPrincipal },
@@ -94,7 +97,7 @@ describe('HttpAgent.readState value decoding', () => {
     // The StatePaths builder bakes ['canister', <id>, 'module_hash'] ...
     const built = StatePaths.canisterModuleHash(testPrincipal);
     // ... equivalent to spelling the full path out.
-    const explicit = new KnownPath(['canister', canisterBuffer, 'module_hash'], bytesToHex);
+    const explicit = new KnownPath(['canister', canisterBuffer, 'module_hash'], x => x);
     const { values } = await agent.readState(
       { canisterId: testPrincipal },
       { paths: [built, explicit] },
@@ -106,10 +109,7 @@ describe('HttpAgent.readState value decoding', () => {
   it('maps an absent path to null', async () => {
     const agent = mockedAgent();
     const missing = new KnownPath(['asdf'], bytesToHex);
-    const { values } = await agent.readState(
-      { canisterId: testPrincipal },
-      { paths: [missing] },
-    );
+    const { values } = await agent.readState({ canisterId: testPrincipal }, { paths: [missing] });
     expect(values.get(missing)).toBe(null);
     // A path that was never requested also reads as null.
     expect(values.get(StatePaths.time)).toBe(null);

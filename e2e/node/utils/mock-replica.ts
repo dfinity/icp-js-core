@@ -400,7 +400,7 @@ export async function prepareV3ReadStateResponse({
     signature,
     delegation,
   };
-  const responseBody: ReadStateResponse = {
+  const responseBody = {
     certificate: Cbor.encode(cert),
   };
 
@@ -441,7 +441,7 @@ export async function prepareV3ReadStateRootSubnetResponse({
     tree,
     signature,
   };
-  const responseBody: ReadStateResponse = {
+  const responseBody = {
     certificate: Cbor.encode(cert),
   };
 

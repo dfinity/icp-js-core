@@ -144,8 +144,8 @@ export const StatePaths = {
    * The given canister's module hash, hex-encoded.
    * @param canisterId the canister to scope the path to
    */
-  canisterModuleHash: (canisterId: Principal): KnownPath<string> =>
-    new KnownPath(['canister', canisterId.toUint8Array(), 'module_hash'], bytesToHex),
+  canisterModuleHash: (canisterId: Principal): KnownPath<Uint8Array> =>
+    new KnownPath(['canister', canisterId.toUint8Array(), 'module_hash'], x => x),
   /**
    * The given canister's `candid:service` metadata, as a UTF-8 string.
    * @param canisterId the canister to scope the path to
