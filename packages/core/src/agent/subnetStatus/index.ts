@@ -12,20 +12,18 @@ import type { HttpAgent } from '../agent/http/index.ts';
 import {
   type Cert,
   type CanisterRanges,
-  type Certificate,
-  lookupResultToBuffer,
-  decodeCanisterRanges,
   lookup_path,
   LookupPathStatus,
 } from '../certificate.ts';
 import * as cbor from '../cbor.ts';
-import { decodeTime } from '../utils/leb.ts';
 import { utf8ToBytes } from '@noble/hashes/utils.js';
-import type { CustomPath } from '../utils/readState.ts';
 import {
   type BaseStatus,
   type BaseSubnetStatus,
   type SubnetNodeKeys,
+  type CustomPath,
+  KnownPath,
+  StatePaths,
   decodeValue,
   isCustomPath,
   lookupNodeKeysFromCertificate,
@@ -50,6 +48,40 @@ export type Status = BaseStatus | SubnetNodeKeys | CanisterRanges;
 export type Path = 'time' | 'canisterRanges' | 'publicKey' | 'nodeKeys' | CustomPath;
 
 export type StatusMap = Map<Path | string, Status>;
+
+/**
+ * Build the {@link KnownPath} for a named (non-`nodeKeys`) subnet status path. `nodeKeys` is handled
+ * separately, as its value is derived from the raw certificate.
+ * @param path the named subnet status path
+ * @param subnetId the subnet the request targets
+ */
+const namedToKnown = (
+  path: Exclude<Path, CustomPath | 'nodeKeys'>,
+  subnetId: Principal,
+): KnownPath<Status> => {
+  switch (path) {
+    case 'time':
+      return StatePaths.time;
+    case 'publicKey':
+      return StatePaths.subnetPublicKey(subnetId);
+    case 'canisterRanges':
+      return StatePaths.subnetCanisterRanges(subnetId);
+  }
+};
+
+/**
+ * Translate a user-provided {@link CustomPath} into a {@link KnownPath} that {@link HttpAgent.readState}
+ * can encode and decode. A string or single-buffer path names a segment under the subnet subtree.
+ * @param custom the user-provided custom path
+ * @param subnetId the subnet to scope a simple path to
+ */
+const customToKnown = (custom: CustomPath, subnetId: Principal): KnownPath<BaseStatus> => {
+  const decode = (bytes: Uint8Array): BaseStatus => decodeValue(bytes, custom.decodeStrategy);
+  if (typeof custom.path === 'string' || custom.path instanceof Uint8Array) {
+    return new KnownPath(['subnet', subnetId.toUint8Array(), custom.path], decode);
+  }
+  return new KnownPath(custom.path, decode);
+};
 
 export interface SubnetStatusOptions {
   /**
@@ -94,84 +126,47 @@ export async function request(options: SubnetStatusOptions): Promise<StatusMap> 
   const subnetId = Principal.from(options.subnetId);
 
   const uniquePaths = [...new Set(paths)];
-  const status = new Map<string | Path, Status>();
+  const status: StatusMap = new Map();
 
-  const promises = uniquePaths.map((path, index) => {
-    const encodedPath = encodePath(path, subnetId);
+  const keyOf = (path: Path): string => (typeof path === 'string' ? path : path.key);
 
-    return (async () => {
-      try {
-        const response = await agent.readSubnetState(subnetId, {
-          paths: [encodedPath],
-          disableTimeVerification: disableCertificateTimeVerification,
-        });
-
-        const certificate = response.verifiedCertificate;
-
-        const lookup = (cert: Certificate, lookupPath: Path) => {
-          if (lookupPath === 'nodeKeys') {
-            // For node keys, we need to parse the certificate directly
-            const data = lookupNodeKeysFromCertificate(cert.cert, subnetId);
-            return {
-              path: lookupPath,
-              data,
-            };
-          }
-          return {
-            path: lookupPath,
-            data: lookupResultToBuffer(cert.lookup_path(encodedPath)),
-          };
-        };
-
-        const { path, data } = lookup(certificate, uniquePaths[index]);
-        if (!data) {
-          if (typeof path === 'string') {
-            status.set(path, null);
-          } else {
-            status.set(path.key, null);
-          }
-        } else {
-          switch (path) {
-            case 'time': {
-              status.set(path, decodeTime(data));
-              break;
-            }
-            case 'canisterRanges': {
-              status.set(path, decodeCanisterRanges(data));
-              break;
-            }
-            case 'publicKey': {
-              status.set(path, data);
-              break;
-            }
-            case 'nodeKeys': {
-              status.set(path, data);
-              break;
-            }
-            default: {
-              // Check for CustomPath signature
-              if (isCustomPath(path)) {
-                status.set(path.key, decodeValue(data, path.decodeStrategy));
-              }
-            }
-          }
-        }
-      } catch (error) {
-        // Throw on certificate errors
-        if (
-          error instanceof AgentError &&
-          (error.hasCode(CertificateVerificationErrorCode) ||
-            error.hasCode(CertificateTimeErrorCode))
-        ) {
-          throw error;
-        }
-        if (isCustomPath(path)) {
-          status.set(path.key, null);
-        } else {
-          status.set(path, null);
-        }
+  const promises = uniquePaths.map(async path => {
+    try {
+      // The nodeKeys path resolves to per-node public keys, which require parsing the raw certificate.
+      if (path === 'nodeKeys') {
+        const { verifiedCertificate } = await agent.readState(
+          { subnetId },
+          {
+            paths: [[utf8ToBytes('subnet'), subnetId.toUint8Array(), utf8ToBytes('node')]],
+            disableTimeVerification: disableCertificateTimeVerification,
+          },
+        );
+        status.set('nodeKeys', lookupNodeKeysFromCertificate(verifiedCertificate.cert, subnetId));
+        return;
       }
-    })();
+
+      // Translate to a KnownPath and let readState encode and decode it.
+      const known: KnownPath<Status> =
+        typeof path === 'string' ? namedToKnown(path, subnetId) : customToKnown(path, subnetId);
+      const { values } = await agent.readState(
+        { subnetId },
+        {
+          paths: [known],
+          disableTimeVerification: disableCertificateTimeVerification,
+        },
+      );
+      status.set(keyOf(path), values.get(known));
+    } catch (error) {
+      // Throw on certificate errors
+      if (
+        error instanceof AgentError &&
+        (error.hasCode(CertificateVerificationErrorCode) ||
+          error.hasCode(CertificateTimeErrorCode))
+      ) {
+        throw error;
+      }
+      status.set(keyOf(path), null);
+    }
   });
 
   // Fetch all values separately, as each option can fail

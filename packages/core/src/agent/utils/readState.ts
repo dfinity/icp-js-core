@@ -5,6 +5,8 @@ import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import type { DerEncodedPublicKey } from '../auth.ts';
 import {
   type Cert,
+  type CanisterRanges,
+  decodeCanisterRanges,
   flatten_forks,
   LookupPathStatus,
   lookup_path,
@@ -61,10 +63,11 @@ export type DecodeStrategy = 'cbor' | 'hex' | 'leb128' | 'utf-8' | 'raw';
 /**
  * A strongly-typed, structured `read_state` path.
  *
- * Pre-built instances for the well-known canister paths are available on {@link StatePaths}, e.g.
- * {@link StatePaths.time} is a `KnownPath<Date>`. Construct your own for arbitrary paths: `path` is
- * the sequence of label segments (strings are UTF-8 encoded), optionally prefixed with
- * `['canister', <id>]` via the `canisterScoped` flag.
+ * Builders for the well-known paths are available on {@link StatePaths}, e.g. {@link StatePaths.time}
+ * is a `KnownPath<Date>` and {@link StatePaths.canisterControllers} builds a `KnownPath<Principal[]>`
+ * for a given canister. Construct your own for arbitrary paths: `path` is the fully-formed sequence
+ * of label segments (strings are UTF-8 encoded), including any `['canister', <id>]` or
+ * `['subnet', <id>]` prefix.
  *
  * The value at the path is decoded with the `decode` function, and looked up from the response
  * by passing the instance to {@link StateValues.get}.
@@ -79,7 +82,6 @@ export class KnownPath<T> {
   constructor(
     path: (Uint8Array | string)[] | Uint8Array | string,
     public readonly decode: (bytes: Uint8Array) => T,
-    public readonly canisterScoped: boolean,
   ) {
     const segments = Array.isArray(path) ? path : [path];
     this.path = segments.map(segment =>
@@ -122,22 +124,49 @@ export class CustomPath {
 export type Path = KnownPath<unknown> | Uint8Array[];
 
 /**
- * Pre-built {@link KnownPath} instances for the well-known canister state paths, accepted directly
+ * Builders for the well-known state paths, producing {@link KnownPath}s accepted directly
  * by {@link https://js.icp.build/core/latest/libs/agent/api/classes/httpagent#readstate | HttpAgent.readState}.
+ *
+ * The `canister*` and `subnet*` entries are functions taking the target ID, since it is baked into
+ * the path. Pass the `subnet*` paths when reading state from a subnet (`readState({ subnetId }, …)`)
+ * and the `canister*` paths when reading from a canister.
  */
 export const StatePaths = {
-  /** The canister's time, as a {@link Date}. */
-  time: new KnownPath(['time'], decodeTime, false),
-  /** The canister's controllers, as {@link Principal}s. */
-  controllers: new KnownPath(['controllers'], decodeControllers, true),
-  /** The canister's module hash, hex-encoded. */
-  moduleHash: new KnownPath(['module_hash'], bytesToHex, true),
-  /** The canister's `candid:service` metadata, as a UTF-8 string. */
-  candid: new KnownPath(
-    ['metadata', 'candid:service'],
-    bytes => new TextDecoder().decode(bytes),
-    true,
-  ),
+  /** The canister's or subnet's time, as a {@link Date}. */
+  time: new KnownPath(['time'], decodeTime),
+  /**
+   * The given canister's controllers, as {@link Principal}s.
+   * @param canisterId the canister to scope the path to
+   */
+  canisterControllers: (canisterId: Principal): KnownPath<Principal[]> =>
+    new KnownPath(['canister', canisterId.toUint8Array(), 'controllers'], decodeControllers),
+  /**
+   * The given canister's module hash, hex-encoded.
+   * @param canisterId the canister to scope the path to
+   */
+  canisterModuleHash: (canisterId: Principal): KnownPath<string> =>
+    new KnownPath(['canister', canisterId.toUint8Array(), 'module_hash'], bytesToHex),
+  /**
+   * The given canister's `candid:service` metadata, as a UTF-8 string.
+   * @param canisterId the canister to scope the path to
+   */
+  canisterCandid: (canisterId: Principal): KnownPath<string> =>
+    new KnownPath(
+      ['canister', canisterId.toUint8Array(), 'metadata', 'candid:service'],
+      bytes => new TextDecoder().decode(bytes),
+    ),
+  /**
+   * The given subnet's canister ID ranges.
+   * @param subnetId the subnet to scope the path to
+   */
+  subnetCanisterRanges: (subnetId: Principal): KnownPath<CanisterRanges> =>
+    new KnownPath(['canister_ranges', subnetId.toUint8Array()], decodeCanisterRanges),
+  /**
+   * The given subnet's public key, as raw bytes.
+   * @param subnetId the subnet to scope the path to
+   */
+  subnetPublicKey: (subnetId: Principal): KnownPath<Uint8Array> =>
+    new KnownPath(['subnet', subnetId.toUint8Array(), 'public_key'], bytes => bytes),
 } as const;
 
 /**
@@ -163,18 +192,11 @@ export class StateValues {
 /**
  * Encode a {@link Path} into the raw path expected by the `read_state` endpoint.
  * @param path the path to encode
- * @param canisterId the canister ID to scope canister-specific paths to
  * @returns the encoded path, as an array of buffers
  */
-export function encodePath(path: Path, canisterId: Principal): Uint8Array[] {
-  // Raw encoded paths pass through unchanged.
-  if (Array.isArray(path)) {
-    return path;
-  }
-  // A fully-formed path, optionally scoped under the target canister.
-  return path.canisterScoped
-    ? [utf8ToBytes('canister'), canisterId.toUint8Array(), ...path.path]
-    : path.path;
+export function encodePath(path: Path): Uint8Array[] {
+  // A raw encoded path passes through unchanged; a KnownPath is already fully-formed.
+  return Array.isArray(path) ? path : path.path;
 }
 
 /**

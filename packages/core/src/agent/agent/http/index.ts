@@ -1306,11 +1306,10 @@ export class HttpAgent implements Agent {
 
     // Encode paths into their raw form. Raw (pre-encoded) paths pass through unchanged; each
     // KnownPath is retained alongside its encoded form so its value can be decoded below.
-    const scope = 'canisterId' in target ? target.canisterId : target.subnetId;
     const encodedPaths: Uint8Array[][] = [];
     const knownPaths: { path: KnownPath<unknown>; encoded: Uint8Array[] }[] = [];
     for (const path of fields.paths) {
-      const encoded = encodePath(path, scope);
+      const encoded = encodePath(path);
       encodedPaths.push(encoded);
       if (!Array.isArray(path)) {
         knownPaths.push({ path, encoded });

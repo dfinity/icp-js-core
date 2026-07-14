@@ -5,9 +5,8 @@ import { request, lookupSubnetInfo, encodePath, IC_ROOT_SUBNET_ID } from './inde
 import { HttpAgent } from '../agent/index.ts';
 import * as Cert from '../certificate.ts';
 import { goldenCertificates } from '../agent/http/__certificates__/goldenCertificates.ts';
-import { decode } from '../cbor.ts';
+import { decode, encode } from '../cbor.ts';
 import { decodeCanisterRanges } from '../certificate.ts';
-import { StateValues } from '../utils/readState.ts';
 
 // bypass bls verification so that an old certificate is accepted
 jest.mock('../utils/bls', () => {
@@ -26,21 +25,16 @@ const testSubnetId = Principal.fromText(
 // Certificate time from mainnetApplicationO3ow2: 2025-11-20T00:07:23.446Z
 const certificateTime = Date.parse('2025-11-20T00:07:23.446Z');
 
-// Helper to get status using precomputed certificate
+// Helper to get status using precomputed certificate. The read_state endpoint is mocked to always
+// return the golden certificate, so the real HttpAgent.readState verifies and decodes it.
 const getStatus = async (paths: Path[], subnetId: Principal = testSubnetId) => {
   jest.setSystemTime(certificateTime);
 
-  const agent = HttpAgent.createSync({ host: 'https://ic0.app' });
-  agent.readSubnetState = jest.fn(async () => ({
-    certificate: certificateBytes,
-    verifiedCertificate: await Cert.Certificate.create({
-      certificate: certificateBytes,
-      rootKey: agent.rootKey!,
-      principal: { subnetId },
-      agent,
-    }),
-    values: new StateValues(),
-  }));
+  const body = encode({ certificate: certificateBytes });
+  const fetch = jest.fn(() =>
+    Promise.resolve(new Response(body, { status: 200 })),
+  ) as unknown as typeof globalThis.fetch;
+  const agent = HttpAgent.createSync({ host: 'https://ic0.app', fetch });
 
   return await request({
     subnetId,

@@ -37,27 +37,42 @@ export type Path = 'time' | 'controllers' | 'subnet' | 'module_hash' | 'candid' 
 export type StatusMap = Map<Path | string, Status>;
 
 /**
- * The {@link StatePaths} field backing each named (non-`subnet`) canister status path. The `subnet`
- * path is handled separately, as its value is derived from the raw certificate.
+ * Build the {@link KnownPath} for a named (non-`subnet`) canister status path. The `subnet` path is
+ * handled separately, as its value is derived from the raw certificate.
+ * @param path the named canister status path
+ * @param canisterId the canister the request targets
  */
-const NAMED_PATHS = {
-  time: StatePaths.time,
-  controllers: StatePaths.controllers,
-  module_hash: StatePaths.moduleHash,
-  candid: StatePaths.candid,
-} satisfies Record<Exclude<Path, CustomPath | 'subnet'>, KnownPath<Status>>;
+const namedToKnown = (
+  path: Exclude<Path, CustomPath | 'subnet'>,
+  canisterId: Principal,
+): KnownPath<Status> => {
+  switch (path) {
+    case 'time':
+      return StatePaths.time;
+    case 'controllers':
+      return StatePaths.canisterControllers(canisterId);
+    case 'module_hash':
+      return StatePaths.canisterModuleHash(canisterId);
+    case 'candid':
+      return StatePaths.canisterCandid(canisterId);
+  }
+};
 
 /**
  * Translate a user-provided {@link CustomPath} into a {@link KnownPath} that {@link HttpAgent.readState}
  * can encode and decode. A string or single-buffer path names a canister metadata entry.
  * @param custom the user-provided custom path
+ * @param canisterId the canister to scope a metadata path to
  */
-const customToKnown = (custom: CustomPath): KnownPath<BaseStatus> => {
+const customToKnown = (custom: CustomPath, canisterId: Principal): KnownPath<BaseStatus> => {
   const decode = (bytes: Uint8Array): BaseStatus => decodeValue(bytes, custom.decodeStrategy);
   if (typeof custom.path === 'string' || custom.path instanceof Uint8Array) {
-    return new KnownPath(['metadata', custom.path], decode, true);
+    return new KnownPath(
+      ['canister', canisterId.toUint8Array(), 'metadata', custom.path],
+      decode,
+    );
   }
-  return new KnownPath(custom.path, decode, false);
+  return new KnownPath(custom.path, decode);
 };
 
 export interface CanisterStatusOptions {
@@ -133,7 +148,7 @@ export const request = async (options: CanisterStatusOptions): Promise<StatusMap
 
       // Translate to a KnownPath and let readState encode and decode it.
       const known: KnownPath<Status> =
-        typeof path === 'string' ? NAMED_PATHS[path] : customToKnown(path);
+        typeof path === 'string' ? namedToKnown(path, canisterId) : customToKnown(path, canisterId);
       const { values } = await agent.readState(
         { canisterId },
         {
