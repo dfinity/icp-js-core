@@ -9,6 +9,7 @@ minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - '@dfinity/cbor'
   - '@dfinity/pic'
+  - 'brace-expansion' # temporary for 5.0.9, remove this afterwards
 
 onlyBuiltDependencies:
   - '@dfinity/pic'
@@ -19,13 +20,13 @@ onlyBuiltDependencies:
 overrides:
   '@babel/core@<=7.29.0': '>=7.29.6'
   body-parser@>=2.0.0 <2.3.0: '>=2.3.0'
-  brace-expansion: '>=5.0.8'
+  brace-expansion: '>=5.0.9'
   esbuild@>=0.27.3 <0.28.1: '>=0.28.1'
   js-yaml: '>=5.2.2'
   # linkify-it 6 dropped its default export, which markdown-it 14 imports
   linkify-it: '>=5.0.2 <6'
   markdown-it@<=14.1.1: '>=14.2.0'
   postcss@<=8.5.17: '>=8.5.18'
-  undici@>=7.0.0 <7.28.0: '>=7.28.0 <8'
-  undici@>=7.23.0 <7.28.0: '>=7.28.0 <8'
+  undici@>=7.0.0 <7.28.0: '>=7.29.0 <8'
+  undici@>=7.23.0 <7.28.0: '>=7.29.0 <8'
   vite@>=8.0.0 <=8.0.15: '>=8.0.16'
