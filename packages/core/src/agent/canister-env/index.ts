@@ -11,6 +11,7 @@ import {
   EmptyCookieErrorCode,
   MissingRootKeyErrorCode,
   MissingCookieErrorCode,
+  ConflictingCanisterEnvErrorCode,
 } from '../errors.ts';
 
 const IC_ENV_COOKIE_NAME = 'ic_env';
@@ -91,6 +92,7 @@ export interface GetCanisterEnvOptions {
  * @returns The environment variables for the asset canister, always including `IC_ROOT_KEY`
  * @throws {TypeError} When `globalThis.document` is not available
  * @throws {InputError} When the cookie is not found
+ * @throws {InputError} When several cookies with that name are present and they disagree
  * @throws {InputError} When the `IC_ROOT_KEY` is missing or has an invalid length
  * @see The {@link https://js.icp.build/core/latest/canister-environment/ | Canister Environment Guide} for more details on how to use the canister environment in a frontend application
  * @experimental
@@ -113,17 +115,25 @@ export function getCanisterEnv<T = Record<string, never>>(
 ): CanisterEnv & T {
   const { cookieName = IC_ENV_COOKIE_NAME } = options;
 
-  const cookie = getCookie(cookieName);
-  if (!cookie) {
+  const cookieValues = getCookieValues(cookieName);
+  if (cookieValues.length === 0) {
     throw InputError.fromCode(new MissingCookieErrorCode(cookieName));
   }
 
-  const cookieValue = cookie.split('=')[1].trim();
-  if (!cookieValue) {
+  // Several cookies with the same name can coexist on one origin, since a cookie is keyed
+  // on (name, domain, path) and partitioned cookies live in their own jar. Picking one of
+  // them arbitrarily silently configures the app against the wrong network or canister, so
+  // only proceed when every copy agrees.
+  const distinctValues = distinctEnvValues(cookieValues.map(decodeURIComponent));
+  if (distinctValues.length > 1) {
+    throw InputError.fromCode(new ConflictingCanisterEnvErrorCode(cookieName, distinctValues));
+  }
+
+  const decodedCookieValue = distinctValues[0];
+  if (!decodedCookieValue) {
     throw InputError.fromCode(new EmptyCookieErrorCode(cookieName));
   }
 
-  const decodedCookieValue = decodeURIComponent(cookieValue);
   const envVars = parseEnvVars<T>(decodedCookieValue);
   if (!envVars.IC_ROOT_KEY) {
     throw InputError.fromCode(new MissingRootKeyErrorCode());
@@ -163,10 +173,36 @@ export function safeGetCanisterEnv<T = Record<string, never>>(
   }
 }
 
-function getCookie(cookieName: string): string | undefined {
+function getCookieValues(cookieName: string): string[] {
+  const prefix = `${cookieName}=`;
+
   return globalThis.document.cookie
     .split(';')
-    .find(cookie => cookie.trim().startsWith(`${cookieName}=`));
+    .map(cookie => cookie.trim())
+    .filter(cookie => cookie.startsWith(prefix))
+    .map(cookie => cookie.slice(prefix.length).trim());
+}
+
+/**
+ * Deduplicate cookie values that carry the same environment, keeping the first occurrence of each.
+ *
+ * Comparing the decoded strings directly would report false conflicts, because writers legitimately
+ * differ in how they percent-encode (`_` vs `%5F`) and in the order they emit variables. Sorting the
+ * variables makes the comparison independent of both.
+ * @param decodedValues The decoded values of every cookie carrying the environment
+ * @returns One value per distinct environment, in the order the browser listed them
+ */
+function distinctEnvValues(decodedValues: string[]): string[] {
+  const byCanonicalForm = new Map<string, string>();
+
+  for (const value of decodedValues) {
+    const canonicalForm = value.split(ENV_VAR_SEPARATOR).sort().join(ENV_VAR_SEPARATOR);
+    if (!byCanonicalForm.has(canonicalForm)) {
+      byCanonicalForm.set(canonicalForm, value);
+    }
+  }
+
+  return Array.from(byCanonicalForm.values());
 }
 
 function parseEnvVars<T = Record<string, never>>(decoded: string): CanisterEnv & T {

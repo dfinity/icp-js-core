@@ -952,6 +952,22 @@ export class EmptyCookieErrorCode extends ErrorCode {
   }
 }
 
+export class ConflictingCanisterEnvErrorCode extends ErrorCode {
+  public name = 'ConflictingCanisterEnvErrorCode';
+
+  constructor(
+    public readonly expectedCookieName: string,
+    public readonly values: string[],
+  ) {
+    super();
+    Object.setPrototypeOf(this, ConflictingCanisterEnvErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return `Found ${this.values.length} '${this.expectedCookieName}' cookies with conflicting values. This usually means a stale cookie from a previous deployment is still present on this origin. Clear the site data for this origin and reload.`;
+  }
+}
+
 export class EffectiveSubnetIdAsyncErrorCode extends ErrorCode {
   public name = 'EffectiveSubnetIdAsyncErrorCode';
 
