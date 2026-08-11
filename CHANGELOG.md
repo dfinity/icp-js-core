@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fix
+
+- **agent**: detect conflicting `ic_env` cookies instead of taking the first (#1386)
+
 ## v6.1.0 (2026-08-03)
 
 ### Feat
