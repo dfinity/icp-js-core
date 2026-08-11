@@ -952,6 +952,19 @@ export class EmptyCookieErrorCode extends ErrorCode {
   }
 }
 
+export class MalformedCookieErrorCode extends ErrorCode {
+  public name = 'MalformedCookieErrorCode';
+
+  constructor(public readonly expectedCookieName: string) {
+    super();
+    Object.setPrototypeOf(this, MalformedCookieErrorCode.prototype);
+  }
+
+  public toErrorMessage(): string {
+    return `Cookie '${this.expectedCookieName}' is not valid URI-encoded content`;
+  }
+}
+
 export class ConflictingCanisterEnvErrorCode extends ErrorCode {
   public name = 'ConflictingCanisterEnvErrorCode';
 
@@ -964,7 +977,7 @@ export class ConflictingCanisterEnvErrorCode extends ErrorCode {
   }
 
   public toErrorMessage(): string {
-    return `Found ${this.values.length} '${this.expectedCookieName}' cookies with conflicting values. This usually means a stale cookie from a previous deployment is still present on this origin. Clear the site data for this origin and reload.`;
+    return `Found ${this.values.length} conflicting values for the '${this.expectedCookieName}' cookie. This usually means a stale cookie from a previous deployment is still present on this origin. Clear the site data for this origin and reload.`;
   }
 }
 

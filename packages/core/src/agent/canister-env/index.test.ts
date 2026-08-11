@@ -7,6 +7,7 @@ import {
   MissingRootKeyErrorCode,
   MissingCookieErrorCode,
   ConflictingCanisterEnvErrorCode,
+  MalformedCookieErrorCode,
 } from '../errors.ts';
 import { JSDOM } from 'jsdom';
 
@@ -203,7 +204,7 @@ describe('getCanisterEnv', () => {
           expect(error).toBeInstanceOf(InputError);
           expect((error as InputError).code).toBeInstanceOf(ConflictingCanisterEnvErrorCode);
           expect((error as ConflictingCanisterEnvErrorCode & InputError).message).toContain(
-            "Found 2 'ic_env' cookies with conflicting values",
+            "Found 2 conflicting values for the 'ic_env' cookie",
           );
           expect((error as InputError).code).toHaveProperty('values', [stale, fresh]);
         }
@@ -220,6 +221,58 @@ describe('getCanisterEnv', () => {
         const env = getCanisterEnv();
 
         expect(bytesToHex(env.IC_ROOT_KEY)).toBe(mockRootKeyHex);
+      });
+
+      test('should report the number of distinct environments, not the number of cookies', () => {
+        const stale = encodeURIComponent(`ic_root_key=${mockRootKeyHex}&PUBLIC_ID=stale`);
+        const fresh = encodeURIComponent(`ic_root_key=${mockRootKeyHex}&PUBLIC_ID=fresh`);
+
+        // Three cookies, two environments.
+        Object.defineProperty(globalThis.document, 'cookie', {
+          writable: true,
+          value: `ic_env=${stale}; ic_env=${fresh}; ic_env=${fresh}`,
+        });
+
+        expect.assertions(1);
+        try {
+          getCanisterEnv();
+        } catch (error) {
+          expect((error as InputError).message).toContain(
+            "Found 2 conflicting values for the 'ic_env' cookie",
+          );
+        }
+      });
+
+      test('should ignore a copy with malformed encoding when a valid one is present', () => {
+        const cookieValue = `ic_root_key=${mockRootKeyHex}`;
+
+        // `%E0%A4%A` is a truncated percent-escape; `decodeURIComponent` throws `URIError` on it.
+        Object.defineProperty(globalThis.document, 'cookie', {
+          writable: true,
+          value: `ic_env=%E0%A4%A; ic_env=${encodeURIComponent(cookieValue)}`,
+        });
+
+        const env = getCanisterEnv();
+
+        expect(bytesToHex(env.IC_ROOT_KEY)).toBe(mockRootKeyHex);
+      });
+
+      test('should throw an InputError, not a URIError, when no copy can be decoded', () => {
+        Object.defineProperty(globalThis.document, 'cookie', {
+          writable: true,
+          value: `ic_env=%E0%A4%A; ic_env=%`,
+        });
+
+        expect.assertions(3);
+        try {
+          getCanisterEnv();
+        } catch (error) {
+          expect(error).toBeInstanceOf(InputError);
+          expect((error as InputError).code).toBeInstanceOf(MalformedCookieErrorCode);
+          expect((error as InputError).message).toEqual(
+            "Cookie 'ic_env' is not valid URI-encoded content",
+          );
+        }
       });
 
       test('should return undefined from safeGetCanisterEnv when copies disagree', () => {
