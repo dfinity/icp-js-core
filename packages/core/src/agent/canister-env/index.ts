@@ -222,7 +222,7 @@ function distinctEnvValues(decodedValues: string[]): string[] {
   const byCanonicalForm = new Map<string, string>();
 
   for (const value of decodedValues) {
-    const canonicalForm = value.split(ENV_VAR_SEPARATOR).sort().join(ENV_VAR_SEPARATOR);
+    const canonicalForm = canonicalEnvForm(value);
     if (!byCanonicalForm.has(canonicalForm)) {
       byCanonicalForm.set(canonicalForm, value);
     }
@@ -231,14 +231,35 @@ function distinctEnvValues(decodedValues: string[]): string[] {
   return Array.from(byCanonicalForm.values());
 }
 
-function parseEnvVars<T = Record<string, never>>(decoded: string): CanisterEnv & T {
-  const entries = decoded.split(ENV_VAR_SEPARATOR).map(v => {
+/**
+ * Render the environment a cookie value resolves to, in a form that is stable across writers.
+ *
+ * Resolving repeated variables the way {@link parseEnvVars} does — last occurrence wins — before
+ * sorting is what makes this reflect the *effective* environment. Sorting the raw variables instead
+ * would make `A=1&A=2` and `A=2&A=1` compare equal despite resolving to different values for `A`,
+ * which would suppress a genuine conflict.
+ * @param decoded The decoded value of a single cookie
+ * @returns A canonical rendering of the environment it resolves to
+ */
+function canonicalEnvForm(decoded: string): string {
+  const resolved = new Map(splitEnvVars(decoded));
+
+  return Array.from(resolved, ([key, value]) => `${key}${ENV_VAR_ASSIGNMENT_SYMBOL}${value}`)
+    .sort()
+    .join(ENV_VAR_SEPARATOR);
+}
+
+function splitEnvVars(decoded: string): [string, string][] {
+  return decoded.split(ENV_VAR_SEPARATOR).map(v => {
     // we only want to split at the first occurrence of the assignment symbol
     const symbolIndex = v.indexOf(ENV_VAR_ASSIGNMENT_SYMBOL);
 
-    const key = v.slice(0, symbolIndex);
-    const value = v.substring(symbolIndex + 1);
+    return [v.slice(0, symbolIndex), v.substring(symbolIndex + 1)];
+  });
+}
 
+function parseEnvVars<T = Record<string, never>>(decoded: string): CanisterEnv & T {
+  const entries = splitEnvVars(decoded).map(([key, value]) => {
     if (key === IC_ROOT_KEY_VALUE_NAME) {
       const rootKey = hexToBytes(value);
       if (rootKey.length !== IC_ROOT_KEY_BYTES_LENGTH) {

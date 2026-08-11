@@ -243,6 +243,40 @@ describe('getCanisterEnv', () => {
         }
       });
 
+      test('should detect a conflict that only repeated variables reveal', () => {
+        // Both copies hold the same variables, so sorting them raw would compare equal. They
+        // resolve differently though, because the last occurrence of a repeated variable wins.
+        const first = `ic_root_key=${mockRootKeyHex}&PUBLIC_ID=a&PUBLIC_ID=b`;
+        const second = `ic_root_key=${mockRootKeyHex}&PUBLIC_ID=b&PUBLIC_ID=a`;
+
+        Object.defineProperty(globalThis.document, 'cookie', {
+          writable: true,
+          value: `ic_env=${encodeURIComponent(first)}; ic_env=${encodeURIComponent(second)}`,
+        });
+
+        expect.assertions(2);
+        try {
+          getCanisterEnv();
+        } catch (error) {
+          expect((error as InputError).code).toBeInstanceOf(ConflictingCanisterEnvErrorCode);
+          expect((error as InputError).message).toContain('Found 2 conflicting values');
+        }
+      });
+
+      test('should treat repeated variables in a consistent order as one environment', () => {
+        const cookieValue = `ic_root_key=${mockRootKeyHex}&PUBLIC_ID=a&PUBLIC_ID=b`;
+        const encoded = encodeURIComponent(cookieValue);
+
+        Object.defineProperty(globalThis.document, 'cookie', {
+          writable: true,
+          value: `ic_env=${encoded}; ic_env=${encoded}`,
+        });
+
+        const env = getCanisterEnv<{ readonly PUBLIC_ID: string }>();
+
+        expect(env.PUBLIC_ID).toBe('b');
+      });
+
       test('should ignore a copy with malformed encoding when a valid one is present', () => {
         const cookieValue = `ic_root_key=${mockRootKeyHex}`;
 
