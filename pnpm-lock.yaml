@@ -12,6 +12,8 @@ overrides:
   js-yaml: '>=5.2.2'
   linkify-it: '>=5.0.2 <6'
   markdown-it@<=14.1.1: '>=14.2.0'
+  nanoid@<3.3.17: '>=3.3.17'
+  nanoid@>=4.0.0 <5.1.16: '>=5.1.16'
   postcss@<=8.5.17: '>=8.5.18'
   undici@>=7.0.0 <7.28.0: '>=7.29.0 <8'
   undici@>=7.23.0 <7.28.0: '>=7.29.0 <8'
@@ -2580,14 +2582,14 @@ packages:
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
 
-  nanoid@3.3.16:
-    resolution: {integrity: sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q==}
-    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
   nanoid@5.1.7:
     resolution: {integrity: sha512-ua3NDgISf6jdwezAheMOk4mbE1LXjm1DfMUDMuJf4AqxLFK3ccGpgWizwa5YV7Yz9EpXwEaWoRXSb/BnV0t5dQ==}
     engines: {node: ^18 || >=20}
+    hasBin: true
+
+  nanoid@6.0.0:
+    resolution: {integrity: sha512-mkUH+rPkwU2qPadJ0oJZOjeZ5Mxn8Q1UhevwkTRWNuUZzyia3h4rhzK39hxaHTk0o2OxB8W2SQ6A8k23ZDi1pQ==}
+    engines: {node: ^22 || ^24 || >=26}
     hasBin: true
 
   nanospinner@1.2.2:
@@ -4317,7 +4319,7 @@ snapshots:
   '@size-limit/esbuild@12.0.1(size-limit@12.0.1(jiti@2.6.1))':
     dependencies:
       esbuild: 0.28.1
-      nanoid: 5.1.7
+      nanoid: 6.0.0
       size-limit: 12.0.1(jiti@2.6.1)
 
   '@size-limit/file@12.0.1(size-limit@12.0.1(jiti@2.6.1))':
@@ -6096,9 +6098,9 @@ snapshots:
       object-assign: 4.1.1
       thenify-all: 1.6.0
 
-  nanoid@3.3.16: {}
-
   nanoid@5.1.7: {}
+
+  nanoid@6.0.0: {}
 
   nanospinner@1.2.2:
     dependencies:
@@ -6245,7 +6247,7 @@ snapshots:
 
   postcss@8.5.23:
     dependencies:
-      nanoid: 3.3.16
+      nanoid: 5.1.7
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -6455,7 +6457,7 @@ snapshots:
 
   size-limit-node-esbuild@0.4.0:
     dependencies:
-      nanoid: 5.1.7
+      nanoid: 6.0.0
       size-limit: 11.2.0
       tslib: 2.8.1
 
