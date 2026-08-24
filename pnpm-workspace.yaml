@@ -26,6 +26,7 @@ overrides:
   # linkify-it 6 dropped its default export, which markdown-it 14 imports
   linkify-it: '>=5.0.2 <6'
   markdown-it@<=14.1.1: '>=14.2.0'
+  nanoid: '>=5.1.16'
   postcss@<=8.5.17: '>=8.5.18'
   undici@>=7.0.0 <7.28.0: '>=7.29.0 <8'
   undici@>=7.23.0 <7.28.0: '>=7.29.0 <8'
