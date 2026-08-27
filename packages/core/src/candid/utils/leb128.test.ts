@@ -57,6 +57,27 @@ test('sleb', () => {
   );
 });
 
+test('leb rejects oversized continuation-byte sequences', () => {
+  // A run of continuation bytes (0x80 …) with no terminator would otherwise
+  // loop unbounded, forcing expensive per-byte BigInt arithmetic (client-side
+  // DoS). The decoder must cap the length and throw instead.
+  const oversized = new Uint8Array(16384).fill(0x80);
+  oversized[oversized.length - 1] = 0x00;
+  expect(() => lebDecode(new Pipe(oversized))).toThrow(/exceeds maximum length/);
+
+  // A value at the maximum permitted length (8192 bytes) still decodes.
+  const atLimit = new Uint8Array(8192).fill(0x80);
+  atLimit[atLimit.length - 1] = 0x00;
+  expect(lebDecode(new Pipe(atLimit))).toBe(BigInt(0));
+});
+
+test('sleb rejects oversized continuation-byte sequences', () => {
+  // The signed decoder's negative path is vulnerable to the same unbounded run.
+  const oversized = new Uint8Array(16384).fill(0x80);
+  oversized[oversized.length - 1] = 0x40; // terminator < 0x80 with sign bit set
+  expect(() => slebDecode(new Pipe(oversized))).toThrow(/exceeds maximum length/);
+});
+
 test('IntLE', () => {
   expect(bytesToHex(writeIntLE(42, 2))).toBe('2a00');
   expect(bytesToHex(writeIntLE(-42, 3))).toBe('d6ffff');

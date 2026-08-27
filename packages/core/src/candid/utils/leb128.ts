@@ -12,6 +12,19 @@ function eob(): never {
   throw new Error('unexpected end of buffer');
 }
 
+// Upper bound on the number of bytes a single LEB128 / signed-LEB128 value may
+// occupy. Without it, an untrusted payload can supply an unbounded run of
+// continuation bytes (`0x80 …`) that forces expensive per-byte BigInt
+// arithmetic (cost grows ~quadratically) and exhausts CPU — a client-side DoS
+// on any dapp decoding a malicious canister response.
+//
+// `nat`/`int` are arbitrary-precision, so there is no protocol limit here; this
+// is a pragmatic guard. 8 KiB is far above any real value (a legitimate token
+// balance, cycle count or timestamp is a handful of bytes; the largest value in
+// the test suite is ~1.2 KiB) while keeping the worst-case decode cost a few
+// milliseconds. The freeze the guard prevents only appears well above 100 KiB.
+const MAX_LEB_BYTES = 8192;
+
 /**
  *
  * @param pipe Pipe from buffer-pipe
@@ -75,8 +88,12 @@ export function lebDecode(pipe: Pipe): bigint {
   let weight = BigInt(1);
   let value = BigInt(0);
   let byte;
+  let count = 0;
 
   do {
+    if (count++ >= MAX_LEB_BYTES) {
+      throw new Error(`LEB128 value exceeds maximum length of ${MAX_LEB_BYTES} bytes`);
+    }
     byte = safeReadUint8(pipe);
     value += BigInt(byte & 0x7f).valueOf() * weight;
     weight *= BigInt(128);
@@ -136,6 +153,9 @@ export function slebDecode(pipe: Pipe): bigint {
   const pipeView = new Uint8Array(pipe.buffer);
   let len = 0;
   for (; len < pipeView.byteLength; len++) {
+    if (len >= MAX_LEB_BYTES) {
+      throw new Error(`LEB128 value exceeds maximum length of ${MAX_LEB_BYTES} bytes`);
+    }
     if (pipeView[len] < 0x80) {
       // If it's a positive number, we reuse lebDecode.
       if ((pipeView[len] & 0x40) === 0) {
