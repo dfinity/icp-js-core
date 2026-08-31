@@ -54,6 +54,15 @@ function resetDecodeBudget(byteLength: number) {
 }
 
 /**
+ * Release the per-decode allocation budget. Called when {@link decode} returns,
+ * so that a decode which threw part-way through does not leave a depleted budget
+ * behind for a subsequent direct `decodeValue` call.
+ */
+function releaseDecodeBudget() {
+  decodeElementBudget = Number.MAX_SAFE_INTEGER;
+}
+
+/**
  * Charge `n` elements against the per-decode budget before allocating them.
  * @param n number of elements about to be allocated
  */
@@ -2382,6 +2391,7 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
     return output;
   } finally {
     resetSubtypeCache();
+    releaseDecodeBudget();
   }
 }
 
