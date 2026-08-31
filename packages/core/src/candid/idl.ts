@@ -19,6 +19,81 @@ import {
 import { iexp2 } from './utils/bigint-math.ts';
 
 /**
+ * Bounds on how much a single `decode()` call may allocate, relative to the size
+ * of the message being decoded.
+ *
+ * Candid `vec` lengths are attacker-controlled and independent of the wire size:
+ * an element type that consumes no bytes (`null`, `reserved`, an empty record)
+ * lets a handful of bytes ask for an arbitrarily long array. Bounding each
+ * length against the remaining buffer is not sufficient, because nesting
+ * (`vec (vec null)`) makes the total quadratic in the message size. So the
+ * budget is global to a decode and charged up front, which caps total allocation
+ * at a linear multiple of the input.
+ *
+ * The budget is charged for every value the decoder is about to materialise:
+ * `vec` elements and record fields. Records need charging too because nesting
+ * them multiplies — a 23-entry type table describes 2^20 leaves in candid's own
+ * `spacebomb.test.did` fixture, with no `vec` length involved.
+ *
+ * The multiplier is chosen so that no payload whose values actually consume wire
+ * bytes can hit it: the densest such type is one value per byte (`vec bool`,
+ * `vec nat8`), so 4x leaves 4x headroom. The constant term lets small messages
+ * still carry a degenerate zero-width collection.
+ */
+const DECODE_ELEMENT_BUDGET_BASE = 65_536;
+const DECODE_ELEMENT_BUDGET_PER_BYTE = 4;
+
+let decodeElementBudget = Number.MAX_SAFE_INTEGER;
+
+/**
+ * Reset the per-decode allocation budget. Called at the start of {@link decode}.
+ * @param byteLength length of the message being decoded
+ */
+function resetDecodeBudget(byteLength: number) {
+  decodeElementBudget = DECODE_ELEMENT_BUDGET_BASE + DECODE_ELEMENT_BUDGET_PER_BYTE * byteLength;
+}
+
+/**
+ * Release the per-decode allocation budget. Called when {@link decode} returns,
+ * so that a decode which threw part-way through does not leave a depleted budget
+ * behind for a subsequent direct `decodeValue` call.
+ */
+function releaseDecodeBudget() {
+  decodeElementBudget = Number.MAX_SAFE_INTEGER;
+}
+
+/**
+ * Charge `n` elements against the per-decode budget before allocating them.
+ * @param n number of elements about to be allocated
+ */
+function chargeElements(n: number) {
+  if (n > decodeElementBudget) {
+    throw new CandidDecodeError(
+      `Decoded value exceeds the allocation budget: tried to allocate ${n} elements with ${decodeElementBudget} remaining`,
+    );
+  }
+  decodeElementBudget -= n;
+}
+
+/**
+ * Read a structural length (a `vec` length, a text byte count, a field count)
+ * from the wire.
+ *
+ * Unlike `nat`/`int`, which are arbitrary-precision, a length is an index into
+ * the message and so must be a safe integer. `Number(lebDecode(...))` silently
+ * yields a lossy value or `Infinity` for oversized varints, which then flows
+ * into loop bounds and typed-array constructors.
+ * @param b the pipe to read from
+ */
+function readLen(b: Pipe): number {
+  const len = lebDecode(b);
+  if (len > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new CandidDecodeError(`Length out of range: ${len}`);
+  }
+  return Number(len);
+}
+
+/**
  * This module provides a combinator library to create serializers/deserializers
  * between JavaScript values and IDL used by canisters on the Internet Computer,
  * as documented at https://github.com/dfinity/candid/blob/119703ba342d2fef6ab4972d2541b9fe36ae8e36/spec/Candid.md
@@ -307,7 +382,9 @@ export abstract class ConstructType<T = any> extends Type<T> {
     if (t instanceof RecClass) {
       const ty = t.getType();
       if (typeof ty === 'undefined') {
-        throw new CandidDecodeError('Type mismatch: cannot decode from uninitialized recursive type');
+        throw new CandidDecodeError(
+          'Type mismatch: cannot decode from uninitialized recursive type',
+        );
       }
       return ty;
     }
@@ -1029,36 +1106,38 @@ export class VecClass<T> extends ConstructType<T[]> {
   public decodeValue(b: Pipe, t: Type): T[] {
     const vec = this.checkType(t);
     if (!(vec instanceof VecClass)) {
-      throw new CandidDecodeError(`Expected type '${this.display()}', but received non-vector type '${vec.display()}'`);
+      throw new CandidDecodeError(
+        `Expected type '${this.display()}', but received non-vector type '${vec.display()}'`,
+      );
     }
-    const len = Number(lebDecode(b));
+    const len = readLen(b);
 
     if (this._type instanceof FixedNatClass) {
       if (this._type._bits == 8) {
-        return new Uint8Array(b.read(len)) as unknown as T[];
+        return new Uint8Array(safeRead(b, len)) as unknown as T[];
       }
       if (this._type._bits == 16) {
-        const bytes = b.read(len * 2);
+        const bytes = safeRead(b, len * 2);
         // Check if we need to swap bytes for endianness
         const u16 = new Uint16Array(bytes.buffer, bytes.byteOffset, len);
         return u16 as unknown as T[];
       }
       if (this._type._bits == 32) {
-        const bytes = b.read(len * 4);
+        const bytes = safeRead(b, len * 4);
         const u32 = new Uint32Array(bytes.buffer, bytes.byteOffset, len);
         return u32 as unknown as T[];
       }
       if (this._type._bits == 64) {
-        return new BigUint64Array(b.read(len * 8).buffer) as unknown as T[];
+        return new BigUint64Array(safeRead(b, len * 8).buffer) as unknown as T[];
       }
     }
 
     if (this._type instanceof FixedIntClass) {
       if (this._type._bits == 8) {
-        return new Int8Array(b.read(len)) as unknown as T[];
+        return new Int8Array(safeRead(b, len)) as unknown as T[];
       }
       if (this._type._bits == 16) {
-        const bytes = b.read(len * 2);
+        const bytes = safeRead(b, len * 2);
         // Create a DataView to properly handle endianness
         const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 
@@ -1071,7 +1150,7 @@ export class VecClass<T> extends ConstructType<T[]> {
         return result as unknown as T[];
       }
       if (this._type._bits == 32) {
-        const bytes = b.read(len * 4);
+        const bytes = safeRead(b, len * 4);
         const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 
         const result = new Int32Array(len);
@@ -1081,7 +1160,7 @@ export class VecClass<T> extends ConstructType<T[]> {
         return result as unknown as T[];
       }
       if (this._type._bits == 64) {
-        const bytes = b.read(len * 8);
+        const bytes = safeRead(b, len * 8);
         const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 
         const result = new BigInt64Array(len);
@@ -1092,6 +1171,7 @@ export class VecClass<T> extends ConstructType<T[]> {
       }
     }
 
+    chargeElements(len);
     const rets: T[] = [];
     for (let i = 0; i < len; i++) {
       rets.push(this._type.decodeValue(b, vec._type));
@@ -1177,7 +1257,9 @@ export class OptClass<T> extends ConstructType<[T] | []> {
     if (t instanceof RecClass) {
       const ty = t.getType();
       if (typeof ty === 'undefined') {
-        throw new CandidDecodeError('Type mismatch: cannot decode from uninitialized recursive type');
+        throw new CandidDecodeError(
+          'Type mismatch: cannot decode from uninitialized recursive type',
+        );
       } else {
         wireType = ty;
       }
@@ -1204,7 +1286,9 @@ export class OptClass<T> extends ConstructType<[T] | []> {
           }
         }
         default:
-          throw new CandidDecodeError(`Invalid option value: expected 0 (None) or 1 (Some) for type '${this.display()}'`);
+          throw new CandidDecodeError(
+            `Invalid option value: expected 0 (None) or 1 (Some) for type '${this.display()}'`,
+          );
       }
     } else if (
       // this check corresponds to `not (null <: <t>)` in the spec
@@ -1332,9 +1416,13 @@ export class RecordClass extends ConstructType<Record<string, any>> {
   public decodeValue(b: Pipe, t: Type) {
     const record = this.checkType(t);
     if (!(record instanceof RecordClass)) {
-      throw new CandidDecodeError(`Expected type '${this.display()}', but received non-record type '${record.display()}'`);
+      throw new CandidDecodeError(
+        `Expected type '${this.display()}', but received non-record type '${record.display()}'`,
+      );
     }
     const x: Record<string, any> = {};
+
+    chargeElements(record._fields.length);
 
     let expectedRecordIdx = 0;
     let actualRecordIdx = 0;
@@ -1472,13 +1560,21 @@ export class TupleClass<T extends any[]> extends RecordClass {
   public decodeValue(b: Pipe, t: Type): T {
     const tuple = this.checkType(t);
     if (!(tuple instanceof TupleClass)) {
-      throw new CandidDecodeError(`Expected type '${this.display()}', but received non-tuple type '${tuple.display()}'`);
+      throw new CandidDecodeError(
+        `Expected type '${this.display()}', but received non-tuple type '${tuple.display()}'`,
+      );
     }
     if (tuple._components.length < this._components.length) {
       throw new CandidDecodeError(
         `Tuple mismatch: expected ${this._components.length} components, but received ${tuple._components.length}`,
       );
     }
+    // Charged here as well as in `RecordClass`, which this overrides rather
+    // than extends: the type-table builder turns any wire record whose field
+    // hashes are `0..n-1` into a tuple, so nesting those would otherwise
+    // multiply without touching the budget.
+    chargeElements(tuple._components.length);
+
     const res = [];
     for (const [i, wireType] of tuple._components.entries()) {
       if (i >= this._components.length) {
@@ -1576,7 +1672,9 @@ export class VariantClass extends ConstructType<Record<string, any>> {
   public decodeValue(b: Pipe, t: Type) {
     const variant = this.checkType(t);
     if (!(variant instanceof VariantClass)) {
-      throw new CandidDecodeError(`Expected type '${this.display()}', but received non-variant type '${variant.display()}'`);
+      throw new CandidDecodeError(
+        `Expected type '${this.display()}', but received non-variant type '${variant.display()}'`,
+      );
     }
     const idx = Number(lebDecode(b));
     if (idx >= variant._fields.length) {
@@ -2280,8 +2378,12 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
   });
 
   resetSubtypeCache();
-  const types = rawTypes.map(t => getType(t));
   try {
+    // Reset and release are paired around this block so that every path out of
+    // it, including a throw from `getType`, restores the budget.
+    resetDecodeBudget(bytes.byteLength);
+    const types = rawTypes.map(t => getType(t));
+
     const output = retTypes.map((t, i) => {
       return t.decodeValue(b, types[i]);
     });
@@ -2298,6 +2400,7 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
     return output;
   } finally {
     resetSubtypeCache();
+    releaseDecodeBudget();
   }
 }
 
