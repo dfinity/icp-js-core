@@ -1569,6 +1569,12 @@ export class TupleClass<T extends any[]> extends RecordClass {
         `Tuple mismatch: expected ${this._components.length} components, but received ${tuple._components.length}`,
       );
     }
+    // Charged here as well as in `RecordClass`, which this overrides rather
+    // than extends: the type-table builder turns any wire record whose field
+    // hashes are `0..n-1` into a tuple, so nesting those would otherwise
+    // multiply without touching the budget.
+    chargeElements(tuple._components.length);
+
     const res = [];
     for (const [i, wireType] of tuple._components.entries()) {
       if (i >= this._components.length) {
@@ -2137,7 +2143,6 @@ export function encode(argTypes: Array<Type<any>>, args: any[]): Uint8Array {
  */
 export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
   const b = new Pipe(bytes);
-  resetDecodeBudget(bytes.byteLength);
 
   if (bytes.byteLength < magicNumber.length) {
     throw new Error('Message length smaller than magic number');
@@ -2373,8 +2378,12 @@ export function decode(retTypes: Type[], bytes: Uint8Array): JsonValue[] {
   });
 
   resetSubtypeCache();
-  const types = rawTypes.map(t => getType(t));
   try {
+    // Reset and release are paired around this block so that every path out of
+    // it, including a throw from `getType`, restores the budget.
+    resetDecodeBudget(bytes.byteLength);
+    const types = rawTypes.map(t => getType(t));
+
     const output = retTypes.map((t, i) => {
       return t.decodeValue(b, types[i]);
     });

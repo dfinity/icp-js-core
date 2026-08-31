@@ -168,6 +168,22 @@ describe('ICPBB-426: vector length is bounded', () => {
       expect(() => IDL.decode([], parseBlob(blob))).toThrow(/allocation budget/);
     }
   });
+
+  it('rejects a tuple-shaped record nesting that describes 2^20 leaves', () => {
+    // The spec fixture above uses field hashes 1 and 2, which stay a record.
+    // Hashes 0..n-1 make the type-table builder emit a tuple instead, and
+    // `TupleClass.decodeValue` overrides `RecordClass.decodeValue` rather than
+    // extending it -- so this bypasses the budget unless tuples charge too.
+    //   T0 = record {0:null; 1:null};  Tn = record {0:T(n-1); 1:T(n-1)}
+    const depth = 20;
+    const table: number[] = [0x6c, 0x02, 0x00, 0x7f, 0x01, 0x7f];
+    for (let i = 1; i <= depth; i++) {
+      table.push(0x6c, 0x02, 0x00, i - 1, 0x01, i - 1);
+    }
+    const msg = Uint8Array.from([0x44, 0x49, 0x44, 0x4c, depth + 1, ...table, 0x01, depth]);
+    expect(msg.byteLength).toBeLessThan(200);
+    expect(() => IDL.decode([], msg)).toThrow(/allocation budget/);
+  });
 });
 
 describe('ICPBB-426: fixed-width vectors are bounded by the buffer', () => {
@@ -210,6 +226,11 @@ describe('the budget does not reject legitimate payloads', () => {
       () => new Array(200_000).fill({ a: 1 }),
     ],
     ['vec (opt nat8)', IDL.Vec(IDL.Opt(IDL.Nat8)), () => new Array(200_000).fill([1])],
+    [
+      'vec (tuple nat8 nat8)',
+      IDL.Vec(IDL.Tuple(IDL.Nat8, IDL.Nat8)),
+      () => new Array(200_000).fill([1, 2]),
+    ],
   ])('decodes 200k elements of %s', (_name, type, make) => {
     const decoded = IDL.decode([type], IDL.encode([type], [make()]))[0];
     expect((decoded as ArrayLike<unknown>).length).toBe(200_000);
