@@ -70,7 +70,7 @@ export class InputBox {
       } catch (err) {
         input.classList.add('reject');
         this.status.style.display = 'block';
-        this.status.innerHTML = `InputError: ${(err as Error).message}`;
+        this.status.textContent = `InputError: ${(err as Error).message}`;
         this.value = undefined;
         return undefined;
       }
