@@ -33,71 +33,73 @@ const rejectByRequestKey = new Map<
   { reject_code: number; reject_message: string; error_code?: string }
 >();
 
+// Fake verified certificate returned by the mocked `readState`. Reproduces the
+// `lookup_path` behaviour polling relies on, driven by the per-request status queues.
+function mockCertificate() {
+  return {
+    lookup_path: (path: [string, RequestId, string]) => {
+      // Path shape: ['request_status', requestIdBytes, 'status'|'reject_code'|'reject_message'|'error_code'|'reply']
+      const requestIdBytes = path[1];
+      const lastPathElement = path[path.length - 1] as string | Uint8Array;
+      const lastPathElementStr =
+        typeof lastPathElement === 'string' ? lastPathElement : textDecoder.decode(lastPathElement);
+
+      if (lastPathElementStr === 'status') {
+        const q = statusesByRequestKey.get(requestIdBytes) ?? [];
+        const current = q.length > 0 ? q.shift()! : 'replied';
+        statusesByRequestKey.set(requestIdBytes, q);
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: textEncoder.encode(current),
+        };
+      }
+      if (lastPathElementStr === 'reply') {
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: replyByRequestKey.get(requestIdBytes)!,
+        };
+      }
+      if (lastPathElementStr === 'reject_code') {
+        const reject = rejectByRequestKey.get(requestIdBytes);
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: new Uint8Array([reject?.reject_code ?? 0]),
+        };
+      }
+      if (lastPathElementStr === 'reject_message') {
+        const reject = rejectByRequestKey.get(requestIdBytes);
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: textEncoder.encode(reject?.reject_message ?? ''),
+        };
+      }
+      if (lastPathElementStr === 'error_code') {
+        const reject = rejectByRequestKey.get(requestIdBytes);
+        if (reject?.error_code) {
+          return {
+            status: 'Found' as LookupPathStatus.Found,
+            value: textEncoder.encode(reject.error_code),
+          };
+        }
+        return { status: 'Absent' as LookupPathStatus.Absent };
+      }
+      throw new Error(`Unexpected lastPathElementStr ${lastPathElementStr}`);
+    },
+  } as const;
+}
+
 const mockAgent = {
   rootKey: new Uint8Array([1]),
-  readState: async () => ({ certificate: new Uint8Array([0]) }),
+  readState: async () => ({
+    certificate: new Uint8Array([0]),
+    verifiedCertificate: mockCertificate(),
+  }),
 } as unknown as Agent;
 
 jest.mock('../certificate.ts', () => {
   return {
     // Simplified adapter used by polling/index.ts
     lookupResultToBuffer: (res: LookupPathResultFound) => res.value,
-    Certificate: {
-      create: jest.fn(async () => {
-        return {
-          lookup_path: (path: [string, RequestId, string]) => {
-            // Path shape: ['request_status', requestIdBytes, 'status'|'reject_code'|'reject_message'|'error_code'|'reply']
-            const requestIdBytes = path[1];
-            const lastPathElement = path[path.length - 1] as string | Uint8Array;
-            const lastPathElementStr =
-              typeof lastPathElement === 'string'
-                ? lastPathElement
-                : textDecoder.decode(lastPathElement);
-
-            if (lastPathElementStr === 'status') {
-              const q = statusesByRequestKey.get(requestIdBytes) ?? [];
-              const current = q.length > 0 ? q.shift()! : 'replied';
-              statusesByRequestKey.set(requestIdBytes, q);
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: textEncoder.encode(current),
-              };
-            }
-            if (lastPathElementStr === 'reply') {
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: replyByRequestKey.get(requestIdBytes)!,
-              };
-            }
-            if (lastPathElementStr === 'reject_code') {
-              const reject = rejectByRequestKey.get(requestIdBytes);
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: new Uint8Array([reject?.reject_code ?? 0]),
-              };
-            }
-            if (lastPathElementStr === 'reject_message') {
-              const reject = rejectByRequestKey.get(requestIdBytes);
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: textEncoder.encode(reject?.reject_message ?? ''),
-              };
-            }
-            if (lastPathElementStr === 'error_code') {
-              const reject = rejectByRequestKey.get(requestIdBytes);
-              if (reject?.error_code) {
-                return {
-                  status: 'Found' as LookupPathStatus.Found,
-                  value: textEncoder.encode(reject.error_code),
-                };
-              }
-              return { status: 'Absent' as LookupPathStatus.Absent };
-            }
-            throw new Error(`Unexpected lastPathElementStr ${lastPathElementStr}`);
-          },
-        } as const;
-      }),
-    },
   };
 });
 
@@ -166,7 +168,7 @@ describe('pollForResponse', () => {
     const rawCertBytes = new Uint8Array([10, 20, 30]);
     const agentWithCustomCert = {
       rootKey: new Uint8Array([1]),
-      readState: async () => ({ certificate: rawCertBytes }),
+      readState: async () => ({ certificate: rawCertBytes, verifiedCertificate: mockCertificate() }),
     } as unknown as Agent;
 
     replyByRequestKey.set(requestId, new Uint8Array([1, 2, 3, 4, 5]));
@@ -184,7 +186,7 @@ describe('pollForResponse', () => {
       rootKey: new Uint8Array([1]),
       readState: async () => {
         callCount++;
-        return { certificate: new Uint8Array([callCount]) };
+        return { certificate: new Uint8Array([callCount]), verifiedCertificate: mockCertificate() };
       },
     } as unknown as Agent;
 
@@ -226,9 +228,16 @@ describe('pollForResponse', () => {
       scenario: 'null rootKey',
       statuses: undefined,
       expectedError: 'ExternalError',
+      // The root-key guard now lives in `readState`; a rootKey-less agent surfaces
+      // the same ExternalError from there, which pollForResponse propagates.
       agent: {
         rootKey: null,
-        readState: async () => ({ certificate: new Uint8Array([0]) }),
+        readState: async () => {
+          // Dynamic import so the thrown error matches the module instance the
+          // reset-per-test registry hands to pollForResponse and the assertion.
+          const { ExternalError, MissingRootKeyErrorCode } = await import('../errors.ts');
+          throw ExternalError.fromCode(new MissingRootKeyErrorCode());
+        },
       } as unknown as Agent,
     },
   ])('throws $expectedError on $scenario', async ({ statuses, expectedError, agent }) => {

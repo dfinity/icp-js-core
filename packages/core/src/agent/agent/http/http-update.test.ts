@@ -25,67 +25,69 @@ const rejectByRequestKey = new Map<
   { reject_code: number; reject_message: string; error_code?: string }
 >();
 
+// Fake certificate shared by the mocked v4 `Certificate.create` and the mocked `readState`
+// (`verifiedCertificate`). Reproduces the `lookup_path` behaviour driven by the per-request queues.
+function makeMockCertificate() {
+  return {
+    lookup_path: (path: [string, RequestId, string]) => {
+      const requestIdBytes = path[1];
+      const lastPathElement = path[path.length - 1] as string | Uint8Array;
+      const lastPathElementStr =
+        typeof lastPathElement === 'string' ? lastPathElement : textDecoder.decode(lastPathElement);
+
+      if (lastPathElementStr === 'status') {
+        if (absentStatusRequestIds.has(requestIdBytes)) {
+          return { status: 'Absent' as LookupPathStatus.Absent };
+        }
+        const q = statusesByRequestKey.get(requestIdBytes) ?? [];
+        const current = q.length > 0 ? q.shift()! : 'replied';
+        statusesByRequestKey.set(requestIdBytes, q);
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: textEncoder.encode(current),
+        };
+      }
+      if (lastPathElementStr === 'reply') {
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: replyByRequestKey.get(requestIdBytes)!,
+        };
+      }
+      if (lastPathElementStr === 'reject_code') {
+        const reject = rejectByRequestKey.get(requestIdBytes);
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: new Uint8Array([reject?.reject_code ?? 0]),
+        };
+      }
+      if (lastPathElementStr === 'reject_message') {
+        const reject = rejectByRequestKey.get(requestIdBytes);
+        return {
+          status: 'Found' as LookupPathStatus.Found,
+          value: textEncoder.encode(reject?.reject_message ?? ''),
+        };
+      }
+      if (lastPathElementStr === 'error_code') {
+        const reject = rejectByRequestKey.get(requestIdBytes);
+        if (reject?.error_code) {
+          return {
+            status: 'Found' as LookupPathStatus.Found,
+            value: textEncoder.encode(reject.error_code),
+          };
+        }
+        return { status: 'Absent' as LookupPathStatus.Absent };
+      }
+      throw new Error(`Unexpected lastPathElementStr ${lastPathElementStr}`);
+    },
+  } as const;
+}
+
 jest.mock('../../certificate.ts', () => {
   return {
     ...jest.requireActual('../../certificate.ts'),
     lookupResultToBuffer: (res: LookupPathResultFound) => res?.value,
     Certificate: {
-      create: jest.fn(async () => {
-        return {
-          lookup_path: (path: [string, RequestId, string]) => {
-            const requestIdBytes = path[1];
-            const lastPathElement = path[path.length - 1] as string | Uint8Array;
-            const lastPathElementStr =
-              typeof lastPathElement === 'string'
-                ? lastPathElement
-                : textDecoder.decode(lastPathElement);
-
-            if (lastPathElementStr === 'status') {
-              if (absentStatusRequestIds.has(requestIdBytes)) {
-                return { status: 'Absent' as LookupPathStatus.Absent };
-              }
-              const q = statusesByRequestKey.get(requestIdBytes) ?? [];
-              const current = q.length > 0 ? q.shift()! : 'replied';
-              statusesByRequestKey.set(requestIdBytes, q);
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: textEncoder.encode(current),
-              };
-            }
-            if (lastPathElementStr === 'reply') {
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: replyByRequestKey.get(requestIdBytes)!,
-              };
-            }
-            if (lastPathElementStr === 'reject_code') {
-              const reject = rejectByRequestKey.get(requestIdBytes);
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: new Uint8Array([reject?.reject_code ?? 0]),
-              };
-            }
-            if (lastPathElementStr === 'reject_message') {
-              const reject = rejectByRequestKey.get(requestIdBytes);
-              return {
-                status: 'Found' as LookupPathStatus.Found,
-                value: textEncoder.encode(reject?.reject_message ?? ''),
-              };
-            }
-            if (lastPathElementStr === 'error_code') {
-              const reject = rejectByRequestKey.get(requestIdBytes);
-              if (reject?.error_code) {
-                return {
-                  status: 'Found' as LookupPathStatus.Found,
-                  value: textEncoder.encode(reject.error_code),
-                };
-              }
-              return { status: 'Absent' as LookupPathStatus.Absent };
-            }
-            throw new Error(`Unexpected lastPathElementStr ${lastPathElementStr}`);
-          },
-        } as const;
-      }),
+      create: jest.fn(async () => makeMockCertificate()),
     },
   };
 });
@@ -137,7 +139,12 @@ function createAgentWithCallMock(
     },
   });
 
-  jest.spyOn(agent, 'readState').mockResolvedValue({ certificate: new Uint8Array([0]) } as never);
+  jest
+    .spyOn(agent, 'readState')
+    .mockResolvedValue({
+      certificate: new Uint8Array([0]),
+      verifiedCertificate: makeMockCertificate(),
+    } as never);
 
   return agent;
 }
@@ -361,7 +368,7 @@ describe('HttpAgent.update', () => {
       origReadState.mockImplementation(async (..._args: unknown[]) => {
         // Polling gets a fresh certificate where the request is now present
         absentStatusRequestIds.delete(requestId);
-        return { certificate: new Uint8Array([0]) };
+        return { certificate: new Uint8Array([0]), verifiedCertificate: makeMockCertificate() };
       });
 
       const result = await agent.update(canisterId, updateFields);
@@ -471,7 +478,7 @@ describe('HttpAgent.update', () => {
       origReadState.mockImplementation(async (..._args: unknown[]) => {
         // Polling gets a fresh certificate where the request is now present
         absentStatusRequestIds.delete(requestId);
-        return { certificate: new Uint8Array([0]) };
+        return { certificate: new Uint8Array([0]), verifiedCertificate: makeMockCertificate() };
       });
 
       let callbackInvoked = false;

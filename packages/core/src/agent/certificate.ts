@@ -150,7 +150,11 @@ function isBufferGreaterThan(a: Uint8Array, b: Uint8Array): boolean {
   return false;
 }
 
-type VerifyFunc = (pk: Uint8Array, sig: Uint8Array, msg: Uint8Array) => Promise<boolean> | boolean;
+export type VerifyFunc = (
+  pk: Uint8Array,
+  sig: Uint8Array,
+  msg: Uint8Array,
+) => Promise<boolean> | boolean;
 
 export type TargetPrincipal =
   | {

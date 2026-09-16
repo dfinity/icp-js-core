@@ -1,12 +1,14 @@
 import { Principal } from '#principal';
 import {
+  Delegation,
   DelegationChain,
   DelegationIdentity,
   PartialDelegationIdentity,
   type SignedDelegation,
 } from './delegation.ts';
 import { Ed25519KeyIdentity } from './ed25519.ts';
-import { type DerEncodedPublicKey, Ed25519PublicKey } from '#agent';
+import { type DerEncodedPublicKey, Ed25519PublicKey, requestIdOf } from '#agent';
+import { bytesToHex } from '@noble/hashes/utils.js';
 
 function createIdentity(seed: number): Ed25519KeyIdentity {
   const s = new Uint8Array([seed, ...new Array(31).fill(0)]);
@@ -154,6 +156,94 @@ test('Delegation Chain can sign', async () => {
   );
   expect(isValid).toBe(true);
   expect(middle.toJSON()[1].length).toBe(64);
+});
+
+describe('Delegation permissions field', () => {
+  const pubkey = new Uint8Array([1, 2, 3, 4]);
+  const expiration = BigInt(1609459200000) * BigInt(1_000_000);
+
+  it('is exposed on the Delegation instance', () => {
+    const delegation = new Delegation(pubkey, expiration, undefined, 'queries');
+    expect(delegation.permissions).toBe('queries');
+  });
+
+  it('is included in the CBOR value when present', () => {
+    const delegation = new Delegation(pubkey, expiration, undefined, 'queries');
+    expect(delegation.toCborValue()).toMatchObject({ permissions: 'queries' });
+  });
+
+  it('is omitted from the CBOR value when absent (backwards compatible)', () => {
+    const delegation = new Delegation(pubkey, expiration);
+    expect('permissions' in delegation.toCborValue()).toBe(false);
+  });
+
+  it('is included in toJSON as a plain (non-hex) string when present', () => {
+    const delegation = new Delegation(pubkey, expiration, undefined, 'queries');
+    expect(delegation.toJSON().permissions).toBe('queries');
+  });
+
+  it('is omitted from toJSON when absent (backwards compatible)', () => {
+    const delegation = new Delegation(pubkey, expiration);
+    expect('permissions' in delegation.toJSON()).toBe(false);
+  });
+
+  it('round-trips through DelegationChain toJSON/fromJSON', async () => {
+    const root = createIdentity(2);
+    const session = createIdentity(0);
+
+    const chain = await DelegationChain.create(
+      root,
+      session.getPublicKey(),
+      new Date(1609459200000),
+      { permissions: 'queries' },
+    );
+
+    expect(chain.delegations[0].delegation.permissions).toBe('queries');
+    expect(chain.toJSON().delegations[0].delegation.permissions).toBe('queries');
+
+    const restored = DelegationChain.fromJSON(JSON.stringify(chain));
+    expect(restored.delegations[0].delegation.permissions).toBe('queries');
+    expect(restored.toJSON()).toEqual(chain.toJSON());
+  });
+
+  it('throws on a non-string permissions value in fromJSON', () => {
+    expect(() =>
+      DelegationChain.fromJSON({
+        publicKey: '00',
+        delegations: [
+          {
+            signature: '00',
+            delegation: {
+              pubkey: '00'.repeat(32),
+              expiration: '1655f29d787c0000',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              permissions: 123 as any,
+            },
+          },
+        ],
+      }),
+    ).toThrow('Invalid permissions.');
+  });
+
+  // Cross-implementation reference vector. The Internet Identity canister signs
+  // the representation-independent hash of `{pubkey, expiration, permissions}`
+  // for a queries-only (read-only) delegation. `requestIdOf` must reproduce that
+  // exact hash byte-for-byte, otherwise the canister signature would not verify
+  // once the delegation is forwarded to the relying party. This pins the same
+  // vector asserted by the II backend test `should_pin_queries_permissions_msg`.
+  it('produces the same representation-independent hash as the II canister', () => {
+    const sessionPubkey = new TextEncoder().encode('test session public key');
+    const delegation = new Delegation(
+      sessionPubkey,
+      BigInt('1700000000000000000'),
+      undefined,
+      'queries',
+    );
+
+    const hash = bytesToHex(new Uint8Array(requestIdOf({ ...delegation })));
+
+    expect(hash).toBe('061d792a31da1cedbbb4ed1a4234c12645d021e6a81ef1598bbe27124f33a4c6');
+  });
 });
 
 describe('PartialDelegationIdentity', () => {

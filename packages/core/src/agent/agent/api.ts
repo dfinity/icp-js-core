@@ -4,6 +4,10 @@ import type { JsonObject } from '#candid';
 import type { Identity } from '../auth.ts';
 import type { CallRequest, HttpHeaderField, QueryRequest } from './http/types.ts';
 import type { PollForResponseResult, PollingOptions } from '../polling/index.ts';
+import type { Certificate, VerifyFunc } from '../certificate.ts';
+import type { KnownPath, Path, StateValues } from '../utils/readState.ts';
+
+export { KnownPath, StatePaths, StateValues, encodePath, type Path } from '../utils/readState.ts';
 
 /**
  * Codes used by the replica for rejecting a message.
@@ -23,7 +27,40 @@ export enum ReplicaRejectCode {
 export interface ReadStateOptions {
   /**
    * A list of paths to read the state of.
+   *
+   * Each {@link Path} may be a raw encoded path (an array of buffers) or a {@link KnownPath}
+   * (see {@link import('../utils/readState.ts').StatePaths | StatePaths} for the well-known ones).
+   * KnownPaths are encoded internally, and their values are decoded into
+   * {@link ReadStateResponse.values}.
    */
+  paths: Path[];
+
+  /**
+   * BLS verification strategy used to verify the returned certificate.
+   * Defaults to bls12_381 from `@noble/curves`.
+   */
+  blsVerify?: VerifyFunc;
+
+  /**
+   * The maximum age of the returned certificate in minutes, used for the freshness check.
+   * @default 5
+   */
+  maxAgeInMinutes?: number;
+
+  /**
+   * Skips the certificate freshness (time) check when verifying the returned certificate.
+   * Required for time-sync bootstrapping and for inspecting certificates when the local clock
+   * is known to be out of sync with the network.
+   * @default false
+   */
+  disableTimeVerification?: boolean;
+}
+
+/**
+ * {@link ReadStateOptions} with every path already encoded to its raw form. Used by the low-level
+ * request builders ({@link Agent.createReadStateRequest}), which do not perform path encoding.
+ */
+export interface ResolvedReadStateOptions extends Omit<ReadStateOptions, 'paths'> {
   paths: Uint8Array[][];
 }
 
@@ -153,6 +190,18 @@ export interface UpdateOptions extends CallOptions {
 
 export interface ReadStateResponse {
   certificate: Uint8Array;
+  /**
+   * The parsed and verified {@link Certificate}, checked against the agent's root key and the
+   * effective target of the request. Unless {@link ReadStateOptions.disableTimeVerification} is
+   * set, verification includes the certificate freshness check.
+   */
+  verifiedCertificate: Certificate;
+  /**
+   * Decoded values for each requested {@link KnownPath}, looked up by passing the same KnownPath
+   * instance to {@link StateValues.get}. Each value is decoded with the path's
+   * {@link KnownPath.decode}. Raw (pre-encoded `Uint8Array[]`) paths are not decoded and are absent.
+   */
+  values: StateValues;
 }
 
 export interface v2ResponseBody {
@@ -230,13 +279,20 @@ export interface Agent {
    * Create the request for the read state call.
    * `readState` uses this internally.
    * Useful to avoid signing the same request multiple times.
+   *
+   * Paths must already be encoded ({@link ResolvedReadStateOptions}); path resolution is done by
+   * {@link Agent.readState} before this is called.
    */
-  createReadStateRequest?(options: ReadStateOptions, identity?: Identity): Promise<unknown>;
+  createReadStateRequest?(
+    options: ResolvedReadStateOptions,
+    identity?: Identity,
+  ): Promise<unknown>;
 
   /**
-   * Send a read state query to the replica. This includes a list of paths to return,
-   * and will return a Certificate. This will only reject on communication errors,
-   * but the certificate might contain less information than requested.
+   * Send a read state query to the replica, given a list of paths to return. Returns the raw
+   * certificate alongside a parsed {@link Certificate} that has been verified against the agent's
+   * root key and the effective target, rejecting on communication errors or if verification fails.
+   * The certificate might contain less information than requested.
    * @param effectiveTarget A Canister ID or Subnet ID related to this call.
    * @param options The options for this call.
    * @param identity Identity for the call. If not specified, uses the instance identity.

@@ -46,6 +46,7 @@ import {
   type QueryResponse,
   type ReadStateOptions,
   type ReadStateResponse,
+  type ResolvedReadStateOptions,
   type SubmitResponse,
   type CallOptions,
   type UpdateOptions,
@@ -71,7 +72,13 @@ import {
 } from './types.ts';
 import { request as canisterStatusRequest } from '../../canisterStatus/index.ts';
 import { request as subnetStatusRequest } from '../../subnetStatus/index.ts';
-import { lookupNodeKeysFromCertificate, type SubnetNodeKeys } from '../../utils/readState.ts';
+import {
+  type KnownPath,
+  StateValues,
+  encodePath,
+  lookupNodeKeysFromCertificate,
+  type SubnetNodeKeys,
+} from '../../utils/readState.ts';
 import {
   Certificate,
   check_canister_ranges,
@@ -1238,7 +1245,7 @@ export class HttpAgent implements Agent {
   };
 
   public async createReadStateRequest(
-    fields: ReadStateOptions,
+    fields: ResolvedReadStateOptions,
     identity?: Identity | Promise<Identity>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
@@ -1273,7 +1280,7 @@ export class HttpAgent implements Agent {
     return id.transformRequest(transformedRequest);
   }
 
-  #getRequestId(options: ReadStateOptions): RequestId | undefined {
+  #getRequestId(options: ResolvedReadStateOptions): RequestId | undefined {
     for (const path of options.paths) {
       const [pathName, value] = path;
       const request_status = new TextEncoder().encode('request_status');
@@ -1296,6 +1303,22 @@ export class HttpAgent implements Agent {
     }
     await this.#rootKeyGuard();
     const target = inputToTarget(effectiveTarget);
+    if (!fields.disableTimeVerification) {
+      await this.#syncTimeGuard(target);
+    }
+
+    // Encode paths into their raw form. Raw (pre-encoded) paths pass through unchanged; each
+    // KnownPath is retained alongside its encoded form so its value can be decoded below.
+    const encodedPaths: Uint8Array[][] = [];
+    const knownPaths: { path: KnownPath<unknown>; encoded: Uint8Array[] }[] = [];
+    for (const path of fields.paths) {
+      const encoded = encodePath(path);
+      encodedPaths.push(encoded);
+      if (!Array.isArray(path)) {
+        knownPaths.push({ path, encoded });
+      }
+    }
+    const resolvedFields: ResolvedReadStateOptions = { ...fields, paths: encodedPaths };
 
     let transformedRequest: ReadStateRequest;
     let requestId: RequestId | undefined;
@@ -1306,14 +1329,14 @@ export class HttpAgent implements Agent {
       transformedRequest = request;
     } else {
       // This is fields, we need to create a request
-      requestId = this.#getRequestId(fields);
+      requestId = this.#getRequestId(resolvedFields);
 
       // Always create a fresh request with the current identity
       const identity = await this.#identity;
       if (!identity) {
         throw ExternalError.fromCode(new IdentityInvalidErrorCode());
       }
-      transformedRequest = await this.createReadStateRequest(fields, identity);
+      transformedRequest = await this.createReadStateRequest(resolvedFields, identity);
     }
 
     const url =
@@ -1321,7 +1344,32 @@ export class HttpAgent implements Agent {
         ? new URL(`api/v3/canister/${target.canisterId.toString()}/read_state`, this.host)
         : new URL(`api/v3/subnet/${target.subnetId.toString()}/read_state`, this.host);
 
-    return await this.#readStateInner(url, target, transformedRequest, requestId);
+    if (this.rootKey === null) {
+      throw ExternalError.fromCode(new MissingRootKeyErrorCode(this.#shouldFetchRootKey));
+    }
+    const rootKey = this.rootKey;
+
+    const { certificate } = await this.#readStateInner(url, target, transformedRequest, requestId);
+
+    const verifiedCertificate = await Certificate.create({
+      certificate,
+      rootKey,
+      principal: target,
+      blsVerify: fields.blsVerify,
+      maxAgeInMinutes: fields.maxAgeInMinutes,
+      disableTimeVerification: fields.disableTimeVerification,
+      agent: this,
+    });
+
+    // Decode the value at each KnownPath with its own decoder, keyed by the path. A value absent
+    // from the certificate maps to null.
+    const decoded = new Map<symbol, unknown>();
+    for (const { path, encoded } of knownPaths) {
+      const buffer = lookupResultToBuffer(verifiedCertificate.lookup_path(encoded));
+      decoded.set(path.key, buffer === undefined ? null : path.decode(buffer));
+    }
+
+    return { certificate, verifiedCertificate, values: new StateValues(decoded) };
   }
 
   // eslint-disable-next-line
@@ -1340,7 +1388,7 @@ export class HttpAgent implements Agent {
     target: TargetPrincipal,
     transformedRequest: ReadStateRequest,
     requestId?: RequestId,
-  ): Promise<ReadStateResponse> {
+  ): Promise<{ certificate: Uint8Array }> {
     const backoff = this.#backoffStrategy();
     try {
       const { responseBodyBytes } = await this.#requestAndRetry({
@@ -1354,7 +1402,7 @@ export class HttpAgent implements Agent {
         tries: 0,
       });
 
-      const decodedResponse: ReadStateResponse = cbor.decode(responseBodyBytes);
+      const decodedResponse: { certificate: Uint8Array } = cbor.decode(responseBodyBytes);
 
       return decodedResponse;
     } catch (error) {
@@ -1623,14 +1671,8 @@ export class HttpAgent implements Agent {
 
     const rootKey = this.rootKey!;
 
-    const canisterReadState = await this.readState(target, {
+    const { verifiedCertificate: canisterCertificate } = await this.readState(target, {
       paths: [[utf8ToBytes('subnet')]],
-    });
-    const canisterCertificate = await Certificate.create({
-      certificate: canisterReadState.certificate,
-      rootKey,
-      principal: target,
-      agent: this,
     });
     const targetKey = getTargetKey(target);
     if ('canisterId' in target && !canisterCertificate.cert.delegation) {
@@ -1664,18 +1706,12 @@ export class HttpAgent implements Agent {
     const effectiveCanisterId = Principal.from(canisterId);
     await this.#asyncGuard({ canisterId: effectiveCanisterId });
 
-    const canisterReadState = await this.readState(
+    const { verifiedCertificate: canisterCertificate } = await this.readState(
       { canisterId: effectiveCanisterId },
       {
         paths: [[utf8ToBytes('time')]],
       },
     );
-    const canisterCertificate = await Certificate.create({
-      certificate: canisterReadState.certificate,
-      rootKey: this.rootKey!,
-      principal: { canisterId: effectiveCanisterId },
-      agent: this,
-    });
 
     return getSubnetIdFromCertificate(canisterCertificate.cert, this.rootKey!);
   }
