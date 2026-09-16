@@ -4,6 +4,7 @@
 
 ### Fix
 
+- Prevent DOM XSS in Candid UI error rendering (#1399)
 - **candid**: bound decode allocation to prevent memory-exhaustion DoS (#1393)
 - **candid**: bound LEB128 decoding to prevent CPU-exhaustion DoS (#1391)
 - **agent**: detect conflicting `ic_env` cookies instead of taking the first (#1386)
