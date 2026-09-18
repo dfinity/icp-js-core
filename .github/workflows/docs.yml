@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/setup-pnpm@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Generate docs
         run: pnpm run -F docs build

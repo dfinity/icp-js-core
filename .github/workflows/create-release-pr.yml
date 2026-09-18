@@ -30,20 +30,20 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: dfinity/ci-tools/actions/setup-python@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/setup-python@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Setup Commitizen
-        uses: dfinity/ci-tools/actions/setup-commitizen@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/setup-commitizen@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/setup-pnpm@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Build packages
         run: pnpm build
 
       - name: Bump version
         id: bump_version
-        uses: dfinity/ci-tools/actions/bump-version@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/bump-version@bdfe993db468e7df927f424be4338c03c5538bc4 # main
         with:
           prerelease: ${{ inputs.beta_release == true && 'beta' || '' }}
 
@@ -51,7 +51,7 @@ jobs:
         run: echo "Bumping to version ${{ steps.bump_version.outputs.version }}"
 
       - name: Create Pull Request
-        uses: dfinity/ci-tools/actions/create-pr@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/create-pr@bdfe993db468e7df927f424be4338c03c5538bc4 # main
         with:
           token: ${{ steps.generate_token.outputs.token }}
           branch_name: 'release/v${{ steps.bump_version.outputs.version }}'
