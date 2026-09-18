@@ -27,19 +27,19 @@ jobs:
           fetch-tags: true
 
       - name: Setup Python
-        uses: dfinity/ci-tools/actions/setup-python@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/setup-python@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Setup Commitizen
-        uses: dfinity/ci-tools/actions/setup-commitizen@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/setup-commitizen@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/setup-pnpm@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Determine if Beta Release
         id: is_beta
-        uses: dfinity/ci-tools/actions/is-beta-tag@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/is-beta-tag@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
-      - uses: dfinity/ci-tools/actions/extract-version@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+      - uses: dfinity/ci-tools/actions/extract-version@bdfe993db468e7df927f424be4338c03c5538bc4 # main
         id: extract-version
         with:
           file: 'packages/core/package.json'
@@ -53,7 +53,7 @@ jobs:
         run: pnpm build
 
       - name: Generate release notes
-        uses: dfinity/ci-tools/actions/generate-release-notes@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/generate-release-notes@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Publish to npm
         env:

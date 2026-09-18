@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/setup-pnpm@bdfe993db468e7df927f424be4338c03c5538bc4 # main
 
       - name: Run pnpm audit
         id: audit
@@ -74,7 +74,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.audit.outputs.needs_update == 'true'
-        uses: dfinity/ci-tools/actions/create-pr@afeee4fbdc0683a88ec5a74ed7f59a2ce0e833ad # main
+        uses: dfinity/ci-tools/actions/create-pr@bdfe993db468e7df927f424be4338c03c5538bc4 # main
         with:
           token: ${{ steps.generate_token.outputs.token }}
           branch_name: 'chore/npm-audit-fix'
