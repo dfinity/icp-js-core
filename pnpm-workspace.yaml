@@ -19,15 +19,25 @@ onlyBuiltDependencies:
 
 overrides:
   '@babel/core@<=7.29.0': '>=7.29.6'
+  # @humanfs/node 0.17 requires node >=24; CI still runs node 20 and 22
+  '@humanfs/node@<0.16.8': '>=0.16.8 <0.17'
+  '@vitest/mocker@>=2.1.0 <4.1.11': '>=4.1.11 <5'
+  baseline-browser-mapping@>=2.0.0 <2.11.0: '>=2.11.0'
   body-parser@>=2.0.0 <2.3.0: '>=2.3.0'
   brace-expansion: '>=5.0.9'
+  browserslist@<=4.28.6: '>=4.28.7'
   esbuild@>=0.27.3 <0.28.1: '>=0.28.1'
+  fflate@>=0.8.0 <0.8.3: '>=0.8.3'
   js-yaml: '>=5.2.2'
   # linkify-it 6 dropped its default export, which markdown-it 14 imports
   linkify-it: '>=5.0.2 <6'
   markdown-it@<=14.1.1: '>=14.2.0'
   nanoid: '>=5.1.16'
   postcss@<=8.5.17: '>=8.5.18'
+  qs@>=2.2.5 <6.16.0: '>=6.16.0'
+  qs@>=6.14.2 <=6.15.3: '>=6.16.0'
   undici@>=7.0.0 <7.28.0: '>=7.29.0 <8'
   undici@>=7.23.0 <7.28.0: '>=7.29.0 <8'
   vite@>=8.0.0 <=8.0.15: '>=8.0.16'
+  # stay on the vitest 4 line; 5 drops describe.sequential used by the e2e suite
+  vitest@>=2.1.0 <4.1.11: '>=4.1.11 <5'
