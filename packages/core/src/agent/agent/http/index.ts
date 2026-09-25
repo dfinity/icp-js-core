@@ -282,6 +282,9 @@ export class HttpAgent implements Agent {
   readonly #shouldFetchRootKey: boolean = false;
 
   #timeDiffMsecs = DEFAULT_TIME_DIFF_MSECS;
+  // A lower bound of the offset between the replica time and the local time,
+  // measured against the local time after the certified time was received.
+  #minTimeDiffMsecs: number | null = null;
   #hasSyncedTime = false;
   #syncTimePromise: Promise<void> | null = null;
   readonly #shouldSyncTime: boolean = false;
@@ -576,8 +579,14 @@ export class HttpAgent implements Agent {
     const requestId = requestIdOf(transformedRequest.body.content ?? submit);
     const body = cbor.encode(transformedRequest.body) as Uint8ArrayBuffer;
     const backoff = this.#backoffStrategy();
+    // Local time before the request is first sent, used to reason about the
+    // replica time at which the signed request could have been received.
+    const submittedAtMs = Date.now();
     try {
       let requestFn: () => Promise<Response>;
+      // The v2 endpoint accepts the same signed envelope as v4, so falling back
+      // resends `body` as-is and the request ID stays the same.
+      let fallbackRequestFn: (() => Promise<Response>) | undefined;
       if ('canisterId' in target) {
         // Attempt v4 sync call
         const requestSync = () => {
@@ -601,6 +610,7 @@ export class HttpAgent implements Agent {
         };
 
         requestFn = callSync ? requestSync : requestAsync;
+        fallbackRequestFn = callSync ? requestAsync : undefined;
       } else {
         if (!callSync) {
           throw InputError.fromCode(new EffectiveSubnetIdAsyncErrorCode());
@@ -615,11 +625,25 @@ export class HttpAgent implements Agent {
           });
         };
       }
-      const { responseBodyBytes, ...response } = await this.#requestAndRetry({
-        requestFn,
-        backoff,
-        tries: 0,
-      });
+      let rawResponse;
+      try {
+        rawResponse = await this.#requestAndRetry({ requestFn, backoff, tries: 0 });
+      } catch (error) {
+        if (
+          !fallbackRequestFn ||
+          !(error instanceof AgentError) ||
+          !error.hasCode(HttpV4ApiNotSupportedErrorCode)
+        ) {
+          throw error;
+        }
+        this.log.warn('v4 api not supported. Fall back to v2');
+        rawResponse = await this.#requestAndRetry({
+          requestFn: fallbackRequestFn,
+          backoff: this.#backoffStrategy(),
+          tries: 0,
+        });
+      }
+      const { responseBodyBytes, ...response } = rawResponse;
 
       const responseBody = (
         responseBodyBytes.byteLength > 0 ? cbor.decode(responseBodyBytes) : null
@@ -636,24 +660,14 @@ export class HttpAgent implements Agent {
     } catch (error) {
       let callError: AgentError;
       if (error instanceof AgentError) {
-        // If the error is due to the v4 api not being supported, fall back to v2
-        if ('canisterId' in target && error.hasCode(HttpV4ApiNotSupportedErrorCode)) {
-          this.log.warn('v4 api not supported. Fall back to v2');
-          return this.call(
-            canisterId,
-            {
-              ...options,
-              // disable v4 api
-              callSync: false,
-            },
-            identity,
-          );
-        }
         if (error.hasCode(IngressExpiryInvalidErrorCode) && !this.#hasSyncedTime) {
           // if there is an ingress expiry error and the time has not been synced yet,
-          // sync time with the network and try again
+          // sync time with the network, and sign a new request only if the certified
+          // time shows the original request's expiry had already passed when it was sent
           await this.syncTime(target);
-          return this.call(canister, options, identity);
+          if (this.#isExpiredAt(ingress_expiry, submittedAtMs)) {
+            return this.call(canister, options, identity);
+          }
         }
         // override the error code to include the request details
         error.code.requestContext = {
@@ -1529,7 +1543,7 @@ export class HttpAgent implements Agent {
               }, []),
           );
 
-          this.#setTimeDiffMsecs(callTime, replicaTimes);
+          this.#setTimeDiffMsecs(callTime, Date.now(), replicaTimes);
         } catch (error) {
           const syncTimeError =
             error instanceof AgentError
@@ -1554,19 +1568,41 @@ export class HttpAgent implements Agent {
     return this.syncTime({ subnetId });
   }
 
-  #setTimeDiffMsecs(callTime: number, replicaTimes: Array<number | undefined>): void {
+  #setTimeDiffMsecs(
+    callTime: number,
+    responseTime: number,
+    replicaTimes: Array<number | undefined>,
+  ): void {
     const maxReplicaTime = replicaTimes.reduce<number>((max, current) => {
       return typeof current === 'number' && current > max ? current : max;
     }, 0);
 
     if (maxReplicaTime > 0) {
       this.#timeDiffMsecs = maxReplicaTime - callTime;
+      this.#minTimeDiffMsecs = maxReplicaTime - responseTime;
       this.#hasSyncedTime = true;
       this.log.notify({
         message: `Syncing time: offset of ${this.#timeDiffMsecs}`,
         level: 'info',
       });
     }
+  }
+
+  /**
+   * Whether the given expiry had already passed, according to the synced certified time,
+   * at the given local time.
+   * @param expiry The ingress expiry of the request.
+   * @param localTimeMs The local time, in milliseconds.
+   * @returns `true` only if time has been synced and the expiry is before the lower bound
+   * of the replica time at `localTimeMs`.
+   */
+  #isExpiredAt(expiry: Expiry, localTimeMs: number): boolean {
+    if (this.#minTimeDiffMsecs === null) {
+      return false;
+    }
+    const replicaTimeLowerBoundNs =
+      BigInt(localTimeMs + this.#minTimeDiffMsecs) * BigInt(MSECS_TO_NANOSECONDS);
+    return expiry.toBigInt() < replicaTimeLowerBoundNs;
   }
 
   public async status(): Promise<JsonObject> {

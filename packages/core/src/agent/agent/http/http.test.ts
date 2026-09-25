@@ -166,6 +166,44 @@ test('call requestId matches the post-transform body content hash', async () => 
 
 test.todo('query');
 
+test('call falls back to v2 with the same signed envelope when v4 is not supported', async () => {
+  const canisterId = Principal.fromText('2chl6-4hpzw-vqaaa-aaaaa-c');
+  const mockFetch: jest.Mock = jest.fn((url: URL) => {
+    if (url.pathname.startsWith('/api/v4/')) {
+      const response = new Response(null, { status: 404 });
+      Object.defineProperty(response, 'url', { value: url.toString() });
+      return Promise.resolve(response);
+    }
+    return Promise.resolve(new Response(null, { status: 202 }));
+  });
+
+  const httpAgent = HttpAgent.createSync({
+    fetch: mockFetch,
+    host: 'http://127.0.0.1',
+    identity: createIdentity(1),
+    retryTimes: 0,
+  });
+
+  const { requestId, response } = await httpAgent.call(canisterId, {
+    methodName: 'greet',
+    arg: new Uint8Array([]),
+  });
+
+  const { calls } = mockFetch.mock;
+  expect(calls.length).toBe(2);
+  expect(calls[0][0].toString()).toBe(
+    `http://127.0.0.1/api/v4/canister/${canisterId.toText()}/call`,
+  );
+  expect(calls[1][0].toString()).toBe(
+    `http://127.0.0.1/api/v2/canister/${canisterId.toText()}/call`,
+  );
+  expect(calls[1][1].body).toEqual(calls[0][1].body);
+
+  const sent = cbor.decode<Envelope<CallRequest>>(calls[0][1].body);
+  expect(requestId).toEqual(requestIdOf(sent.content));
+  expect(response.status).toBe(202);
+});
+
 test('queries with the same content should have the same signature', async () => {
   const mockResponse = {
     status: 'replied',

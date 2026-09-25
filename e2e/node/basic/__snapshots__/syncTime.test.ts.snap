@@ -232,6 +232,53 @@ exports[`syncTime > on error > should sync time when the local time does not mat
 }
 `;
 
+exports[`syncTime > on error > should sync time when the local time does not match the subnet time > V4 call body after sync 1`] = `
+{
+  "content": {
+    "arg": {
+      "data": [
+        68,
+        73,
+        68,
+        76,
+        0,
+        1,
+        113,
+        5,
+        119,
+        111,
+        114,
+        108,
+        100,
+      ],
+      "type": "Buffer",
+    },
+    "canister_id": {
+      "data": [
+        255,
+        255,
+        255,
+        255,
+        255,
+        144,
+        0,
+        1,
+        1,
+        1,
+      ],
+      "type": "Buffer",
+    },
+    "ingress_expiry": 1746103740000000000n,
+    "method_name": "greet",
+    "nonce": Any<Uint8Array>,
+    "request_type": "call",
+    "sender": Any<Uint8Array>,
+  },
+  "sender_pubkey": Any<Uint8Array>,
+  "sender_sig": Any<Uint8Array>,
+}
+`;
+
 exports[`syncTime > on first call > should not sync time by default > V4 call body 1`] = `
 {
   "content": {
