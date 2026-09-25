@@ -12,6 +12,7 @@ import {
   IC_REQUEST_DOMAIN_SEPARATOR,
   IngressExpiryInvalidErrorCode,
   InputError,
+  makeExpiryTransform,
   makeNonce,
 } from '@icp-sdk/core/agent';
 import { Principal } from '@icp-sdk/core/principal';
@@ -34,6 +35,9 @@ const INVALID_EXPIRY_ERROR =
 
 describe('syncTime', () => {
   const date = new Date('2025-05-01T12:34:56.789Z');
+  // A subnet time ahead of the local time by more than the ingress expiry window
+  const SUBNET_TIME_DIFF_MSECS = 10 * 60 * 1_000;
+  const subnetDate = new Date(date.getTime() + SUBNET_TIME_DIFF_MSECS);
   const canisterId = Principal.fromText('uxrrr-q7777-77774-qaaaq-cai');
   const nonce = makeNonce();
 
@@ -127,9 +131,10 @@ describe('syncTime', () => {
         rootSubnetKeyPair,
         keyPair,
         canisterId,
+        date: subnetDate,
       });
 
-      const { responseBody: callResponse, requestId } = await prepareV4Response({
+      const { requestId } = await prepareV4Response({
         canisterId,
         methodName: greetMethodName,
         arg: greetArgs,
@@ -141,6 +146,22 @@ describe('syncTime', () => {
         nonce,
       });
       const signature = await identity.sign(concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, requestId));
+
+      const { responseBody: callResponse, requestId: requestIdTwo } = await prepareV4Response({
+        canisterId,
+        methodName: greetMethodName,
+        arg: greetArgs,
+        sender,
+        rootSubnetKeyPair,
+        reply: greetReply,
+        keyPair,
+        date: subnetDate,
+        timeDiffMsecs: SUBNET_TIME_DIFF_MSECS,
+        nonce,
+      });
+      const signatureTwo = await identity.sign(
+        concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, requestIdTwo),
+      );
       mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
         res.status(200).send(callResponse);
       });
@@ -163,7 +184,16 @@ describe('syncTime', () => {
       );
 
       const reqTwo = mockReplica.getV4CallReq(canisterId.toString(), 1);
-      expect(reqTwo).toEqual(req);
+      expectV4CallRequest(
+        reqTwo,
+        {
+          nonce,
+          sender,
+          pubKey: identity.getPublicKey().toDer(),
+          signature: signatureTwo,
+        },
+        'V4 call body after sync',
+      );
 
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
       expectV3ReadStateRequest(
@@ -207,6 +237,7 @@ describe('syncTime', () => {
         rootSubnetKeyPair,
         keyPair,
         canisterId,
+        date: subnetDate,
       });
 
       mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
@@ -228,6 +259,101 @@ describe('syncTime', () => {
 
       expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
+      expect(agent.hasSyncedTime()).toBe(true);
+    });
+
+    it('should not sign a new call request if the original expiry is valid at the subnet time', async () => {
+      const agent = await HttpAgent.create({
+        host: mockReplica.address,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
+        identity,
+      });
+      const actor = await createActor(canisterId, { agent });
+
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+        res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
+      });
+
+      await mockSyncTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair,
+        canisterId,
+        date,
+      });
+
+      expect.assertions(5);
+
+      try {
+        await actor.greet(greetReq);
+      } catch (e) {
+        expect(e).toBeInstanceOf(InputError);
+        const err = e as InputError;
+        expect(err.cause.code).toBeInstanceOf(IngressExpiryInvalidErrorCode);
+      }
+
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+      expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
+      expect(agent.hasSyncedTime()).toBe(true);
+    });
+
+    it('should use the expiry of the sent request to decide whether to sign a new call request', async () => {
+      const agent = await HttpAgent.create({
+        host: mockReplica.address,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
+        identity,
+      });
+      // The sent request expires in the past, while the default expiry would be valid
+      agent.addTransform('update', makeExpiryTransform(-SUBNET_TIME_DIFF_MSECS));
+      const actor = await createActor(canisterId, { agent });
+
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+        res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
+      });
+
+      await mockSyncTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair,
+        canisterId,
+        date,
+      });
+
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+        res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
+      });
+
+      await expect(actor.greet(greetReq)).rejects.toBeInstanceOf(InputError);
+
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
+      expect(agent.hasSyncedTime()).toBe(true);
+    });
+
+    it('should not sign a new call request if the wall clock moves backward before the time sync', async () => {
+      const agent = await HttpAgent.create({
+        host: mockReplica.address,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
+        identity,
+      });
+      const actor = await createActor(canisterId, { agent });
+
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+        // The wall clock is adjusted backward while the call is in flight
+        vi.setSystemTime(new Date(date.getTime() - SUBNET_TIME_DIFF_MSECS));
+        res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
+      });
+
+      await mockSyncTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair,
+        canisterId,
+        date,
+      });
+
+      await expect(actor.greet(greetReq)).rejects.toBeInstanceOf(InputError);
+
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
       expect(agent.hasSyncedTime()).toBe(true);
     });
 
