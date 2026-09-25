@@ -665,7 +665,7 @@ export class HttpAgent implements Agent {
           // sync time with the network, and sign a new request only if the certified
           // time shows the original request's expiry had already passed when it was sent
           await this.syncTime(target);
-          if (this.#isExpiredAt(ingress_expiry, submittedAtMs)) {
+          if (this.#isExpiredAt(transformedRequest.body.content.ingress_expiry, submittedAtMs)) {
             return this.call(canister, options, identity);
           }
         }

@@ -12,6 +12,7 @@ import {
   IC_REQUEST_DOMAIN_SEPARATOR,
   IngressExpiryInvalidErrorCode,
   InputError,
+  makeExpiryTransform,
   makeNonce,
 } from '@icp-sdk/core/agent';
 import { Principal } from '@icp-sdk/core/principal';
@@ -293,6 +294,38 @@ describe('syncTime', () => {
 
       expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
       expect(mockReplica.getV3ReadStateSpy(canisterId.toString())).toHaveBeenCalledTimes(3);
+      expect(agent.hasSyncedTime()).toBe(true);
+    });
+
+    it('should use the expiry of the sent request to decide whether to sign a new call request', async () => {
+      const agent = await HttpAgent.create({
+        host: mockReplica.address,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
+        identity,
+      });
+      // The sent request expires in the past, while the default expiry would be valid
+      agent.addTransform('update', makeExpiryTransform(-SUBNET_TIME_DIFF_MSECS));
+      const actor = await createActor(canisterId, { agent });
+
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+        res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
+      });
+
+      await mockSyncTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair,
+        canisterId,
+        date,
+      });
+
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+        res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
+      });
+
+      await expect(actor.greet(greetReq)).rejects.toBeInstanceOf(InputError);
+
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(2);
       expect(agent.hasSyncedTime()).toBe(true);
     });
 
