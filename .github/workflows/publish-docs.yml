@@ -34,9 +34,9 @@ jobs:
           ref: ${{ inputs.ref }}
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@bdfe993db468e7df927f424be4338c03c5538bc4 # main
+        uses: dfinity/ci-tools/actions/setup-pnpm@a98f5d0198719ad41ded2f02fa0f5e426102f369 # main
 
-      - uses: dfinity/ci-tools/actions/extract-version@bdfe993db468e7df927f424be4338c03c5538bc4 # main
+      - uses: dfinity/ci-tools/actions/extract-version@a98f5d0198719ad41ded2f02fa0f5e426102f369 # main
         id: extract-version
         with:
           file: 'packages/core/package.json'
@@ -66,7 +66,7 @@ jobs:
           path: icp-pages
 
       - name: Assemble docs
-        uses: dfinity/ci-tools/actions/assemble-docs@bdfe993db468e7df927f424be4338c03c5538bc4 # main
+        uses: dfinity/ci-tools/actions/assemble-docs@a98f5d0198719ad41ded2f02fa0f5e426102f369 # main
         with:
           assets_dir: 'docs/dist/${{ steps.ver.outputs.major_minor_version }}'
           version: ${{ steps.ver.outputs.major_minor_version }}
@@ -75,7 +75,7 @@ jobs:
           version_in_title: ${{ steps.ver.outputs.major_minor_patch_version }}
 
       - name: Assemble docs
-        uses: dfinity/ci-tools/actions/assemble-docs@bdfe993db468e7df927f424be4338c03c5538bc4 # main
+        uses: dfinity/ci-tools/actions/assemble-docs@a98f5d0198719ad41ded2f02fa0f5e426102f369 # main
         with:
           assets_dir: 'docs/dist/latest'
           version: 'latest'
@@ -83,7 +83,7 @@ jobs:
           version_label: 'Latest (${{ steps.ver.outputs.major_minor_patch_version }})'
 
       - name: Submit Documentation
-        uses: dfinity/ci-tools/actions/submit-docs@bdfe993db468e7df927f424be4338c03c5538bc4 # main
+        uses: dfinity/ci-tools/actions/submit-docs@a98f5d0198719ad41ded2f02fa0f5e426102f369 # main
         with:
           destination_repo: 'dfinity/icp-js-sdk-docs'
           token: ${{ steps.generate_token.outputs.token }}

@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@bdfe993db468e7df927f424be4338c03c5538bc4 # main
+        uses: dfinity/ci-tools/actions/setup-pnpm@a98f5d0198719ad41ded2f02fa0f5e426102f369 # main
         with:
           node_version: ${{ matrix.node }}
 
