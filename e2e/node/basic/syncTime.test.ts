@@ -329,6 +329,34 @@ describe('syncTime', () => {
       expect(agent.hasSyncedTime()).toBe(true);
     });
 
+    it('should not sign a new call request if the wall clock moves backward before the time sync', async () => {
+      const agent = await HttpAgent.create({
+        host: mockReplica.address,
+        rootKey: rootSubnetKeyPair.publicKeyDer,
+        identity,
+      });
+      const actor = await createActor(canisterId, { agent });
+
+      mockReplica.setV4CallSpyImplOnce(canisterId.toString(), (_req, res) => {
+        // The wall clock is adjusted backward while the call is in flight
+        vi.setSystemTime(new Date(date.getTime() - SUBNET_TIME_DIFF_MSECS));
+        res.status(400).send(new TextEncoder().encode(INVALID_EXPIRY_ERROR));
+      });
+
+      await mockSyncTimeResponse({
+        mockReplica,
+        rootSubnetKeyPair,
+        keyPair,
+        canisterId,
+        date,
+      });
+
+      await expect(actor.greet(greetReq)).rejects.toBeInstanceOf(InputError);
+
+      expect(mockReplica.getV4CallSpy(canisterId.toString())).toHaveBeenCalledTimes(1);
+      expect(agent.hasSyncedTime()).toBe(true);
+    });
+
     it('should sync time when the local time does not match the subnet time (query)', async () => {
       const agent = await HttpAgent.create({
         host: mockReplica.address,

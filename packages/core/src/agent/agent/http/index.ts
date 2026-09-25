@@ -282,9 +282,8 @@ export class HttpAgent implements Agent {
   readonly #shouldFetchRootKey: boolean = false;
 
   #timeDiffMsecs = DEFAULT_TIME_DIFF_MSECS;
-  // A lower bound of the offset between the replica time and the local time,
-  // measured against the local time after the certified time was received.
-  #minTimeDiffMsecs: number | null = null;
+  // The latest synced certified time, and the local time right after it was received.
+  #syncedCertifiedTime: { replicaTimeMs: number; receivedAt: LocalTimestamp } | null = null;
   #hasSyncedTime = false;
   #syncTimePromise: Promise<void> | null = null;
   readonly #shouldSyncTime: boolean = false;
@@ -581,7 +580,7 @@ export class HttpAgent implements Agent {
     const backoff = this.#backoffStrategy();
     // Local time before the request is first sent, used to reason about the
     // replica time at which the signed request could have been received.
-    const submittedAtMs = Date.now();
+    const submittedAt = localTimestamp();
     try {
       let requestFn: () => Promise<Response>;
       // The v2 endpoint accepts the same signed envelope as v4, so falling back
@@ -665,7 +664,7 @@ export class HttpAgent implements Agent {
           // sync time with the network, and sign a new request only if the certified
           // time shows the original request's expiry had already passed when it was sent
           await this.syncTime(target);
-          if (this.#isExpiredAt(transformedRequest.body.content.ingress_expiry, submittedAtMs)) {
+          if (this.#isExpiredAt(transformedRequest.body.content.ingress_expiry, submittedAt)) {
             return this.call(canister, options, identity);
           }
         }
@@ -1543,7 +1542,7 @@ export class HttpAgent implements Agent {
               }, []),
           );
 
-          this.#setTimeDiffMsecs(callTime, Date.now(), replicaTimes);
+          this.#setTimeDiffMsecs(callTime, localTimestamp(), replicaTimes);
         } catch (error) {
           const syncTimeError =
             error instanceof AgentError
@@ -1570,7 +1569,7 @@ export class HttpAgent implements Agent {
 
   #setTimeDiffMsecs(
     callTime: number,
-    responseTime: number,
+    receivedAt: LocalTimestamp,
     replicaTimes: Array<number | undefined>,
   ): void {
     const maxReplicaTime = replicaTimes.reduce<number>((max, current) => {
@@ -1579,7 +1578,7 @@ export class HttpAgent implements Agent {
 
     if (maxReplicaTime > 0) {
       this.#timeDiffMsecs = maxReplicaTime - callTime;
-      this.#minTimeDiffMsecs = maxReplicaTime - responseTime;
+      this.#syncedCertifiedTime = { replicaTimeMs: maxReplicaTime, receivedAt };
       this.#hasSyncedTime = true;
       this.log.notify({
         message: `Syncing time: offset of ${this.#timeDiffMsecs}`,
@@ -1592,16 +1591,24 @@ export class HttpAgent implements Agent {
    * Whether the given expiry had already passed, according to the synced certified time,
    * at the given local time.
    * @param expiry The ingress expiry of the request.
-   * @param localTimeMs The local time, in milliseconds.
+   * @param at The local time to check the expiry at.
    * @returns `true` only if time has been synced and the expiry is before the lower bound
-   * of the replica time at `localTimeMs`.
+   * of the replica time at `at`.
    */
-  #isExpiredAt(expiry: Expiry, localTimeMs: number): boolean {
-    if (this.#minTimeDiffMsecs === null) {
+  #isExpiredAt(expiry: Expiry, at: LocalTimestamp): boolean {
+    if (this.#syncedCertifiedTime === null) {
       return false;
     }
+    const { replicaTimeMs, receivedAt } = this.#syncedCertifiedTime;
+    // The certified time is not later than the replica time when it was received. Subtract
+    // the larger of the wall-clock and monotonic elapsed times, so that neither a wall-clock
+    // adjustment nor a paused monotonic clock (e.g. system sleep) inflates the bound.
+    const elapsedMs = Math.max(
+      receivedAt.wallMs - at.wallMs,
+      receivedAt.monotonicMs - at.monotonicMs,
+    );
     const replicaTimeLowerBoundNs =
-      BigInt(localTimeMs + this.#minTimeDiffMsecs) * BigInt(MSECS_TO_NANOSECONDS);
+      BigInt(Math.floor(replicaTimeMs - elapsedMs)) * BigInt(MSECS_TO_NANOSECONDS);
     return expiry.toBigInt() < replicaTimeLowerBoundNs;
   }
 
@@ -1798,6 +1805,24 @@ export function calculateIngressExpiry(
 ): Expiry {
   const ingressExpiryMs = maxIngressExpiryInMinutes * MINUTE_TO_MSECS;
   return Expiry.fromDeltaInMilliseconds(ingressExpiryMs, timeDiffMsecs);
+}
+
+interface LocalTimestamp {
+  wallMs: number;
+  monotonicMs: number;
+}
+
+/**
+ * Reads the local wall-clock time, and a monotonic time where available.
+ * @returns the current local timestamp.
+ */
+function localTimestamp(): LocalTimestamp {
+  const wallMs = Date.now();
+  const monotonicMs =
+    typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : wallMs;
+  return { wallMs, monotonicMs };
 }
 
 /**
