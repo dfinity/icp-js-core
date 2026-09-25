@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup PNPM
-        uses: dfinity/ci-tools/actions/setup-pnpm@bdfe993db468e7df927f424be4338c03c5538bc4 # main
+        uses: dfinity/ci-tools/actions/setup-pnpm@a98f5d0198719ad41ded2f02fa0f5e426102f369 # main
 
       - uses: andresz1/size-limit-action@94bc357df29c36c8f8d50ea497c3e225c3c95d1d # v1.8.0
         with:
