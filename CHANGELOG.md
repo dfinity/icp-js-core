@@ -4,6 +4,7 @@
 
 ### Fix
 
+- **agent**: reuse the signed call on v4 fallback, and re-sign after time sync only if provably expired (#1405)
 - Prevent DOM XSS in Candid UI error rendering (#1399)
 - **candid**: bound decode allocation to prevent memory-exhaustion DoS (#1393)
 - **candid**: bound LEB128 decoding to prevent CPU-exhaustion DoS (#1391)
