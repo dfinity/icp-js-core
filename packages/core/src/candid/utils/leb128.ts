@@ -149,8 +149,8 @@ export function slebEncode(value: bigint | number): Uint8Array {
  * @param pipe A Buffer containing the signed leb encoded bits.
  */
 export function slebDecode(pipe: Pipe): bigint {
-  // Get the size of the buffer, then cut a buffer of that size.
-  const pipeView = new Uint8Array(pipe.buffer);
+  // Find where the value ends. save() is the unread bytes as a view, so this does not copy them.
+  const pipeView = pipe.save();
   let len = 0;
   for (; len < pipeView.byteLength; len++) {
     if (len >= MAX_LEB_BYTES) {

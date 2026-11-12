@@ -78,6 +78,19 @@ test('sleb rejects oversized continuation-byte sequences', () => {
   expect(() => slebDecode(new Pipe(oversized))).toThrow(/exceeds maximum length/);
 });
 
+test('sleb reads values one after another from the same pipe', () => {
+  const values = [
+    BigInt(-1),
+    BigInt(42),
+    BigInt(-123456),
+    BigInt('60000000000000000'),
+    BigInt(-64),
+  ];
+  const pipe = new Pipe(new Uint8Array(values.flatMap(value => [...slebEncode(value)])));
+  expect(values.map(() => slebDecode(pipe))).toEqual(values);
+  expect(pipe.byteLength).toBe(0);
+});
+
 test('IntLE', () => {
   expect(bytesToHex(writeIntLE(42, 2))).toBe('2a00');
   expect(bytesToHex(writeIntLE(-42, 3))).toBe('d6ffff');
