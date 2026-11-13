@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fix
+
+- **candid**: slebDecode no longer copies the rest of the buffer for every int (#1413)
+
 ## v6.1.1 (2026-10-09)
 
 ### Fix
