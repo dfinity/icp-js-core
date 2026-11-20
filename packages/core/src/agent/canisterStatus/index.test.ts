@@ -1,9 +1,9 @@
 import { fetchNodeKeys } from './index.ts';
 import { Principal } from '#principal';
 import * as Cert from '../certificate.ts';
-import { hexToBytes } from '@noble/hashes/utils.js';
+import { hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { goldenCertificates } from '../agent/http/__certificates__/goldenCertificates.ts';
-import { decode } from '../cbor.ts';
+import { decode, encode } from '../cbor.ts';
 import { LookupErrorCode, ProtocolError } from '../errors.ts';
 
 const IC_ROOT_KEY =
@@ -188,5 +188,56 @@ describe('check_canister_ranges', () => {
       tree: legacyCertificate.tree,
     });
     expect(canisterInRange).toBe(false);
+  });
+});
+
+describe('check_canister_ranges with multiple canister range shards', () => {
+  // A canister ID shaped as 8 id bytes followed by the 0x01 0x01 suffix. The 8th byte orders them.
+  const cid = (n: number): Uint8Array => Uint8Array.from([0, 0, 0, 0, 0, 0, 0, n, 0x01, 0x01]);
+  const canister = (n: number): Principal => Principal.fromUint8Array(cid(n));
+
+  const subnetId = Principal.fromUint8Array(Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+
+  const leaf = (value: Uint8Array): Cert.HashTree => [Cert.NodeType.Leaf, value as Cert.NodeValue];
+  const labeled = (label: Uint8Array, child: Cert.HashTree): Cert.HashTree => [
+    Cert.NodeType.Labeled,
+    label as Cert.NodeLabel,
+    child,
+  ];
+  const fork = (left: Cert.HashTree, right: Cert.HashTree): Cert.HashTree => [
+    Cert.NodeType.Fork,
+    left,
+    right,
+  ];
+
+  // A shard keyed by its first canister ID, holding a single range [start, end].
+  const shard = (start: number, end: number): Cert.HashTree =>
+    labeled(cid(start), leaf(encode([[cid(start), cid(end)]]) as Uint8Array));
+
+  // Three non-adjacent shards (sorted ascending by label), built directly as a hash tree so the
+  // sharded `/canister_ranges/<subnet_id>/<first_canister_id>` path is exercised. A real
+  // certificate reaches this same code once a subnet's ranges span more than one shard.
+  const tree: Cert.HashTree = labeled(
+    utf8ToBytes('canister_ranges'),
+    labeled(
+      subnetId.toUint8Array(),
+      fork(shard(0x10, 0x1f), fork(shard(0x30, 0x3f), shard(0x50, 0x5f))),
+    ),
+  );
+
+  it.each([
+    { label: 'first shard', canisterId: canister(0x15) },
+    { label: 'middle shard', canisterId: canister(0x35) },
+    { label: 'last shard', canisterId: canister(0x55) },
+  ])('returns true for a canister in the $label', ({ canisterId }) => {
+    expect(Cert.check_canister_ranges({ canisterId, subnetId, tree })).toBe(true);
+  });
+
+  it.each([
+    { label: 'below the first shard', canisterId: canister(0x05) },
+    { label: 'in a gap between shards', canisterId: canister(0x25) },
+    { label: 'above the last shard', canisterId: canister(0x65) },
+  ])('returns false for a canister $label', ({ canisterId }) => {
+    expect(Cert.check_canister_ranges({ canisterId, subnetId, tree })).toBe(false);
   });
 });

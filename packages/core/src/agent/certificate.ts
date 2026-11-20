@@ -898,6 +898,12 @@ export function check_canister_ranges(params: CheckCanisterRangesParams): boolea
 }
 
 /**
+ * The CBOR encoding of an empty canister range list, returned when no shard can contain the
+ * requested canister ID. Decoding it yields no ranges, so the canister is treated as out of range.
+ */
+const EMPTY_CANISTER_RANGES: Uint8Array = cbor.encode([]);
+
+/**
  * Lookup the canister ranges using the `/canister_ranges/<subnet_id>/<ranges>` path.
  * Certificates returned by `/api/v4/canister/<effective_canister_id>/call`
  * and `/api/v3/canister/<effective_canister_id>/read_state` use this path.
@@ -931,6 +937,12 @@ export function lookupCanisterRanges(params: CheckCanisterRangesParams): Uint8Ar
   shardPaths.sort(uint8Compare);
 
   const shardDivision = getCanisterRangeShardPartitionPoint(shardPaths, canisterId);
+  if (shardDivision < 0) {
+    // The canister ID is smaller than every shard's starting canister ID, so no shard can contain
+    // it. Return an empty range set so the caller treats the canister as out of range, consistent
+    // with a canister ID that falls past the end of the covered ranges.
+    return EMPTY_CANISTER_RANGES;
+  }
   const maxPotentialShard = shardPaths[shardDivision];
 
   const canisterRange = getCanisterRangeFromShards(maxPotentialShard, canisterRangeShards);
@@ -989,13 +1001,16 @@ function getCanisterRangeShardPaths(canisterRangeShards: HashTree): Array<NodeLa
 }
 
 /**
- * Finds the partition point that divides shard paths into two groups based on canister ID comparison.
- * Uses binary search to partition the array where:
- * - Elements at indices [0, partitionPoint) have values >= canisterId
- * - Elements at indices [partitionPoint, length) have values < canisterId
- * @param shardPaths Sorted array of shard paths to search through
- * @param canisterId The canister ID to compare against
- * @returns The index of the first shard that is less than the canister ID, or last index if all shards are >= canisterId
+ * Finds the shard that may contain the given canister ID.
+ *
+ * The sharded `/canister_ranges/<subnet_id>/<canister_id>` layout keys each shard by the first
+ * canister ID it covers, and the shards partition the subnet's canister ranges without overlap.
+ * The shard that may contain a target canister ID is therefore the one whose label is the greatest
+ * shard start that is less than or equal to the target (a floor lookup).
+ * @param shardPaths Ascending-sorted array of shard path labels to search through.
+ * @param canisterId The canister ID to locate.
+ * @returns The index of the greatest shard label that is `<=` the canister ID, or `-1` when the
+ * canister ID is smaller than every shard label (no shard can contain it).
  */
 function getCanisterRangeShardPartitionPoint(
   shardPaths: Array<NodeLabel>,
@@ -1004,20 +1019,22 @@ function getCanisterRangeShardPartitionPoint(
   const canisterIdBytes = canisterId.toUint8Array();
   let left = 0;
   let right = shardPaths.length - 1;
+  let result = -1;
 
-  // Binary search for the first element where shard < canisterId
-  while (left < right) {
+  // Binary search for the greatest shard label that is <= canisterId (floor lookup).
+  while (left <= right) {
     const mid = Math.floor((left + right) / 2);
     if (uint8Compare(shardPaths[mid], canisterIdBytes) <= 0) {
-      // Found an element <= canisterId, search left half for earlier occurrence
-      right = mid;
-    } else {
-      // Element is > canisterId, search right half
+      // shardPaths[mid] <= canisterId: a candidate floor; search the right half for a greater one.
+      result = mid;
       left = mid + 1;
+    } else {
+      // shardPaths[mid] > canisterId: search the left half.
+      right = mid - 1;
     }
   }
 
-  return left;
+  return result;
 }
 
 function getCanisterRangeFromShards(
