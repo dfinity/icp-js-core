@@ -898,8 +898,9 @@ export function check_canister_ranges(params: CheckCanisterRangesParams): boolea
 }
 
 /**
- * The CBOR encoding of an empty canister range list, returned when no shard can contain the
- * requested canister ID. Decoding it yields no ranges, so the canister is treated as out of range.
+ * The CBOR encoding of an empty canister range list. {@link lookupCanisterRanges} returns a copy of
+ * it when no shard can contain the requested canister ID; decoding the copy yields no ranges, so the
+ * canister is treated as out of range.
  */
 const EMPTY_CANISTER_RANGES: Uint8Array = cbor.encode([]);
 
@@ -940,8 +941,9 @@ export function lookupCanisterRanges(params: CheckCanisterRangesParams): Uint8Ar
   if (shardDivision < 0) {
     // The canister ID is smaller than every shard's starting canister ID, so no shard can contain
     // it. Return an empty range set so the caller treats the canister as out of range, consistent
-    // with a canister ID that falls past the end of the covered ranges.
-    return EMPTY_CANISTER_RANGES;
+    // with a canister ID that falls past the end of the covered ranges. Return a copy, as the normal
+    // lookup path does, so a caller mutating the result cannot corrupt the shared constant.
+    return EMPTY_CANISTER_RANGES.slice();
   }
   const maxPotentialShard = shardPaths[shardDivision];
 
