@@ -4,6 +4,7 @@
 
 ### Fix
 
+- **agent**: select correct canister-range shard in floor lookup (#1416)
 - **candid**: slebDecode no longer copies the rest of the buffer for every int (#1413)
 
 ## v6.1.1 (2026-10-09)
