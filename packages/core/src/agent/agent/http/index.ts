@@ -12,6 +12,7 @@ import {
   LookupErrorCode,
   MalformedPublicKeyErrorCode,
   MalformedSignatureErrorCode,
+  MissingSignatureErrorCode,
   MissingRootKeyErrorCode,
   ProtocolError,
   QuerySignatureVerificationFailedErrorCode,
@@ -940,7 +941,16 @@ export class HttpAgent implements Agent {
       return response;
     }
 
-    const signatureTimestampNs = response.signatures?.[0]?.timestamp;
+    const { signatures } = response;
+    if (signatures !== undefined && !Array.isArray(signatures)) {
+      throw ProtocolError.fromCode(
+        new MalformedSignatureErrorCode(
+          'Signatures field in query response is not an array. This suggests a malformed or malicious response.',
+        ),
+      );
+    }
+
+    const signatureTimestampNs = signatures?.[0]?.timestamp;
     if (!signatureTimestampNs) {
       throw ProtocolError.fromCode(
         new MalformedSignatureErrorCode(
@@ -1205,7 +1215,18 @@ export class HttpAgent implements Agent {
       // This should not be called if the user has disabled verification
       return queryResponse;
     }
-    const { status, signatures = [], requestId } = queryResponse;
+    const { status, signatures, requestId } = queryResponse;
+
+    if (signatures !== undefined && !Array.isArray(signatures)) {
+      throw ProtocolError.fromCode(
+        new MalformedSignatureErrorCode(
+          'Signatures field in query response is not an array. This suggests a malformed or malicious response.',
+        ),
+      );
+    }
+    if (!signatures || signatures.length === 0) {
+      throw ProtocolError.fromCode(new MissingSignatureErrorCode());
+    }
 
     const maxSignatures = subnetNodeKeys.size;
     if (signatures.length > maxSignatures) {
