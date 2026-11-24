@@ -5,6 +5,7 @@ import {
   AgentError,
   ExcessiveSignaturesErrorCode,
   MalformedSignatureErrorCode,
+  MissingSignatureErrorCode,
 } from '../../errors.ts';
 import { lookupNodeKeysFromCertificate } from '../../utils/readState.ts';
 
@@ -140,6 +141,32 @@ describe('excessive signatures guard', () => {
       String(call[0]).includes('/read_state'),
     );
     expect(readStateCalls).toHaveLength(2);
+  });
+
+  it.each([
+    { label: 'omitted', signatures: undefined },
+    { label: 'an empty array', signatures: [] },
+  ])('should throw MissingSignatureErrorCode when signatures is $label', async ({ signatures }) => {
+    const agent = HttpAgent.createSync({
+      fetch: createMockFetch({
+        status: 'replied',
+        reply: { arg: new Uint8Array([]) },
+        ...(signatures === undefined ? {} : { signatures }),
+      }),
+      host: 'http://localhost:4943',
+      retryTimes: 0,
+      rootKey: new Uint8Array(96),
+    });
+
+    await expect(
+      agent.query(canisterId, { methodName: 'greet', arg: new Uint8Array([]) }),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        cause: expect.objectContaining({
+          code: expect.any(MissingSignatureErrorCode),
+        }),
+      }),
+    );
   });
 
   describe('non-array signatures field', () => {
