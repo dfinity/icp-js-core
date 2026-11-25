@@ -4,6 +4,7 @@
 
 ### Fix
 
+- **agent**: require query response signatures to be a non-empty array (#1420)
 - **agent**: select correct canister-range shard in floor lookup (#1416)
 - **candid**: slebDecode no longer copies the rest of the buffer for every int (#1413)
 
