@@ -169,7 +169,7 @@ describe('excessive signatures guard', () => {
     );
   });
 
-  describe('non-array signatures field', () => {
+  describe('malformed signatures field', () => {
     function createSignature() {
       return {
         timestamp: BigInt(now) * BigInt(NANOSECONDS_PER_MILLISECONDS),
@@ -185,6 +185,7 @@ describe('excessive signatures guard', () => {
         // The computed key defines "__proto__" as an own property, so the encoder emits it.
         signatures: { '0': createSignature(), ['__proto__']: [] },
       },
+      { label: 'an array whose first entry is null', signatures: [null] },
     ])('should throw MalformedSignatureErrorCode for $label', async ({ signatures }) => {
       const agent = HttpAgent.createSync({
         fetch: createMockFetch({

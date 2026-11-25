@@ -963,7 +963,7 @@ export class HttpAgent implements Agent {
 
     const signatures = assertNonEmptySignatures(response.signatures);
 
-    const signatureTimestampNs = signatures[0].timestamp;
+    const signatureTimestampNs = signatures[0]?.timestamp;
     if (!signatureTimestampNs) {
       throw ProtocolError.fromCode(
         new MalformedSignatureErrorCode(
