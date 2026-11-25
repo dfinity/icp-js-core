@@ -1,7 +1,12 @@
 import { Principal } from '#principal';
 import { HttpAgent } from '../index.ts';
 import * as cbor from '../../cbor.ts';
-import { AgentError, ExcessiveSignaturesErrorCode } from '../../errors.ts';
+import {
+  AgentError,
+  ExcessiveSignaturesErrorCode,
+  MalformedSignatureErrorCode,
+  MissingSignatureErrorCode,
+} from '../../errors.ts';
 import { lookupNodeKeysFromCertificate } from '../../utils/readState.ts';
 
 // Mock the certificate module to bypass real certificate verification in fetchSubnetKeys
@@ -136,6 +141,73 @@ describe('excessive signatures guard', () => {
       String(call[0]).includes('/read_state'),
     );
     expect(readStateCalls).toHaveLength(2);
+  });
+
+  it.each([
+    { label: 'omitted', signatures: undefined },
+    { label: 'an empty array', signatures: [] },
+  ])('should throw MissingSignatureErrorCode when signatures is $label', async ({ signatures }) => {
+    const agent = HttpAgent.createSync({
+      fetch: createMockFetch({
+        status: 'replied',
+        reply: { arg: new Uint8Array([]) },
+        ...(signatures === undefined ? {} : { signatures }),
+      }),
+      host: 'http://localhost:4943',
+      retryTimes: 0,
+      rootKey: new Uint8Array(96),
+    });
+
+    await expect(
+      agent.query(canisterId, { methodName: 'greet', arg: new Uint8Array([]) }),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        cause: expect.objectContaining({
+          code: expect.any(MissingSignatureErrorCode),
+        }),
+      }),
+    );
+  });
+
+  describe('malformed signatures field', () => {
+    function createSignature() {
+      return {
+        timestamp: BigInt(now) * BigInt(NANOSECONDS_PER_MILLISECONDS),
+        signature: new Uint8Array(64),
+        identity: Principal.anonymous().toUint8Array(),
+      };
+    }
+
+    it.each([
+      { label: 'a map with an index key', signatures: { '0': createSignature() } },
+      {
+        label: 'a map with an index key and a "__proto__" key',
+        // The computed key defines "__proto__" as an own property, so the encoder emits it.
+        signatures: { '0': createSignature(), ['__proto__']: [] },
+      },
+      { label: 'an array whose first entry is null', signatures: [null] },
+    ])('should throw MalformedSignatureErrorCode for $label', async ({ signatures }) => {
+      const agent = HttpAgent.createSync({
+        fetch: createMockFetch({
+          status: 'replied',
+          reply: { arg: new Uint8Array([]) },
+          signatures,
+        }),
+        host: 'http://localhost:4943',
+        retryTimes: 0,
+        rootKey: new Uint8Array(96),
+      });
+
+      await expect(
+        agent.query(canisterId, { methodName: 'greet', arg: new Uint8Array([]) }),
+      ).rejects.toThrow(
+        expect.objectContaining({
+          cause: expect.objectContaining({
+            code: expect.any(MalformedSignatureErrorCode),
+          }),
+        }),
+      );
+    });
   });
 
   it.each([{ signatureCount: 1 }, { signatureCount: 3 }])(

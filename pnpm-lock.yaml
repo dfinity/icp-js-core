@@ -150,8 +150,8 @@ importers:
   packages/core:
     dependencies:
       '@dfinity/cbor':
-        specifier: ^0.2.3
-        version: 0.2.3
+        specifier: ^0.2.4
+        version: 0.2.4
       '@noble/curves':
         specifier: ^2.2.0
         version: 2.2.0
@@ -618,10 +618,10 @@ packages:
       }
     engines: { node: '>=20.19.0' }
 
-  '@dfinity/cbor@0.2.3':
+  '@dfinity/cbor@0.2.4':
     resolution:
       {
-        integrity: sha512-5GX+9tAf29r94Pxv8nCzrv2/t+AkOfem/c/G61+FA2Wadq7THvc5cvr/AVLH0LpukVfNSWRRHvl1fkCdiB9MMQ==,
+        integrity: sha512-oBj/R+aGGCndLuuDxK2EW7VxVIzRfZgOdumxTysl4V5C6dhyrz6vH1lZ+wGgDecp+MeME9+SvbxphkZ3WBySBw==,
       }
 
   '@dfinity/pic@0.22.0':
@@ -5913,7 +5913,7 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.0': {}
 
-  '@dfinity/cbor@0.2.3': {}
+  '@dfinity/cbor@0.2.4': {}
 
   '@dfinity/pic@0.22.0':
     dependencies:
@@ -6112,7 +6112,7 @@ snapshots:
 
   '@icp-sdk/core@5.2.0':
     dependencies:
-      '@dfinity/cbor': 0.2.3
+      '@dfinity/cbor': 0.2.4
       '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0

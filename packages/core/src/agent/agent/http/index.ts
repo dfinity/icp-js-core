@@ -12,6 +12,7 @@ import {
   LookupErrorCode,
   MalformedPublicKeyErrorCode,
   MalformedSignatureErrorCode,
+  MissingSignatureErrorCode,
   MissingRootKeyErrorCode,
   ProtocolError,
   QuerySignatureVerificationFailedErrorCode,
@@ -54,6 +55,7 @@ import {
   type v4ResponseBody,
   isV4ResponseBody,
   isV2ResponseBody,
+  type NodeSignature,
 } from '../api.ts';
 import { Expiry, httpHeadersTransform, makeNonceTransform } from './transforms.ts';
 import {
@@ -114,6 +116,25 @@ const MINUTE_TO_MSECS = 60 * 1_000;
 const MSECS_TO_NANOSECONDS = 1_000_000;
 
 const DEFAULT_TIME_DIFF_MSECS = 0;
+
+/**
+ * Checks that the `signatures` field of a query response is a non-empty array.
+ * @param signatures - The `signatures` field as decoded from the response
+ * @returns The signatures, narrowed to a non-empty array
+ */
+function assertNonEmptySignatures(signatures: unknown): [NodeSignature, ...NodeSignature[]] {
+  if (signatures === undefined || (Array.isArray(signatures) && signatures.length === 0)) {
+    throw ProtocolError.fromCode(new MissingSignatureErrorCode());
+  }
+  if (!Array.isArray(signatures)) {
+    throw ProtocolError.fromCode(
+      new MalformedSignatureErrorCode(
+        'Signatures field in query response is not an array. This suggests a malformed or malicious response.',
+      ),
+    );
+  }
+  return signatures as [NodeSignature, ...NodeSignature[]];
+}
 
 // Root public key for the IC, encoded as hex
 export const IC_ROOT_KEY =
@@ -940,7 +961,9 @@ export class HttpAgent implements Agent {
       return response;
     }
 
-    const signatureTimestampNs = response.signatures?.[0]?.timestamp;
+    const signatures = assertNonEmptySignatures(response.signatures);
+
+    const signatureTimestampNs = signatures[0]?.timestamp;
     if (!signatureTimestampNs) {
       throw ProtocolError.fromCode(
         new MalformedSignatureErrorCode(
@@ -1205,7 +1228,8 @@ export class HttpAgent implements Agent {
       // This should not be called if the user has disabled verification
       return queryResponse;
     }
-    const { status, signatures = [], requestId } = queryResponse;
+    const { status, requestId } = queryResponse;
+    const signatures = assertNonEmptySignatures(queryResponse.signatures);
 
     const maxSignatures = subnetNodeKeys.size;
     if (signatures.length > maxSignatures) {

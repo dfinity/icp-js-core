@@ -100,7 +100,7 @@
     }
   },
   "dependencies": {
-    "@dfinity/cbor": "^0.2.3",
+    "@dfinity/cbor": "^0.2.4",
     "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.2.0",
     "@scure/bip32": "^2.2.0",
